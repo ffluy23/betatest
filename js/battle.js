@@ -529,6 +529,8 @@ async function switchPokemon(newIdx) {
   resetRankStack(myPokemon)
   // 교체 시 구르기 초기화
   myPokemon.rollState = { active: false, turn: 0 }
+  // 교체 시 상대 방어 해제
+  enePokemon.defending = false; enePokemon.defendTurns = 0
   const prev = myPokemon.name, next = myEntry[newIdx].name
   await addLog(`돌아와, ${prev}!`); await wait(400)
   await addLog(`${myName}${josa(myName, "은는")} ${next}${josa(next, "을를")} 내보냈다!`); await wait(200)
@@ -604,7 +606,7 @@ async function useMove(moveIdx, data) {
     if (prevDefend && stack >= 1) chance = stack >= 2 ? 0.25 : 0.5
     if (Math.random() < chance) {
       myPokemon.defending = true
-      myPokemon.defendTurns = 1
+      myPokemon.defendTurns = 2
       myPokemon.lastDefendMove = "방어"
       myPokemon.defendStack = prevDefend ? Math.min(2, stack + 1) : 1
       await addLog(`${myPokemon.name}${josa(myPokemon.name, "은는")} 방어 태세에 들어갔다!`)
@@ -722,6 +724,8 @@ async function useMove(moveIdx, data) {
     for (const msg of rankMsgs) { await addLog(msg); await wait(300) }
     const rankEffectMsgs = applyMoveEffect(moveInfo?.effect, myPokemon, enePokemon, 0)
     for (const msg of rankEffectMsgs) { await addLog(msg); await wait(280) }
+    // 랭크/효과 기술 사용 시에도 상대 방어 해제
+    enePokemon.defending = false; enePokemon.defendTurns = 0
     await updateDoc(roomRef, { [`${mySlot}_entry`]: myEntry, [`${enemySlot}_entry`]: enemyEntry, current_turn: enemySlot, turn_count: nextTurnCount })
     return
   }
@@ -736,8 +740,13 @@ async function useMove(moveIdx, data) {
 
   await triggerAttackEffect("my", "enemy")
 
-  // 방어 체크: 상대가 방어 중이면 데미지 무효
-  if (enePokemon.defending) {
+  // 방어 상태 먼저 읽고 → 즉시 해제 (상대 행동 이후엔 무조건 소멸)
+  const wasDefending = enePokemon.defending ?? false
+  enePokemon.defending = false
+  enePokemon.defendTurns = 0
+
+  // 방어 체크: 상대가 방어 중이었으면 데미지 무효
+  if (wasDefending) {
     await addLog(`${enePokemon.name}${josa(enePokemon.name, "은는")} 방어했다!`)
     // 무릎차기 빗나감 자해
     if (moveInfo?.jumpKick) {
