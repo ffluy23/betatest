@@ -4,12 +4,12 @@ import { auth, db } from "./firebase.js"
 import { onAuthStateChanged } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-auth.js"
 import { doc, getDoc, updateDoc, onSnapshot } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js"
 
+const API = "https://betatest-ten.vercel.app"
 const roomRef = doc(db, "rooms", ROOM_ID)
 let myUid = null
 let myNickname = null
-let myDisplayName = null  // 칭호 포함 이름
+let myDisplayName = null
 
-// mySlot은 onSnapshot마다 Firestore 기준으로 재계산
 function calcMySlot(room) {
   if (!room || !myUid) return null
   if (room.player1_uid === myUid) return "player1"
@@ -26,7 +26,6 @@ onAuthStateChanged(auth, async (user) => {
   const userData = userSnap.data()
   myNickname = userData.nickname
 
-  // 칭호 포함 표시 이름 계산
   const activeTitle = userData?.activeTitle ?? null
   myDisplayName = activeTitle ? `[${activeTitle}] ${myNickname}` : myNickname
 
@@ -56,7 +55,6 @@ async function joinRoom() {
   const roomSnap = await getDoc(roomRef)
   const room = roomSnap.data()
 
-  // 이미 이 방에 있는 경우
   if (calcMySlot(room)) return
 
   if (room.game_started) {
@@ -76,7 +74,6 @@ async function joinRoom() {
 async function joinAsSpectator(room) {
   const spectators = room.spectators ?? []
   if (spectators.includes(myUid)) return
-
   await updateDoc(roomRef, {
     spectators: [...spectators, myUid],
     spectator_names: [...(room.spectator_names ?? []), myDisplayName]
@@ -97,26 +94,7 @@ function listenRoom() {
     renderSwapRequest(room, mySlot)
     updateButtonsBySlot(room, mySlot)
 
-    // entry 복사 + game_started
-    if (room.player1_ready && room.player2_ready && !room.game_started) {
-      if (mySlot === "player1" || mySlot === "player2") {
-        const firestoreSlot = mySlot === "player1" ? "p1" : "p2"
-        const userSnap = await getDoc(doc(db, "users", myUid))
-        const myEntry = userSnap.data()?.entry ?? []
-        const myEntryWithMax = myEntry.map(pkmn => ({ ...pkmn, maxHp: pkmn.hp }))
-
-        await updateDoc(roomRef, {
-          [`${firestoreSlot}_entry`]: myEntryWithMax,
-          [`${firestoreSlot}_active_idx`]: 0,
-        })
-
-        if (mySlot === "player1") {
-          await updateDoc(roomRef, { game_started: true })
-        }
-      }
-    }
-
-    // 게임 시작 시 전원 이동
+    // 게임 시작 시 전원 이동 — 서버가 game_started 세팅하면 여기서 감지해서 이동
     if (room.game_started && mySlot) {
       const roomNumber = ROOM_ID.replace("battleroom", "")
       if (mySlot === "spectator") {
@@ -224,11 +202,25 @@ async function promoteToPlayer(targetSlot) {
 }
 
 function setupButtons() {
+  // 레디 버튼 → 서버 API 호출
   document.getElementById("readyBtn").onclick = async () => {
     const roomSnap = await getDoc(roomRef)
     const mySlot = calcMySlot(roomSnap.data())
-    if (mySlot === "player1") await updateDoc(roomRef, { player1_ready: true })
-    if (mySlot === "player2") await updateDoc(roomRef, { player2_ready: true })
+    if (mySlot !== "player1" && mySlot !== "player2") return
+
+    const btn = document.getElementById("readyBtn")
+    if (btn) { btn.disabled = true; btn.innerText = "대기 중..." }
+
+    try {
+      await fetch(`${API}/api/ready`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ roomId: ROOM_ID, myUid, mySlot })
+      })
+    } catch (e) {
+      console.error("레디 실패:", e)
+      if (btn) { btn.disabled = false; btn.innerText = "레디" }
+    }
   }
 
   document.getElementById("leaveBtn").onclick = async () => {
