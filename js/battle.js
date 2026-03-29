@@ -11,7 +11,7 @@ import { getTypeMultiplier } from "./typeChart.js"
 import {
   statusName, josa as josaEH,
   applyMoveEffect, checkPreActionStatus, checkConfusion,
-  applyEndOfTurnDamage, applyWeatherEffect,
+  applyEndOfTurnDamage, applyWeatherEffect, tickVolatiles,
   getStatusSpdPenalty
 } from "./effecthandler.js"
 import { fadeBgmOut } from "./intro.js"
@@ -25,13 +25,11 @@ const SFX_BTN  = "https://usual-salmon-mnqxptwyvw.edgeone.app/Pokemon%20(A%20But
 function playSound(url) {
   const a = new Audio(url); a.volume = 0.6; a.play().catch(() => {})
 }
-
 function popDiceNum(el) {
   if (!el) return
   el.classList.remove("pop"); void el.offsetWidth; el.classList.add("pop")
   el.addEventListener("animationend", () => el.classList.remove("pop"), { once: true })
 }
-
 function showBattlePopup(prefix, type) {
   const wrap = document.querySelector(`#${prefix}-pokemon-area .portrait-wrap`)
     ?? document.getElementById(`${prefix}-pokemon-area`)
@@ -69,12 +67,10 @@ function tickMyRanks(pokemon) {
   if (r.spdTurns > 0) { r.spdTurns--; if (!r.spdTurns) { r.spd = 0; msgs.push(`${pokemon.name}의 스피드 랭크가 원래대로 돌아왔다!`) } }
   return msgs
 }
-
 function clearRankStack(pokemon) {
   pokemon.lastRankMove = null
   pokemon.rankStack    = 0
 }
-
 function resetRankStack(pokemon) {
   pokemon.lastRankMove = null
   pokemon.rankStack    = 0
@@ -88,91 +84,42 @@ function resetRankStack(pokemon) {
 function applyRankChanges(r, self, target, moveName) {
   if (!r) return []
   const msgs = []
-
   const roll = r.chance !== undefined ? Math.random() < r.chance : true
   if (!roll) return []
-
   const selfR   = { ...defaultRanks(), ...(self.ranks   ?? {}) }
   const targetR = { ...defaultRanks(), ...(target.ranks ?? {}) }
-
   const isSameMove = moveName && self.lastRankMove === moveName
   const stack = self.rankStack ?? 0
-
   if (moveName) {
-    if (!isSameMove) {
-      self.lastRankMove = moveName
-      self.rankStack    = 1
-    } else if (stack >= 2) {
-      selfR.atk = 0; selfR.atk = 0
-      selfR.def = 0; selfR.defTurns = 0
-      selfR.spd = 0; selfR.spdTurns = 0
-      self.rankStack = 1
-    } else {
-      self.rankStack = stack + 1
-    }
+    if (!isSameMove) { self.lastRankMove = moveName; self.rankStack = 1 }
+    else if (stack >= 2) { selfR.atk = 0; selfR.atkTurns = 0; selfR.def = 0; selfR.defTurns = 0; selfR.spd = 0; selfR.spdTurns = 0; self.rankStack = 1 }
+    else { self.rankStack = stack + 1 }
   }
-
   if (r.atk !== undefined) {
-    if (r.atk > 0) {
-      const prev = selfR.atk
-      selfR.atk = Math.min(4, selfR.atk + r.atk); selfR.atkTurns = r.turns ?? 2
-      msgs.push(`${self.name}의 공격이 올라갔다! (+${selfR.atk - prev})`)
-    } else if (r.atk < 0) {
-      if (selfR.atk === 0) msgs.push(`${self.name}의 공격은 더 이상 내려가지 않는다!`)
-      else { const prev = selfR.atk; selfR.atk = Math.max(0, selfR.atk + r.atk); selfR.atkTurns = r.turns ?? 2; msgs.push(`${self.name}의 공격이 내려갔다! (${selfR.atk - prev})`) }
-    }
+    if (r.atk > 0) { const p = selfR.atk; selfR.atk = Math.min(4, selfR.atk + r.atk); selfR.atkTurns = r.turns ?? 2; msgs.push(`${self.name}의 공격이 올라갔다! (+${selfR.atk - p})`) }
+    else if (r.atk < 0) { if (selfR.atk === 0) msgs.push(`${self.name}의 공격은 더 이상 내려가지 않는다!`); else { const p = selfR.atk; selfR.atk = Math.max(0, selfR.atk + r.atk); selfR.atkTurns = r.turns ?? 2; msgs.push(`${self.name}의 공격이 내려갔다! (${selfR.atk - p})`) } }
   }
   if (r.def !== undefined) {
-    if (r.def > 0) {
-      const prev = selfR.def
-      selfR.def = Math.min(3, selfR.def + r.def); selfR.defTurns = r.turns ?? 2
-      msgs.push(`${self.name}의 방어가 올라갔다! (+${selfR.def - prev})`)
-    } else if (r.def < 0) {
-      if (selfR.def === 0) msgs.push(`${self.name}의 방어는 더 이상 내려가지 않는다!`)
-      else { const prev = selfR.def; selfR.def = Math.max(0, selfR.def + r.def); selfR.defTurns = r.turns ?? 2; msgs.push(`${self.name}의 방어가 내려갔다! (${selfR.def - prev})`) }
-    }
+    if (r.def > 0) { const p = selfR.def; selfR.def = Math.min(3, selfR.def + r.def); selfR.defTurns = r.turns ?? 2; msgs.push(`${self.name}의 방어가 올라갔다! (+${selfR.def - p})`) }
+    else if (r.def < 0) { if (selfR.def === 0) msgs.push(`${self.name}의 방어는 더 이상 내려가지 않는다!`); else { const p = selfR.def; selfR.def = Math.max(0, selfR.def + r.def); selfR.defTurns = r.turns ?? 2; msgs.push(`${self.name}의 방어가 내려갔다! (${selfR.def - p})`) } }
   }
   if (r.spd !== undefined) {
-    if (r.spd > 0) {
-      const prev = selfR.spd
-      selfR.spd = Math.min(5, selfR.spd + r.spd); selfR.spdTurns = r.turns ?? 2
-      msgs.push(`${self.name}의 스피드가 올라갔다! (+${selfR.spd - prev}%p)`)
-    } else if (r.spd < 0) {
-      if (selfR.spd === 0) msgs.push(`${self.name}의 스피드는 더 이상 내려가지 않는다!`)
-      else { const prev = selfR.spd; selfR.spd = Math.max(0, selfR.spd + r.spd); selfR.spdTurns = r.turns ?? 2; msgs.push(`${self.name}의 스피드가 내려갔다! (${selfR.spd - prev}%p)`) }
-    }
+    if (r.spd > 0) { const p = selfR.spd; selfR.spd = Math.min(5, selfR.spd + r.spd); selfR.spdTurns = r.turns ?? 2; msgs.push(`${self.name}의 스피드가 올라갔다! (+${selfR.spd - p}%p)`) }
+    else if (r.spd < 0) { if (selfR.spd === 0) msgs.push(`${self.name}의 스피드는 더 이상 내려가지 않는다!`); else { const p = selfR.spd; selfR.spd = Math.max(0, selfR.spd + r.spd); selfR.spdTurns = r.turns ?? 2; msgs.push(`${self.name}의 스피드가 내려갔다! (${selfR.spd - p}%p)`) } }
   }
-
   if (r.targetAtk !== undefined) {
-    if (r.targetAtk < 0) {
-      if (targetR.atk === 0) msgs.push(`${target.name}의 공격은 더 이상 내려가지 않는다!`)
-      else { const prev = targetR.atk; targetR.atk = Math.max(0, targetR.atk + r.targetAtk); targetR.atkTurns = r.turns ?? 2; msgs.push(`${target.name}의 공격이 내려갔다! (${targetR.atk - prev})`) }
-    } else if (r.targetAtk > 0) {
-      const prev = targetR.atk; targetR.atk = Math.min(4, targetR.atk + r.targetAtk); targetR.atkTurns = r.turns ?? 2
-      msgs.push(`${target.name}의 공격이 올라갔다! (+${targetR.atk - prev})`)
-    }
+    if (r.targetAtk < 0) { if (targetR.atk === 0) msgs.push(`${target.name}의 공격은 더 이상 내려가지 않는다!`); else { const p = targetR.atk; targetR.atk = Math.max(0, targetR.atk + r.targetAtk); targetR.atkTurns = r.turns ?? 2; msgs.push(`${target.name}의 공격이 내려갔다! (${targetR.atk - p})`) } }
+    else if (r.targetAtk > 0) { const p = targetR.atk; targetR.atk = Math.min(4, targetR.atk + r.targetAtk); targetR.atkTurns = r.turns ?? 2; msgs.push(`${target.name}의 공격이 올라갔다! (+${targetR.atk - p})`) }
   }
   if (r.targetDef !== undefined) {
-    if (r.targetDef < 0) {
-      if (targetR.def === 0) msgs.push(`${target.name}의 방어는 더 이상 내려가지 않는다!`)
-      else { const prev = targetR.def; targetR.def = Math.max(0, targetR.def + r.targetDef); targetR.defTurns = r.turns ?? 2; msgs.push(`${target.name}의 방어가 내려갔다! (${targetR.def - prev})`) }
-    } else if (r.targetDef > 0) {
-      const prev = targetR.def; targetR.def = Math.min(3, targetR.def + r.targetDef); targetR.defTurns = r.turns ?? 2
-      msgs.push(`${target.name}의 방어가 올라갔다! (+${targetR.def - prev})`)
-    }
+    if (r.targetDef < 0) { if (targetR.def === 0) msgs.push(`${target.name}의 방어는 더 이상 내려가지 않는다!`); else { const p = targetR.def; targetR.def = Math.max(0, targetR.def + r.targetDef); targetR.defTurns = r.turns ?? 2; msgs.push(`${target.name}의 방어가 내려갔다! (${targetR.def - p})`) } }
+    else if (r.targetDef > 0) { const p = targetR.def; targetR.def = Math.min(3, targetR.def + r.targetDef); targetR.defTurns = r.turns ?? 2; msgs.push(`${target.name}의 방어가 올라갔다! (+${targetR.def - p})`) }
   }
   if (r.targetSpd !== undefined) {
-    if (r.targetSpd < 0) {
-      if (targetR.spd === 0) msgs.push(`${target.name}의 스피드는 더 이상 내려가지 않는다!`)
-      else { const prev = targetR.spd; targetR.spd = Math.max(0, targetR.spd + r.targetSpd); targetR.spdTurns = r.turns ?? 2; msgs.push(`${target.name}의 스피드가 내려갔다! (${targetR.spd - prev}%p)`) }
-    } else if (r.targetSpd > 0) {
-      const prev = targetR.spd; targetR.spd = Math.min(5, targetR.spd + r.targetSpd); targetR.spdTurns = r.turns ?? 2
-      msgs.push(`${target.name}의 스피드가 올라갔다! (+${targetR.spd - prev}%p)`)
-    }
+    if (r.targetSpd < 0) { if (targetR.spd === 0) msgs.push(`${target.name}의 스피드는 더 이상 내려가지 않는다!`); else { const p = targetR.spd; targetR.spd = Math.max(0, targetR.spd + r.targetSpd); targetR.spdTurns = r.turns ?? 2; msgs.push(`${target.name}의 스피드가 내려갔다! (${targetR.spd - p}%p)`) } }
+    else if (r.targetSpd > 0) { const p = targetR.spd; targetR.spd = Math.min(5, targetR.spd + r.targetSpd); targetR.spdTurns = r.turns ?? 2; msgs.push(`${target.name}의 스피드가 올라갔다! (+${targetR.spd - p}%p)`) }
   }
-
-  self.ranks   = selfR
-  target.ranks = targetR
+  self.ranks = selfR; target.ranks = targetR
   return msgs
 }
 
@@ -185,7 +132,7 @@ function calcHit(attacker, moveInfo, defender) {
   return Math.random() * 100 < ev ? { hit: false, hitType: "evaded" } : { hit: true, hitType: "hit" }
 }
 
-function calcDamage(attacker, moveName, defender, atkRank = 0, defRank = 0) {
+function calcDamage(attacker, moveName, defender, atkRank = 0, defRank = 0, powerOverride = null) {
   const move = moves[moveName]
   if (!move) return { damage: 0, multiplier: 1, stab: false, dice: 0, critical: false }
   const dice = rollD10()
@@ -195,13 +142,24 @@ function calcDamage(attacker, moveName, defender, atkRank = 0, defRank = 0) {
   if (multiplier === 0) return { damage: 0, multiplier: 0, stab: false, dice, critical: false }
   const atkTypes = Array.isArray(attacker.type) ? attacker.type : [attacker.type]
   const stab = atkTypes.includes(move.type)
-  const base = (move.power ?? 40) + (attacker.attack ?? 3) * 4 + dice
+  const power = powerOverride ?? (move.power ?? 40)
+  const base = power + (attacker.attack ?? 3) * 4 + dice
   const raw  = Math.floor(base * multiplier * (stab ? 1.3 : 1))
   const afterAtk = Math.max(0, raw + Math.max(-raw, atkRank))
   const afterDef = Math.max(0, afterAtk - (defender.defense ?? 3) * 5)
   const baseDmg  = Math.max(0, afterDef - Math.min(3, Math.max(0, defRank)) * 3)
   const critical = Math.random() * 100 < Math.min(100, (attacker.attack ?? 3) * 2)
   return { damage: critical ? Math.floor(baseDmg * 1.5) : baseDmg, multiplier, stab, dice, critical }
+}
+
+// 구르기 전용: 고정 데미지 (타입상성만 적용, 다른 보정 없음)
+function calcRolloutDamage(moveName, defender, power) {
+  const move = moves[moveName]
+  if (!move) return 0
+  const defTypes = Array.isArray(defender.type) ? defender.type : [defender.type]
+  let multiplier = 1
+  for (const dt of defTypes) multiplier *= getTypeMultiplier(move.type, dt)
+  return Math.floor(power * multiplier)
 }
 
 function updateHpBar(barId, textId, hp, maxHp, showNumbers) {
@@ -224,9 +182,7 @@ function updatePortrait(prefix, pokemon, animate = false) {
   if (placeholder) placeholder.style.display = "none"
   img.classList.remove("visible", "slide-in-my", "slide-in-enemy")
   img.style.display = "block"; img.src = pokemon.portrait; img.alt = pokemon.name
-  setTimeout(() => {
-    img.classList.add("visible", ...(animate ? [prefix === "my" ? "slide-in-my" : "slide-in-enemy"] : []))
-  }, 80)
+  setTimeout(() => { img.classList.add("visible", ...(animate ? [prefix === "my" ? "slide-in-my" : "slide-in-enemy"] : [])) }, 80)
 }
 
 function triggerAttackEffect(atkPfx, defPfx) {
@@ -297,24 +253,14 @@ async function grantWinCoins(winnerName, data) {
   } catch(e) { console.warn("코인 지급 실패", e) }
 }
 
-// ── 게임 로그를 games 서브컬렉션에 저장
-// leaveGame() 호출 전에 반드시 실행해야 함
 async function saveGameLog() {
-  // 스펙테이터나 p2는 저장 안 함 (p1만 저장 담당)
   if (isSpectator || mySlot !== "p1") return
   try {
-    const roomSnap = await getDoc(roomRef)
-    const data = roomSnap.data()
+    const roomSnap = await getDoc(roomRef), data = roomSnap.data()
     const logSnap = await getDocs(query(logsRef, orderBy("ts")))
     const logs = logSnap.docs.map(d => ({ text: d.data().text, ts: d.data().ts }))
     const gamesRef = collection(db, "rooms", ROOM_ID, "games")
-    await addDoc(gamesRef, {
-      p1:       data.player1_name ?? "???",
-      p2:       data.player2_name ?? "???",
-      winner:   data.winner ?? null,
-      logs,
-      createdAt: Date.now()
-    })
+    await addDoc(gamesRef, { p1: data.player1_name ?? "???", p2: data.player2_name ?? "???", winner: data.winner ?? null, logs, createdAt: Date.now() })
   } catch(e) { console.warn("게임 로그 저장 실패", e) }
 }
 
@@ -349,17 +295,14 @@ function animateDualDice(p1Roll, p2Roll, onDone, p1Name, p2Name) {
   if (!wrap) { onDone(); return }
   if (p1NameEl) p1NameEl.innerText = p1Name ?? "Player1"
   if (p2NameEl) p2NameEl.innerText = p2Name ?? "Player2"
-  if (p1Box) p1Box.style.display = "block"
-  if (p2Box) p2Box.style.display = "block"
+  if (p1Box) p1Box.style.display = "block"; if (p2Box) p2Box.style.display = "block"
   wrap.style.display = "flex"
   let count = 0
   const iv = setInterval(() => {
-    if (p1El) p1El.innerText = rollD10()
-    if (p2El) p2El.innerText = rollD10()
+    if (p1El) p1El.innerText = rollD10(); if (p2El) p2El.innerText = rollD10()
     if (++count >= 22) {
       clearInterval(iv)
-      if (p1El) p1El.innerText = p1Roll
-      if (p2El) p2El.innerText = p2Roll
+      if (p1El) p1El.innerText = p1Roll; if (p2El) p2El.innerText = p2Roll
       popDiceNum(p1Roll >= p2Roll ? p1El : p2El); playSound(SFX_DICE)
       setTimeout(() => { wrap.style.display = "none"; onDone() }, 1800)
     }
@@ -378,16 +321,13 @@ onAuthStateChanged(auth, async user => {
     if (lb) { lb.style.display = "inline-block"; lb.disabled = false; lb.innerText = "관전 종료"; lb.onclick = leaveAsSpectator }
     document.getElementById("battle-screen").classList.add("visible")
   }
-  waitForBattleReady()
-  listenLogs()
+  waitForBattleReady(); listenLogs()
 })
 
 function waitForBattleReady() {
   const screen = document.getElementById("battle-screen")
   if (screen.classList.contains("visible")) { listenRoom(); return }
-  const obs = new MutationObserver(() => {
-    if (screen.classList.contains("visible")) { obs.disconnect(); listenRoom() }
-  })
+  const obs = new MutationObserver(() => { if (screen.classList.contains("visible")) { obs.disconnect(); listenRoom() } })
   obs.observe(screen, { attributes: true, attributeFilter: ["class"] })
 }
 
@@ -397,10 +337,7 @@ async function initTurn(data) {
   const p1 = data.p1_entry[0], p2 = data.p2_entry[0]
   const r1 = rollD10(), r2 = rollD10()
   const fs = (p1.speed ?? 3) + r1 >= (p2.speed ?? 3) + r2 ? "p1" : "p2"
-  await updateDoc(roomRef, {
-    first_slot: fs, first_pokemon_name: fs === "p1" ? p1.name : p2.name,
-    p1_dice: r1, p2_dice: r2
-  })
+  await updateDoc(roomRef, { first_slot: fs, first_pokemon_name: fs === "p1" ? p1.name : p2.name, p1_dice: r1, p2_dice: r2 })
 }
 
 async function runBattleIntroSequence(data) {
@@ -411,8 +348,8 @@ async function runBattleIntroSequence(data) {
   const base = Date.now()
   await addDoc(logsRef, { text: `${p1Name}${josa(p1Name, "은는")} ${data.p1_entry[0].name}${josa(data.p1_entry[0].name, "을를")} 내보냈다!`, ts: base })
   await addDoc(logsRef, { text: `${p2Name}${josa(p2Name, "은는")} ${data.p2_entry[0].name}${josa(data.p2_entry[0].name, "을를")} 내보냈다!`, ts: base + 1 })
-  updatePortrait("my",    data[`${mySlot}_entry`][0],    true)
-  updatePortrait("enemy", data[`${enemySlot}_entry`][0], true)
+  updatePortrait("my", data[`${mySlot}_entry`][0], true)
+  updatePortrait("enemy", data[`${mySlot === "p1" ? "p2" : "p1"}_entry`][0], true)
   await wait(800)
   await addLog(`${data.first_pokemon_name}의 선공!`)
   await updateDoc(roomRef, { current_turn: data.first_slot, turn_count: 1, intro_done: true })
@@ -443,8 +380,7 @@ function listenRoom() {
         diceShown = true
         animateDualDice(data.p1_dice, data.p2_dice, async () => {
           if (!isSpectator && mySlot === "p1" && !data.intro_done && !battleIntroSequenceStarted) {
-            battleIntroSequenceStarted = true
-            await runBattleIntroSequence(data)
+            battleIntroSequenceStarted = true; await runBattleIntroSequence(data)
           }
         }, data.player1_name, data.player2_name)
       }
@@ -481,21 +417,16 @@ function showGameOver(data) {
 async function leaveAsSpectator() {
   const snap = await getDoc(roomRef), data = snap.data()
   await updateDoc(roomRef, {
-    spectators:      (data.spectators      ?? []).filter(u => u !== myUid),
+    spectators: (data.spectators ?? []).filter(u => u !== myUid),
     spectator_names: (data.spectator_names ?? []).filter((_, i) => (data.spectators ?? [])[i] !== myUid)
   })
   location.href = "../main.html"
 }
 
 async function leaveGame() {
-  // 1. 게임 로그 먼저 저장 (p1만 담당)
   await saveGameLog()
-
-  // 2. logs 서브컬렉션 삭제
   const logSnap = await getDocs(logsRef)
   await Promise.all(logSnap.docs.map(d => deleteDoc(d.ref)))
-
-  // 3. 방 초기화
   await updateDoc(roomRef, {
     player1_uid: null, player1_name: null, player1_ready: false,
     player2_uid: null, player2_name: null, player2_ready: false,
@@ -504,7 +435,8 @@ async function leaveGame() {
     p1_active_idx: 0, p2_active_idx: 0, p1_dice: null, p2_dice: null,
     first_slot: null, first_pokemon_name: null, intro_done: false,
     intro_ready_p1: false, intro_ready_p2: false,
-    hit_event: null, background: null, dice_event: null
+    hit_event: null, background: null, dice_event: null,
+    revenge_ready_p1: false, revenge_ready_p2: false
   })
   location.href = "../main.html"
 }
@@ -534,13 +466,34 @@ function updateMoveButtons(data) {
     if (i >= movesArr.length) { btn.innerHTML = '<span style="font-size:13px;">-</span>'; btn.disabled = true; btn.onclick = null; continue }
     const move = movesArr[i], moveInfo = moves[move.name]
     const accText = moveInfo?.alwaysHit ? "필중" : `${moveInfo?.accuracy ?? 100}%`
+
+    // 뒀다쓰기: 조건 미충족 시 비활성
+    const isLastResort = moveInfo?.lastResort
+    const lrUnlocked = isLastResort ? checkLastResortUnlocked(myPokemon, i, movesArr) : true
+
+    // 구르기: 구르기 진행 중이면 구르기만 활성
+    const rollActive = (myPokemon?.rollState?.active ?? false)
+    const isRollout = moveInfo?.rollout
+    const lockedByRoll = rollActive && !isRollout
+
     btn.innerHTML = `<span style="display:block;font-size:13px;font-weight:bold;">${move.name}</span><span style="display:block;font-size:10px;opacity:0.85;">PP: ${move.pp} | ${accText}</span>`
     const color = typeColors[moveInfo?.type] ?? "#a0a0a0"
     btn.style.setProperty("--btn-color", color); btn.style.background = color
     btn.style.boxShadow = `inset 0 0 0 2px white, 0 0 0 2px ${color}`
-    if (isSpectator || fainted || move.pp <= 0 || !myTurn || actionDone) { btn.disabled = true; btn.onclick = null }
+    const disabled = isSpectator || fainted || move.pp <= 0 || !myTurn || actionDone || !lrUnlocked || lockedByRoll
+    if (disabled) { btn.disabled = true; btn.onclick = null }
     else { btn.disabled = false; btn.onclick = () => { playSound(SFX_BTN); useMove(i, data) } }
   }
+}
+
+// 뒀다쓰기 조건: 자신 제외 다른 기술 모두 명중한 적 있어야 함
+function checkLastResortUnlocked(pokemon, lrIdx, movesArr) {
+  const usedMoves = pokemon.usedMoves ?? []
+  for (let i = 0; i < movesArr.length; i++) {
+    if (i === lrIdx) continue
+    if (!usedMoves.includes(movesArr[i].name)) return false
+  }
+  return usedMoves.length > 0
 }
 
 function updateBenchButtons(data) {
@@ -573,9 +526,11 @@ async function switchPokemon(newIdx) {
   const myEntry = data[`${mySlot}_entry`].map(p => ({ ...p, ranks: { ...defaultRanks(), ...(p.ranks ?? {}) } }))
   const myPokemon = myEntry[data[`${mySlot}_active_idx`]]
   const myName = mySlot === "p1" ? data.player1_name : data.player2_name
-
   resetRankStack(myPokemon)
-
+  // 교체 시 구르기 초기화
+  myPokemon.rollState = { active: false, turn: 0 }
+  // 교체 시 상대 방어 해제
+  enePokemon.defending = false; enePokemon.defendTurns = 0
   const prev = myPokemon.name, next = myEntry[newIdx].name
   await addLog(`돌아와, ${prev}!`); await wait(400)
   await addLog(`${myName}${josa(myName, "은는")} ${next}${josa(next, "을를")} 내보냈다!`); await wait(200)
@@ -600,12 +555,19 @@ async function useMove(moveIdx, data) {
 
   const myName = mySlot === "p1" ? freshData.player1_name : freshData.player2_name
   const enemyName = enemySlot === "p1" ? freshData.player1_name : freshData.player2_name
+  const nextTurnCount = (freshData.turn_count ?? 1) + 1
+
+  // 희망사항 회복 체크 (내 턴 시작 시)
+  const wishMsgs = tickVolatiles(myPokemon)
+  for (const msg of wishMsgs) { await addLog(msg); await wait(280) }
 
   const preAction = checkPreActionStatus(myPokemon)
   for (const msg of preAction.msgs) { await addLog(msg); await wait(350) }
   if (preAction.blocked) {
     resetRankStack(myPokemon)
-    await updateDoc(roomRef, { [`${mySlot}_entry`]: myEntry, current_turn: enemySlot, turn_count: (freshData.turn_count ?? 1) + 1 })
+    // 방어 턴도 차감
+    if ((myPokemon.defendTurns ?? 0) > 0) { myPokemon.defendTurns--; if (!myPokemon.defendTurns) myPokemon.defending = false }
+    await updateDoc(roomRef, { [`${mySlot}_entry`]: myEntry, current_turn: enemySlot, turn_count: nextTurnCount })
     return
   }
 
@@ -614,17 +576,16 @@ async function useMove(moveIdx, data) {
   if (confResult.selfHit) {
     resetRankStack(myPokemon)
     if (isAllFainted(myEntry)) {
-      await updateDoc(roomRef, { [`${mySlot}_entry`]: myEntry, turn_count: (freshData.turn_count ?? 1) + 1, game_over: true, winner: enemyName, current_turn: null })
-      await grantWinCoins(enemyName, freshData)
-      await addLog(`${enemyName}의 승리!`)
+      await updateDoc(roomRef, { [`${mySlot}_entry`]: myEntry, turn_count: nextTurnCount, game_over: true, winner: enemyName, current_turn: null })
+      await grantWinCoins(enemyName, freshData); await addLog(`${enemyName}의 승리!`)
     } else {
-      await updateDoc(roomRef, { [`${mySlot}_entry`]: myEntry, current_turn: enemySlot, turn_count: (freshData.turn_count ?? 1) + 1 })
+      await updateDoc(roomRef, { [`${mySlot}_entry`]: myEntry, current_turn: enemySlot, turn_count: nextTurnCount })
     }
     return
   }
 
-  myPokemon.moves[moveIdx] = { ...moveData, pp: moveData.pp - 1 }
   const moveInfo = moves[moveData.name]
+  myPokemon.moves[moveIdx] = { ...moveData, pp: moveData.pp - 1 }
 
   await addLog(`${myPokemon.name}의 ${moveData.name}!`); await wait(300)
 
@@ -633,63 +594,216 @@ async function useMove(moveIdx, data) {
   await animateDiceSingle(mySlot, diceRoll, freshData.player1_name, freshData.player2_name)
   await updateDoc(roomRef, { dice_event: null })
 
+  // ══════════════════════════════════════════════════════
+  //  특수 기술 처리
+  // ══════════════════════════════════════════════════════
+
+  // ── 방어
+  if (moveInfo?.defend) {
+    const prevDefend = myPokemon.lastDefendMove === "방어"
+    const stack = myPokemon.defendStack ?? 0
+    let chance = 1.0
+    if (prevDefend && stack >= 1) chance = stack >= 2 ? 0.25 : 0.5
+    if (Math.random() < chance) {
+      myPokemon.defending = true
+      myPokemon.defendTurns = 2
+      myPokemon.lastDefendMove = "방어"
+      myPokemon.defendStack = prevDefend ? Math.min(2, stack + 1) : 1
+      await addLog(`${myPokemon.name}${josa(myPokemon.name, "은는")} 방어 태세에 들어갔다!`)
+    } else {
+      myPokemon.lastDefendMove = null
+      myPokemon.defendStack = 0
+      await addLog(`그러나 방어에 실패했다!`)
+    }
+    await updateDoc(roomRef, { [`${mySlot}_entry`]: myEntry, [`${enemySlot}_entry`]: enemyEntry, current_turn: enemySlot, turn_count: nextTurnCount })
+    return
+  }
+
+  // ── 울부짖기
+  if (moveInfo?.roar) {
+    const bench = enemyEntry.filter((p, i) => i !== eneActiveIdx && p.hp > 0)
+    if (bench.length === 0) {
+      await addLog(`그러나 ${enePokemon.name}에게는 맞지 않았다!`)
+      await updateDoc(roomRef, { [`${mySlot}_entry`]: myEntry, [`${enemySlot}_entry`]: enemyEntry, current_turn: enemySlot, turn_count: nextTurnCount })
+      return
+    }
+    const candidates = enemyEntry.map((p, i) => ({ p, i })).filter(({ p, i }) => i !== eneActiveIdx && p.hp > 0)
+    const chosen = candidates[Math.floor(Math.random() * candidates.length)]
+    await addLog(`${enePokemon.name}${josa(enePokemon.name, "은는")} 물러났다!`)
+    await addLog(`${chosen.p.name}${josa(chosen.p.name, "이가")} 나왔다!`)
+    await updateDoc(roomRef, {
+      [`${mySlot}_entry`]: myEntry, [`${enemySlot}_entry`]: enemyEntry,
+      [`${enemySlot}_active_idx`]: chosen.i,
+      current_turn: enemySlot, turn_count: nextTurnCount
+    })
+    return
+  }
+
+  // ── 신비의부적
+  if (moveInfo?.amulet) {
+    myPokemon.amuletTurns = 3
+    await addLog(`${myPokemon.name}${josa(myPokemon.name, "은는")} 신비의 부적으로 몸을 감쌌다!`)
+    await updateDoc(roomRef, { [`${mySlot}_entry`]: myEntry, [`${enemySlot}_entry`]: enemyEntry, current_turn: enemySlot, turn_count: nextTurnCount })
+    return
+  }
+
+  // ── 희망사항
+  if (moveInfo?.wish) {
+    myPokemon.wishTurns = 2
+    await addLog(`${myPokemon.name}${josa(myPokemon.name, "은는")} 희망사항을 빌었다!`)
+    await updateDoc(roomRef, { [`${mySlot}_entry`]: myEntry, [`${enemySlot}_entry`]: enemyEntry, current_turn: enemySlot, turn_count: nextTurnCount })
+    return
+  }
+
+  // ── 구르기 처리
+  if (moveInfo?.rollout) {
+    const rollState = myPokemon.rollState ?? { active: false, turn: 0 }
+    const rollTurn = rollState.active ? rollState.turn + 1 : 1
+    const rollPower = rollTurn === 1 ? 30 : rollTurn === 2 ? 60 : 120
+    const { hit, hitType } = calcHit(myPokemon, moveInfo, enePokemon)
+    if (!hit) {
+      await addLog(hitType === "evaded" ? `${enePokemon.name}에게는 맞지 않았다!` : `그러나 ${myPokemon.name}의 공격은 빗나갔다!`)
+      myPokemon.rollState = { active: false, turn: 0 }
+    } else {
+      if (enePokemon.defending) {
+        await addLog(`${enePokemon.name}${josa(enePokemon.name, "은는")} 방어했다!`)
+        myPokemon.rollState = { active: false, turn: 0 }
+      } else {
+        await triggerAttackEffect("my", "enemy")
+        const dmg = calcRolloutDamage(moveData.name, enePokemon, rollPower)
+        await updateDoc(roomRef, { hit_event: { defender: enemySlot, ts: Date.now() } })
+        await triggerBlink("enemy")
+        await updateDoc(roomRef, { hit_event: null })
+        enePokemon.hp = Math.max(0, enePokemon.hp - dmg)
+        updateHpBar("enemy-hp-bar", "enemy-active-hp", enePokemon.hp, enePokemon.maxHp, false)
+        await wait(400)
+        await addLog(`구르기 ${rollTurn}번째 (${rollPower} 데미지)!`)
+        if (enePokemon.hp <= 0) { await addLog(`${enePokemon.name}${josa(enePokemon.name, "은는")} 쓰러졌다!`); await wait(300) }
+        myPokemon.rollState = rollTurn >= 3 ? { active: false, turn: 0 } : { active: true, turn: rollTurn }
+      }
+    }
+    const expMsgs = tickMyRanks(myPokemon); clearRankStack(myPokemon)
+    for (const msg of expMsgs) { await addLog(msg); await wait(250) }
+    if (isAllFainted(enemyEntry)) {
+      await updateDoc(roomRef, { [`${mySlot}_entry`]: myEntry, [`${enemySlot}_entry`]: enemyEntry, turn_count: nextTurnCount, game_over: true, winner: myName, current_turn: null })
+      await grantWinCoins(myName, freshData); await addLog(`${myName}의 승리!`)
+    } else {
+      await updateDoc(roomRef, { [`${mySlot}_entry`]: myEntry, [`${enemySlot}_entry`]: enemyEntry, current_turn: enemySlot, turn_count: nextTurnCount })
+    }
+    return
+  }
+
+  // ── power: 0 → 랭크/효과 전용 기술
   if (!moveInfo?.power) {
     const r = moveInfo?.rank
-    const targetsEnemy = r && (r.targetAtk !== undefined || r.targetDef !== undefined || r.targetSpd !== undefined)
-    || moveInfo?.targetSelf === false
+    const targetsEnemy = (r && (r.targetAtk !== undefined || r.targetDef !== undefined || r.targetSpd !== undefined))
+      || moveInfo?.targetSelf === false
 
     if (targetsEnemy) {
       const { hit, hitType } = calcHit(myPokemon, moveInfo, enePokemon)
       if (!hit) {
         await addLog(hitType === "evaded" ? `${enePokemon.name}에게는 맞지 않았다!` : `그러나 ${myPokemon.name}의 공격은 빗나갔다!`)
-        await updateDoc(roomRef, { [`${mySlot}_entry`]: myEntry, [`${enemySlot}_entry`]: enemyEntry, current_turn: enemySlot, turn_count: (freshData.turn_count ?? 1) + 1 })
+        await updateDoc(roomRef, { [`${mySlot}_entry`]: myEntry, [`${enemySlot}_entry`]: enemyEntry, current_turn: enemySlot, turn_count: nextTurnCount })
         return
       }
     } else {
       if (!moveInfo?.alwaysHit && Math.random() * 100 >= (moveInfo?.accuracy ?? 100)) {
         await addLog(`그러나 ${myPokemon.name}의 기술은 실패했다!`)
-        await updateDoc(roomRef, { [`${mySlot}_entry`]: myEntry, [`${enemySlot}_entry`]: enemyEntry, current_turn: enemySlot, turn_count: (freshData.turn_count ?? 1) + 1 })
+        await updateDoc(roomRef, { [`${mySlot}_entry`]: myEntry, [`${enemySlot}_entry`]: enemyEntry, current_turn: enemySlot, turn_count: nextTurnCount })
         return
       }
+    }
+
+    // 클리어스모그: 상대 랭크 초기화
+    if (moveInfo?.clearSmog) {
+      enePokemon.ranks = defaultRanks()
+      await addLog(`${enePokemon.name}${josa(enePokemon.name, "의")} 능력 변화가 원래대로 돌아왔다!`)
     }
 
     const rankMsgs = applyRankChanges(r, myPokemon, enePokemon, moveData.name)
     for (const msg of rankMsgs) { await addLog(msg); await wait(300) }
     const rankEffectMsgs = applyMoveEffect(moveInfo?.effect, myPokemon, enePokemon, 0)
     for (const msg of rankEffectMsgs) { await addLog(msg); await wait(280) }
-    await updateDoc(roomRef, { [`${mySlot}_entry`]: myEntry, [`${enemySlot}_entry`]: enemyEntry, current_turn: enemySlot, turn_count: (freshData.turn_count ?? 1) + 1 })
+    // 랭크/효과 기술 사용 시에도 상대 방어 해제
+    enePokemon.defending = false; enePokemon.defendTurns = 0
+    await updateDoc(roomRef, { [`${mySlot}_entry`]: myEntry, [`${enemySlot}_entry`]: enemyEntry, current_turn: enemySlot, turn_count: nextTurnCount })
     return
   }
+
+  // ── power > 0 → 공격 기술
+  resetRankStack(myPokemon)
+  // 방어 상태 초기화 (공격 시 방어 연속 사용 끊김)
+  myPokemon.lastDefendMove = null; myPokemon.defendStack = 0
 
   const atkRank = getActiveRank(myPokemon, "atk"), defRankEne = getActiveRank(enePokemon, "def")
   let expiredMsgs = []
 
   await triggerAttackEffect("my", "enemy")
 
-  const { hit, hitType } = calcHit(myPokemon, moveInfo, enePokemon)
-  if (!hit) {
-    if (hitType === "evaded") { showBattlePopup("enemy", "evade"); await addLog(`${enePokemon.name}에게는 맞지 않았다!`) }
-    else { await addLog(`그러나 ${myPokemon.name}의 공격은 빗나갔다!`) }
+  // 방어 상태 먼저 읽고 → 즉시 해제 (상대 행동 이후엔 무조건 소멸)
+  const wasDefending = enePokemon.defending ?? false
+  enePokemon.defending = false
+  enePokemon.defendTurns = 0
+
+  // 방어 체크: 상대가 방어 중이었으면 데미지 무효
+  if (wasDefending) {
+    await addLog(`${enePokemon.name}${josa(enePokemon.name, "은는")} 방어했다!`)
+    // 무릎차기 빗나감 자해
+    if (moveInfo?.jumpKick) {
+      const selfDmg = Math.max(1, Math.floor((myPokemon.maxHp ?? myPokemon.hp) * 0.25))
+      myPokemon.hp = Math.max(0, myPokemon.hp - selfDmg)
+      await addLog(`${myPokemon.name}${josa(myPokemon.name, "은는")} 반동으로 ${selfDmg} 데미지를 입었다!`)
+    }
   } else {
-    const { damage, multiplier, stab, dice, critical } = calcDamage(myPokemon, moveData.name, enePokemon, atkRank, defRankEne)
-    if (multiplier === 0) { await addLog(`${enePokemon.name}에게는 효과가 없다…`) }
-    else {
-      await updateDoc(roomRef, { hit_event: { defender: enemySlot, ts: Date.now() } })
-      await triggerBlink("enemy")
-      await updateDoc(roomRef, { hit_event: null })
-      enePokemon.hp = Math.max(0, enePokemon.hp - damage)
-      updateHpBar("enemy-hp-bar", "enemy-active-hp", enePokemon.hp, enePokemon.maxHp, false)
-      await wait(500)
-      if (multiplier > 1) { await addLog("효과가 굉장했다!"); await wait(280) }
-      if (multiplier < 1) { await addLog("효과가 별로인 듯하다…"); await wait(280) }
-      if (critical) { showBattlePopup("enemy", "critical"); await addLog("급소에 맞았다!"); await wait(280) }
-      const effectMsgs = applyMoveEffect(moveInfo?.effect, myPokemon, enePokemon, damage)
-      for (const msg of effectMsgs) { await addLog(msg); await wait(280) }
-      if (moveInfo?.rank) {
-        const rankMsgs = applyRankChanges(moveInfo.rank, myPokemon, enePokemon, null)
-        for (const msg of rankMsgs) { await addLog(msg); await wait(280) }
+    const { hit, hitType } = calcHit(myPokemon, moveInfo, enePokemon)
+    if (!hit) {
+      if (hitType === "evaded") { showBattlePopup("enemy", "evade"); await addLog(`${enePokemon.name}에게는 맞지 않았다!`) }
+      else { await addLog(`그러나 ${myPokemon.name}의 공격은 빗나갔다!`) }
+      // 무릎차기 빗나감 자해
+      if (moveInfo?.jumpKick) {
+        const selfDmg = Math.max(1, Math.floor((myPokemon.maxHp ?? myPokemon.hp) * 0.25))
+        myPokemon.hp = Math.max(0, myPokemon.hp - selfDmg)
+        await addLog(`${myPokemon.name}${josa(myPokemon.name, "은는")} 반동으로 ${selfDmg} 데미지를 입었다!`)
       }
-      if (enePokemon.hp <= 0) { await addLog(`${enePokemon.name}${josa(enePokemon.name, "은는")} 쓰러졌다!`); await wait(300) }
+    } else {
+      // 원수갚기 위력 보정
+      const revengeReady = freshData[`revenge_ready_${mySlot}`] ?? false
+      const powerOverride = (moveInfo?.revenge && revengeReady) ? 70 : null
+
+      const { damage, multiplier, stab, dice, critical } = calcDamage(myPokemon, moveData.name, enePokemon, atkRank, defRankEne, powerOverride)
+      if (multiplier === 0) {
+        await addLog(`${enePokemon.name}에게는 효과가 없다…`)
+      } else {
+        await updateDoc(roomRef, { hit_event: { defender: enemySlot, ts: Date.now() } })
+        await triggerBlink("enemy")
+        await updateDoc(roomRef, { hit_event: null })
+        enePokemon.hp = Math.max(0, enePokemon.hp - damage)
+        updateHpBar("enemy-hp-bar", "enemy-active-hp", enePokemon.hp, enePokemon.maxHp, false)
+        await wait(500)
+        if (multiplier > 1) { await addLog("효과가 굉장했다!"); await wait(280) }
+        if (multiplier < 1) { await addLog("효과가 별로인 듯하다…"); await wait(280) }
+        if (critical) { showBattlePopup("enemy", "critical"); await addLog("급소에 맞았다!"); await wait(280) }
+
+        // 클리어스모그: 명중 시 상대 랭크 초기화
+        if (moveInfo?.clearSmog) {
+          enePokemon.ranks = defaultRanks()
+          await addLog(`${enePokemon.name}${josa(enePokemon.name, "의")} 능력 변화가 원래대로 돌아왔다!`)
+        }
+
+        const effectMsgs = applyMoveEffect(moveInfo?.effect, myPokemon, enePokemon, damage)
+        for (const msg of effectMsgs) { await addLog(msg); await wait(280) }
+        if (moveInfo?.rank) {
+          const rankMsgs = applyRankChanges(moveInfo.rank, myPokemon, enePokemon, null)
+          for (const msg of rankMsgs) { await addLog(msg); await wait(280) }
+        }
+
+        // 명중한 기술 기록 (뒀다쓰기용)
+        if (!moveInfo?.lastResort) {
+          myPokemon.usedMoves = [...new Set([...(myPokemon.usedMoves ?? []), moveData.name])]
+        }
+
+        if (enePokemon.hp <= 0) { await addLog(`${enePokemon.name}${josa(enePokemon.name, "은는")} 쓰러졌다!`); await wait(300) }
+      }
     }
   }
 
@@ -699,16 +813,23 @@ async function useMove(moveIdx, data) {
   expiredMsgs = tickMyRanks(myPokemon)
   clearRankStack(myPokemon)
 
-  const nextTurn = (freshData.turn_count ?? 1) + 1
+  // 원수갚기 플래그 초기화 (사용했으므로)
+  const revengeUpdate = {}
+  if (moveInfo?.revenge) revengeUpdate[`revenge_ready_${mySlot}`] = false
+
+  const nextTurn = nextTurnCount
   if (nextTurn % 2 === 0) {
     const { msgs: eotMsgs, anyFainted } = applyEndOfTurnDamage([myEntry, enemyEntry])
     for (const msg of eotMsgs) { await addLog(msg); await wait(280) }
     if (anyFainted) {
-      if (isAllFainted(enemyEntry)) {
-        await updateDoc(roomRef, { [`${mySlot}_entry`]: myEntry, [`${enemySlot}_entry`]: enemyEntry, turn_count: nextTurn, game_over: true, winner: myName, current_turn: null, ...(weatherResult.weather ? { weather: weatherResult.weather } : {}) })
+      // 아군 쓰러짐 → 상대 원수갚기 플래그 세팅
+      const enemyFainted = isAllFainted(enemyEntry), myFainted = isAllFainted(myEntry)
+      if (!enemyFainted && anyFainted) revengeUpdate[`revenge_ready_${enemySlot}`] = true
+      if (enemyFainted) {
+        await updateDoc(roomRef, { [`${mySlot}_entry`]: myEntry, [`${enemySlot}_entry`]: enemyEntry, turn_count: nextTurn, game_over: true, winner: myName, current_turn: null, ...revengeUpdate, ...(weatherResult.weather ? { weather: weatherResult.weather } : {}) })
         await grantWinCoins(myName, freshData); await addLog(`${myName}의 승리!`); return
-      } else if (isAllFainted(myEntry)) {
-        await updateDoc(roomRef, { [`${mySlot}_entry`]: myEntry, [`${enemySlot}_entry`]: enemyEntry, turn_count: nextTurn, game_over: true, winner: enemyName, current_turn: null, ...(weatherResult.weather ? { weather: weatherResult.weather } : {}) })
+      } else if (myFainted) {
+        await updateDoc(roomRef, { [`${mySlot}_entry`]: myEntry, [`${enemySlot}_entry`]: enemyEntry, turn_count: nextTurn, game_over: true, winner: enemyName, current_turn: null, ...revengeUpdate, ...(weatherResult.weather ? { weather: weatherResult.weather } : {}) })
         await grantWinCoins(enemyName, freshData); await addLog(`${enemyName}의 승리!`); return
       }
     }
@@ -716,13 +837,17 @@ async function useMove(moveIdx, data) {
 
   for (const msg of expiredMsgs) { await addLog(msg); await wait(250) }
 
+  // 포켓몬 쓰러짐 → 원수갚기 플래그 세팅
+  if (enePokemon.hp <= 0) revengeUpdate[`revenge_ready_${enemySlot}`] = false  // 상대가 쓰러지면 상대 플래그 초기화
+  if (myPokemon.hp <= 0) revengeUpdate[`revenge_ready_${enemySlot}`] = true    // 내가 쓰러지면 상대 원수갚기 가능
+
   if (isAllFainted(enemyEntry)) {
-    await updateDoc(roomRef, { [`${mySlot}_entry`]: myEntry, [`${enemySlot}_entry`]: enemyEntry, turn_count: nextTurn, game_over: true, winner: myName, current_turn: null, ...(weatherResult.weather ? { weather: weatherResult.weather } : {}) })
+    await updateDoc(roomRef, { [`${mySlot}_entry`]: myEntry, [`${enemySlot}_entry`]: enemyEntry, turn_count: nextTurn, game_over: true, winner: myName, current_turn: null, ...revengeUpdate, ...(weatherResult.weather ? { weather: weatherResult.weather } : {}) })
     await grantWinCoins(myName, freshData); await addLog(`${myName}의 승리!`)
   } else if (isAllFainted(myEntry)) {
-    await updateDoc(roomRef, { [`${mySlot}_entry`]: myEntry, [`${enemySlot}_entry`]: enemyEntry, turn_count: nextTurn, game_over: true, winner: enemyName, current_turn: null, ...(weatherResult.weather ? { weather: weatherResult.weather } : {}) })
+    await updateDoc(roomRef, { [`${mySlot}_entry`]: myEntry, [`${enemySlot}_entry`]: enemyEntry, turn_count: nextTurn, game_over: true, winner: enemyName, current_turn: null, ...revengeUpdate, ...(weatherResult.weather ? { weather: weatherResult.weather } : {}) })
     await grantWinCoins(enemyName, freshData); await addLog(`${enemyName}의 승리!`)
   } else {
-    await updateDoc(roomRef, { [`${mySlot}_entry`]: myEntry, [`${enemySlot}_entry`]: enemyEntry, current_turn: enemySlot, turn_count: nextTurn, ...(weatherResult.weather ? { weather: weatherResult.weather } : {}) })
+    await updateDoc(roomRef, { [`${mySlot}_entry`]: myEntry, [`${enemySlot}_entry`]: enemyEntry, current_turn: enemySlot, turn_count: nextTurn, ...revengeUpdate, ...(weatherResult.weather ? { weather: weatherResult.weather } : {}) })
   }
 }

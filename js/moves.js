@@ -40,7 +40,7 @@ export const moves = {
                   effect: { chance: 1, volatile: "풀죽음" } },
   "야금야금":     { power: 40, type: "노말", accuracy: 100, alwaysHit: false, skipEvasion: true, effect: null },
   "박치기":     { power: 40, type: "노말", accuracy: 100, alwaysHit: false,
-                  effect: { chance: 1, volatile: "풀죽음" } },
+                  effect: { chance: 0.3, volatile: "풀죽음" } },
   "울음소리":   { power: 0, type: "노말", accuracy: 100, alwaysHit: false, effect: null,
                   rank: { targetAtk: -1, turns: 1 } },
   "웅크리기":   { power: 0, type: "노말", accuracy: 100, alwaysHit: true, effect: null,
@@ -66,7 +66,7 @@ export const moves = {
 
   // ───── 물 ─────
   "거품광선":     { power: 40, type: "물", accuracy: 100, alwaysHit: false, effect: null },
-  "껍질에숨기":     { power: 40, type: "물", accuracy: 100, alwaysHit: true, targetSelf: true , effect: null, rank: { def: 1, turns: 1 } },
+  "껍질에숨기":     { power: 0, type: "물", accuracy: 100, alwaysHit: true, targetSelf: true , effect: null, rank: { def: 1, turns: 1 } },
   "거품":         { power: 40, type: "물", accuracy: 100, alwaysHit: false, effect: null },
   "파도타기":     { power: 40, type: "물", accuracy: 100, alwaysHit: false, effect: null },
   "물대포":       { power: 40, type: "물", accuracy: 100, alwaysHit: false, effect: null },
@@ -154,6 +154,7 @@ export const moves = {
 
   // ───── 악 ─────
   "악의파동": { power: 50, type: "악", accuracy: 100, alwaysHit: false, effect: { chance: 0.2, volatile: "풀죽음" } },
+  "속여때리기": { power: 40, type: "악", accuracy: 100, alwaysHit: true, effect: null },
   "물기": { power: 40, type: "악", accuracy: 100, alwaysHit: false, effect: { chance: 0.3, volatile: "풀죽음" } },
   "암타":     { power: 40, type: "악", accuracy: 100, alwaysHit: false, effect: null },
   "바크아웃": { power: 0,  type: "악", accuracy: 95,  alwaysHit: false, effect: null,

@@ -19,7 +19,7 @@ if (loginBtn) {
       await signInWithEmailAndPassword(auth, email, password)
       location.href = "main.html"
     } catch (error) {
-      alert("아이디 또는 비밀번호를 확인해줘!")
+      alert("아이디 또는 비밀번호를 확인해주세요!")
     }
   }
 }
