@@ -1,0 +1,145 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <link rel="stylesheet" href="css/style.css">
+  <style>
+/* 메인 페이지 */
+.main-page {
+  height: 100vh;
+  background: #fff;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+}
+
+/* 컨테이너 */
+.main-container {
+  width: 100%;
+  max-width: 420px;
+  padding: 40px 20px;
+  text-align: center;
+}
+
+/* 로고 */
+.logo {
+  font-size: 28px;
+  font-weight: 700;
+  margin-bottom: 40px;
+  color: #111;
+  letter-spacing: -0.5px;
+}
+
+/* 메뉴 영역 */
+.menu {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+/* 버튼 */
+.menu-btn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+
+  width: 100%;
+  padding: 16px;
+
+  border: 1px solid #ddd;
+  border-radius: 10px;
+
+  background: #fff;
+  color: #111;
+  font-size: 15px;
+  font-weight: 600;
+
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+/* 아이콘 */
+.menu-btn svg {
+  width: 20px;
+  height: 20px;
+}
+
+/* hover */
+.menu-btn:hover {
+  background: #000;
+  color: #fff;
+  border-color: #000;
+}
+
+/* 클릭 */
+.menu-btn:active {
+  transform: scale(0.98);
+}
+
+/* 모바일 */
+@media (max-width: 480px) {
+  .main-container {
+    padding: 24px 16px;
+  }
+
+  .logo {
+    font-size: 24px;
+    margin-bottom: 30px;
+  }
+
+  .menu-btn {
+    padding: 14px;
+    font-size: 14px;
+  }
+}
+  </style>
+  <title>베타테스트</title>
+
+
+</head>
+
+<body class="main-page">
+
+  <div class="main-container">
+
+
+    <div class="menu">
+      <button class="menu-btn" onclick="location.href='profile/profile.html'">
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 16 16">
+          <path fill="currentColor" d="M8 9c3.85 0 7 2.5 7 4.5a1.5 1.5 0 0 1-1.5 1.5h-11A1.5 1.5 0 0 1 1 13.5C1 11.5 4.15 9 8 9m0-8a3.5 3.5 0 1 1 0 7a3.5 3.5 0 0 1 0-7"/>
+        </svg>
+        <span>프로필</span>
+      </button>
+
+      <button class="menu-btn" onclick="location.href='battle.html'">
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24">
+          <path fill="currentColor" d="M14.5 12a2.5 2.5 0 0 1-5 0a2.5 2.5 0 0 1 5 0m7.5 0c0 5.52-4.48 10-10 10S2 17.52 2 12S6.48 2 12 2s10 4.48 10 10m-2 0h-4c0-2.21-1.79-4-4-4s-4 1.79-4 4H4c0 4.41 3.59 8 8 8s8-3.59 8-8"/>
+        </svg>
+        <span>배틀</span>
+      </button>
+    </div>
+
+
+
+  </div>
+
+
+
+
+
+  <script type="module">
+    import { auth, db } from "./js/firebase.js"
+import { onAuthStateChanged } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-auth.js"
+import { doc, onSnapshot } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js"
+
+onAuthStateChanged(auth, user => {
+  if (!user) {
+    location.href = "index.html"
+    return
+  }
+})
+  </script>
+</body>
+</html>
