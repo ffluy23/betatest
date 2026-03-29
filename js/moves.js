@@ -40,7 +40,7 @@ export const moves = {
                   effect: { chance: 1, volatile: "풀죽음" } },
   "야금야금":     { power: 40, type: "노말", accuracy: 100, alwaysHit: false, skipEvasion: true, effect: null },
   "박치기":     { power: 40, type: "노말", accuracy: 100, alwaysHit: false,
-                  effect: { chance: 1, volatile: "풀죽음" } },
+                  effect: { chance: 0.3, volatile: "풀죽음" } },
   "울음소리":   { power: 0, type: "노말", accuracy: 100, alwaysHit: false, effect: null,
                   rank: { targetAtk: -1, turns: 1 } },
   "웅크리기":   { power: 0, type: "노말", accuracy: 100, alwaysHit: true, effect: null,
