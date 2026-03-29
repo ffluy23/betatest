@@ -148,18 +148,18 @@ export const moves = {
   "비바라기": { power: 0, type: "물",   accuracy: 100, alwaysHit: false, effect: { chance: 1.0, weather: "비" } },
   "모래바람": { power: 0, type: "바위", accuracy: 100, alwaysHit: false, effect: { chance: 1.0, weather: "모래바람" } },
   "싸라기눈": { power: 0, type: "얼음", accuracy: 100, alwaysHit: false, effect: { chance: 1.0, weather: "싸라기눈" } },
-}
 
-  // ───── 특수 기술 추가 ─────
-  "무릎차기":   { power: 70, type: "격투", accuracy: 90, alwaysHit: false, effect: null, jumpKick: true },
-  "방어":       { power: 0, type: "노말", accuracy: 100, alwaysHit: true, effect: null, defend: true, targetSelf: true },
-  "울부짖기":   { power: 0, type: "노말", accuracy: 100, alwaysHit: false, effect: null, roar: true, targetSelf: false },
+  // ───── 특수 기술 ─────
+  "무릎차기":   { power: 70, type: "격투", accuracy: 90,  alwaysHit: false, effect: null, jumpKick: true },
+  "방어":       { power: 0,  type: "노말", accuracy: 100, alwaysHit: true,  effect: null, defend: true, targetSelf: true },
+  "울부짖기":   { power: 0,  type: "노말", accuracy: 100, alwaysHit: false, effect: null, roar: true, targetSelf: false },
   "원수갚기":   { power: 40, type: "노말", accuracy: 100, alwaysHit: false, effect: null, revenge: true },
   "뒀다쓰기":   { power: 70, type: "노말", accuracy: 100, alwaysHit: false, effect: null, lastResort: true },
-  "신비의부적": { power: 0, type: "노말", accuracy: 100, alwaysHit: true, effect: null, amulet: true, targetSelf: true },
-  "클리어스모그": { power: 40, type: "독", accuracy: 100, alwaysHit: true, effect: null, clearSmog: true },
-  "불꽃세례":   { power: 30, type: "불", accuracy: 100, alwaysHit: false, effect: { chance: 0.1, status: "화상", thawEnemy: true } },
+  "신비의부적": { power: 0,  type: "노말", accuracy: 100, alwaysHit: true,  effect: null, amulet: true, targetSelf: true },
+  "클리어스모그": { power: 40, type: "독", accuracy: 100, alwaysHit: true,  effect: null, clearSmog: true },
+  "불꽃세례":   { power: 30, type: "불",  accuracy: 100, alwaysHit: false, effect: { chance: 0.1, status: "화상", thawEnemy: true } },
   "구르기":     { power: 30, type: "바위", accuracy: 90, alwaysHit: false, effect: null, rollout: true },
-  "태만함":     { power: 0, type: "노말", accuracy: 100, alwaysHit: true, effect: { heal: 0.12 }, targetSelf: true },
-  "HP회복":     { power: 0, type: "노말", accuracy: 100, alwaysHit: true, effect: { heal: 0.12 }, targetSelf: true },
-  "희망사항":   { power: 0, type: "노말", accuracy: 100, alwaysHit: true, effect: null, wish: true, targetSelf: true },
+  "태만함":     { power: 0,  type: "노말", accuracy: 100, alwaysHit: true,  effect: { heal: 0.12 }, targetSelf: true },
+  "HP회복":     { power: 0,  type: "노말", accuracy: 100, alwaysHit: true,  effect: { heal: 0.12 }, targetSelf: true },
+  "희망사항":   { power: 0,  type: "노말", accuracy: 100, alwaysHit: true,  effect: null, wish: true, targetSelf: true },
+}
