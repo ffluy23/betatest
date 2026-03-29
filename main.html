@@ -3,6 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <link rel="stylesheet" href="css/style.css">
   <style>
 /* 메인 페이지 */
 .main-page {
@@ -120,6 +121,8 @@
       </button>
     </div>
 
+
+
   </div>
 
 
@@ -136,20 +139,6 @@ onAuthStateChanged(auth, user => {
     location.href = "index.html"
     return
   }
-
-  onSnapshot(doc(db, "users", user.uid), snap => {
-    const data = snap.data()
-    const inbox = data?.inbox ?? []
-    const total = inbox.filter(n => !n.read).length
-
-    const badge = document.getElementById("mail-badge")
-    if (total > 0) {
-      badge.innerText = total
-      badge.classList.add("show")
-    } else {
-      badge.classList.remove("show")
-    }
-  })
 })
   </script>
 </body>
