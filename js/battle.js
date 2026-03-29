@@ -22,6 +22,8 @@ const logsRef = collection(db, "rooms", ROOM_ID, "logs")
 const SFX_DICE = "https://slippery-copper-mzpmcmc2ra.edgeone.app/soundreality-bicycle-bell-155622.mp3"
 const SFX_BTN  = "https://usual-salmon-mnqxptwyvw.edgeone.app/Pokemon%20(A%20Button)%20-%20Sound%20Effect%20(HD)%20(1)%20(1).mp3"
 
+const API = "https://betatest-ten.vercel.app"
+
 function playSound(url) {
   const a = new Audio(url); a.volume = 0.6; a.play().catch(() => {})
 }
@@ -45,7 +47,6 @@ function showBattlePopup(prefix, type) {
 let mySlot   = null, myUid  = null, myTurn = false
 let gameStarted = false, diceShown = false, actionDone = false, gameOver = false
 let battleIntroSequenceStarted = false
-let lastHitEventTs = 0, lastDiceEventTs = 0
 
 const isSpectator = new URLSearchParams(location.search).get("spectator") === "true"
 
@@ -152,7 +153,6 @@ function calcDamage(attacker, moveName, defender, atkRank = 0, defRank = 0, powe
   return { damage: critical ? Math.floor(baseDmg * 1.5) : baseDmg, multiplier, stab, dice, critical }
 }
 
-// 구르기 전용: 고정 데미지 (타입상성만 적용, 다른 보정 없음)
 function calcRolloutDamage(moveName, defender, power) {
   const move = moves[moveName]
   if (!move) return 0
@@ -208,28 +208,98 @@ function triggerBlink(prefix) {
   })
 }
 
-let renderedLogIds = new Set(), typingQueue = [], isTyping = false
+// ── 로그 큐 시스템 (타입별 애니메이션 처리)
+let renderedLogIds = new Set()
+let logQueue = []      // { id, text, type, meta } 순서대로 쌓임
+let isProcessing = false
 
-function processQueue() {
-  if (isTyping || typingQueue.length === 0) return
-  isTyping = true
-  const { text, resolve } = typingQueue.shift()
+function processLogQueue() {
+  if (isProcessing || logQueue.length === 0) return
+  isProcessing = true
+  const entry = logQueue.shift()
+  handleLogEntry(entry).then(() => {
+    isProcessing = false
+    setTimeout(processLogQueue, 80)
+  })
+}
+
+async function handleLogEntry({ text, type, meta }) {
   const log = document.getElementById("battle-log")
-  if (!log) { isTyping = false; if (resolve) resolve(); processQueue(); return }
-  const line = document.createElement("p"); log.appendChild(line)
-  const chars = [...text]; let i = 0
-  function typeNext() {
-    if (i >= chars.length) { isTyping = false; if (resolve) resolve(); setTimeout(processQueue, 80); return }
-    line.textContent += chars[i++]; log.scrollTop = log.scrollHeight; setTimeout(typeNext, 18)
+
+  switch (type) {
+    case "dice": {
+      // 다이스 애니메이션
+      const { slot, roll } = meta ?? {}
+      const snap = await getDoc(roomRef)
+      const d = snap.data()
+      await animateDiceSingle(slot, roll, d?.player1_name, d?.player2_name)
+      break
+    }
+    case "attack": {
+      // 공격 플래시 (공격자 my, 방어 enemy 기준 — 항상 내가 공격하는 거)
+      await triggerAttackEffect("my", "enemy")
+      break
+    }
+    case "hit": {
+      // 피격 애니메이션
+      const defender = meta?.defender
+      const prefix = defender === mySlot ? "my" : "enemy"
+      await triggerBlink(prefix)
+      break
+    }
+    case "hit_self": {
+      await triggerBlink("my")
+      break
+    }
+    case "critical": {
+      showBattlePopup("enemy", "critical")
+      await typeText(log, text)
+      await wait(280)
+      break
+    }
+    case "evade": {
+      showBattlePopup("enemy", "evade")
+      await typeText(log, text)
+      await wait(280)
+      break
+    }
+    case "faint": {
+      await typeText(log, text)
+      await wait(400)
+      break
+    }
+    case "win": {
+      await typeText(log, text)
+      await wait(500)
+      break
+    }
+    default: {
+      if (text) {
+        await typeText(log, text)
+        await wait(200)
+      }
+      break
+    }
   }
-  typeNext()
 }
 
-async function addLog(text) { await addDoc(logsRef, { text, ts: Date.now() }) }
-async function addLogs(lines) {
-  const base = Date.now()
-  for (let i = 0; i < lines.length; i++) await addDoc(logsRef, { text: lines[i], ts: base + i })
+function typeText(log, text) {
+  return new Promise(resolve => {
+    if (!log || !text) { resolve(); return }
+    const line = document.createElement("p")
+    log.appendChild(line)
+    const chars = [...text]; let i = 0
+    function typeNext() {
+      if (i >= chars.length) { resolve(); return }
+      line.textContent += chars[i++]
+      log.scrollTop = log.scrollHeight
+      setTimeout(typeNext, 18)
+    }
+    typeNext()
+  })
 }
+
+async function addLog(text) { await addDoc(logsRef, { text, type: "normal", ts: Date.now() }) }
 
 function listenLogs() {
   const q = query(logsRef, orderBy("ts"))
@@ -237,9 +307,10 @@ function listenLogs() {
     snap.docs.forEach(d => {
       if (renderedLogIds.has(d.id)) return
       renderedLogIds.add(d.id)
-      typingQueue.push({ text: d.data().text, resolve: null })
+      const data = d.data()
+      logQueue.push({ id: d.id, text: data.text ?? "", type: data.type ?? "normal", meta: data })
     })
-    processQueue()
+    processLogQueue()
   })
 }
 
@@ -334,7 +405,7 @@ function waitForBattleReady() {
 async function initTurn(data) {
   if (gameStarted) return
   gameStarted = true
-  await fetch("https://betatest-ten.vercel.app/api/init-turn", {
+  await fetch(`${API}/api/init-turn`, {
     method: "POST",
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify({ roomId: ROOM_ID })
@@ -343,12 +414,11 @@ async function initTurn(data) {
 
 async function runBattleIntroSequence(data) {
   const p1Name = data.player1_name, p2Name = data.player2_name
-  const enemySlot = mySlot === "p1" ? "p2" : "p1"
   await addLog(`${p1Name}${josa(p1Name, "과와")} ${p2Name}의 승부가 시작됐다!`)
   await wait(3000)
   const base = Date.now()
-  await addDoc(logsRef, { text: `${p1Name}${josa(p1Name, "은는")} ${data.p1_entry[0].name}${josa(data.p1_entry[0].name, "을를")} 내보냈다!`, ts: base })
-  await addDoc(logsRef, { text: `${p2Name}${josa(p2Name, "은는")} ${data.p2_entry[0].name}${josa(data.p2_entry[0].name, "을를")} 내보냈다!`, ts: base + 1 })
+  await addDoc(logsRef, { text: `${p1Name}${josa(p1Name, "은는")} ${data.p1_entry[0].name}${josa(data.p1_entry[0].name, "을를")} 내보냈다!`, type: "normal", ts: base })
+  await addDoc(logsRef, { text: `${p2Name}${josa(p2Name, "은는")} ${data.p2_entry[0].name}${josa(data.p2_entry[0].name, "을를")} 내보냈다!`, type: "normal", ts: base + 1 })
   updatePortrait("my", data[`${mySlot}_entry`][0], true)
   updatePortrait("enemy", data[`${mySlot === "p1" ? "p2" : "p1"}_entry`][0], true)
   await wait(800)
@@ -366,14 +436,6 @@ function listenRoom() {
     if (!data.p1_entry || !data.p2_entry) return
     const enemySlot = mySlot === "p1" ? "p2" : "p1"
     updateActiveUI(mySlot, data, "my"); updateActiveUI(enemySlot, data, "enemy")
-    if (data.hit_event && data.hit_event.ts > lastHitEventTs) {
-      lastHitEventTs = data.hit_event.ts
-      triggerBlink(data.hit_event.defender === mySlot ? "my" : "enemy")
-    }
-    if (data.dice_event && data.dice_event.ts > lastDiceEventTs) {
-      lastDiceEventTs = data.dice_event.ts
-      animateDiceSingle(data.dice_event.slot, data.dice_event.roll, data.player1_name, data.player2_name)
-    }
     if (data.game_over) { showGameOver(data); return }
     if (!data.current_turn) {
       if (!isSpectator && mySlot === "p1" && !gameStarted) await initTurn(data)
@@ -467,16 +529,11 @@ function updateMoveButtons(data) {
     if (i >= movesArr.length) { btn.innerHTML = '<span style="font-size:13px;">-</span>'; btn.disabled = true; btn.onclick = null; continue }
     const move = movesArr[i], moveInfo = moves[move.name]
     const accText = moveInfo?.alwaysHit ? "필중" : `${moveInfo?.accuracy ?? 100}%`
-
-    // 뒀다쓰기: 조건 미충족 시 비활성
     const isLastResort = moveInfo?.lastResort
     const lrUnlocked = isLastResort ? checkLastResortUnlocked(myPokemon, i, movesArr) : true
-
-    // 구르기: 구르기 진행 중이면 구르기만 활성
     const rollActive = (myPokemon?.rollState?.active ?? false)
     const isRollout = moveInfo?.rollout
     const lockedByRoll = rollActive && !isRollout
-
     btn.innerHTML = `<span style="display:block;font-size:13px;font-weight:bold;">${move.name}</span><span style="display:block;font-size:10px;opacity:0.85;">PP: ${move.pp} | ${accText}</span>`
     const color = typeColors[moveInfo?.type] ?? "#a0a0a0"
     btn.style.setProperty("--btn-color", color); btn.style.background = color
@@ -487,7 +544,6 @@ function updateMoveButtons(data) {
   }
 }
 
-// 뒀다쓰기 조건: 자신 제외 다른 기술 모두 명중한 적 있어야 함
 function checkLastResortUnlocked(pokemon, lrIdx, movesArr) {
   const usedMoves = pokemon.usedMoves ?? []
   for (let i = 0; i < movesArr.length; i++) {
@@ -522,20 +578,17 @@ function updateTurnUI(data) {
 async function switchPokemon(newIdx) {
   if (isSpectator || !myTurn || actionDone || gameOver) return
   actionDone = true
-  const snap = await getDoc(roomRef), data = snap.data()
-  const enemySlot = mySlot === "p1" ? "p2" : "p1"
-  const myEntry = data[`${mySlot}_entry`].map(p => ({ ...p, ranks: { ...defaultRanks(), ...(p.ranks ?? {}) } }))
-  const myPokemon = myEntry[data[`${mySlot}_active_idx`]]
-  const myName = mySlot === "p1" ? data.player1_name : data.player2_name
-  resetRankStack(myPokemon)
-  // 교체 시 구르기 초기화
-  myPokemon.rollState = { active: false, turn: 0 }
-  // 교체 시 상대 방어 해제
-  enePokemon.defending = false; enePokemon.defendTurns = 0
-  const prev = myPokemon.name, next = myEntry[newIdx].name
-  await addLog(`돌아와, ${prev}!`); await wait(400)
-  await addLog(`${myName}${josa(myName, "은는")} ${next}${josa(next, "을를")} 내보냈다!`); await wait(200)
-  await updateDoc(roomRef, { [`${mySlot}_entry`]: myEntry, [`${mySlot}_active_idx`]: newIdx, current_turn: enemySlot, turn_count: (data.turn_count ?? 1) + 1 })
+
+  const res = await fetch(`${API}/api/switch-pokemon`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ roomId: ROOM_ID, mySlot, newIdx })
+  })
+  const result = await res.json()
+  if (!result.ok) {
+    console.error("교체 실패:", result.error)
+    actionDone = false
+  }
 }
 
 async function useMove(moveIdx, data) {
@@ -543,16 +596,11 @@ async function useMove(moveIdx, data) {
   actionDone = true
   updateMoveButtons(data)
 
-  const res = await fetch("https://betatest-ten.vercel.app/api/use-move", {
+  const res = await fetch(`${API}/api/use-move`, {
     method: "POST",
     headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({
-      roomId: ROOM_ID,
-      mySlot,
-      moveIdx
-    })
+    body: JSON.stringify({ roomId: ROOM_ID, mySlot, moveIdx })
   })
-
   const result = await res.json()
   if (!result.ok) {
     console.error("기술 사용 실패:", result.error)

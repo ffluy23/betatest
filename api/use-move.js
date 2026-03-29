@@ -2,7 +2,7 @@ import { db } from "./_firebase.js"
 import { moves } from "./moves.js"
 import { getTypeMultiplier } from "./typeChart.js"
 import {
-  statusName, josa,
+  josa,
   applyMoveEffect, checkPreActionStatus, checkConfusion,
   applyEndOfTurnDamage, applyWeatherEffect, tickVolatiles,
   getStatusSpdPenalty
@@ -121,8 +121,12 @@ function calcRolloutDamage(moveName, defender, power) {
   return Math.floor(power * multiplier)
 }
 
-async function addLog(logsRef, text, ts) {
-  await logsRef.add({ text, ts: ts ?? Date.now() })
+// 로그 추가 헬퍼 - type 필드로 클라이언트 애니메이션 제어
+let logTs = Date.now()
+function nextTs() { return logTs++ }
+
+async function log(logsRef, text, type = "normal", meta = {}) {
+  await logsRef.add({ text, type, ts: nextTs(), ...meta })
 }
 
 export default async function handler(req, res) {
@@ -138,6 +142,10 @@ export default async function handler(req, res) {
 
     const roomRef = db.collection("rooms").doc(roomId)
     const logsRef = roomRef.collection("logs")
+
+    // ts 기준점을 현재 시각으로 초기화
+    logTs = Date.now()
+
     const snap = await roomRef.get()
     const freshData = snap.data()
     if (!freshData) return res.status(404).json({ error: "방 없음" })
@@ -163,11 +171,11 @@ export default async function handler(req, res) {
 
     // 희망사항 회복
     const wishMsgs = tickVolatiles(myPokemon)
-    for (const msg of wishMsgs) await addLog(logsRef, msg)
+    for (const msg of wishMsgs) await log(logsRef, msg)
 
     // 행동 불능 체크
     const preAction = checkPreActionStatus(myPokemon)
-    for (const msg of preAction.msgs) await addLog(logsRef, msg)
+    for (const msg of preAction.msgs) await log(logsRef, msg)
     if (preAction.blocked) {
       resetRankStack(myPokemon)
       if ((myPokemon.defendTurns ?? 0) > 0) { myPokemon.defendTurns--; if (!myPokemon.defendTurns) myPokemon.defending = false }
@@ -177,12 +185,14 @@ export default async function handler(req, res) {
 
     // 혼란 체크
     const confResult = checkConfusion(myPokemon)
-    for (const msg of confResult.msgs) await addLog(logsRef, msg)
+    for (const msg of confResult.msgs) await log(logsRef, msg)
     if (confResult.selfHit) {
       resetRankStack(myPokemon)
+      // 혼란 자해 시 hit 애니메이션 (자신)
+      await log(logsRef, "", "hit_self")
       if (isAllFainted(myEntry)) {
         await roomRef.update({ [`${mySlot}_entry`]: myEntry, turn_count: nextTurnCount, game_over: true, winner: enemyName, current_turn: null })
-        await addLog(logsRef, `${enemyName}의 승리!`)
+        await log(logsRef, `${enemyName}의 승리!`, "win")
       } else {
         await roomRef.update({ [`${mySlot}_entry`]: myEntry, current_turn: enemySlot, turn_count: nextTurnCount })
       }
@@ -190,11 +200,11 @@ export default async function handler(req, res) {
     }
 
     myPokemon.moves[moveIdx] = { ...moveData, pp: moveData.pp - 1 }
-    await addLog(logsRef, `${myPokemon.name}의 ${moveData.name}!`)
+    await log(logsRef, `${myPokemon.name}의 ${moveData.name}!`)
 
-    // 다이스 이벤트
+    // 다이스 로그 - 클라이언트가 이걸 보고 다이스 애니메이션 실행
     const diceRoll = rollD10()
-    await roomRef.update({ dice_event: { slot: mySlot, roll: diceRoll, ts: Date.now() } })
+    await log(logsRef, "", "dice", { slot: mySlot, roll: diceRoll })
 
     // ── 방어
     if (moveInfo?.defend) {
@@ -205,12 +215,12 @@ export default async function handler(req, res) {
       if (Math.random() < chance) {
         myPokemon.defending = true; myPokemon.defendTurns = 2
         myPokemon.lastDefendMove = "방어"; myPokemon.defendStack = prevDefend ? Math.min(2, stack + 1) : 1
-        await addLog(logsRef, `${myPokemon.name}${josa(myPokemon.name, "은는")} 방어 태세에 들어갔다!`)
+        await log(logsRef, `${myPokemon.name}${josa(myPokemon.name, "은는")} 방어 태세에 들어갔다!`)
       } else {
         myPokemon.lastDefendMove = null; myPokemon.defendStack = 0
-        await addLog(logsRef, `그러나 방어에 실패했다!`)
+        await log(logsRef, `그러나 방어에 실패했다!`)
       }
-      await roomRef.update({ [`${mySlot}_entry`]: myEntry, [`${enemySlot}_entry`]: enemyEntry, current_turn: enemySlot, turn_count: nextTurnCount, dice_event: null })
+      await roomRef.update({ [`${mySlot}_entry`]: myEntry, [`${enemySlot}_entry`]: enemyEntry, current_turn: enemySlot, turn_count: nextTurnCount })
       return res.status(200).json({ ok: true })
     }
 
@@ -218,30 +228,30 @@ export default async function handler(req, res) {
     if (moveInfo?.roar) {
       const candidates = enemyEntry.map((p, i) => ({ p, i })).filter(({ p, i }) => i !== eneActiveIdx && p.hp > 0)
       if (candidates.length === 0) {
-        await addLog(logsRef, `그러나 ${enePokemon.name}에게는 맞지 않았다!`)
-        await roomRef.update({ [`${mySlot}_entry`]: myEntry, [`${enemySlot}_entry`]: enemyEntry, current_turn: enemySlot, turn_count: nextTurnCount, dice_event: null })
+        await log(logsRef, `그러나 ${enePokemon.name}에게는 맞지 않았다!`)
+        await roomRef.update({ [`${mySlot}_entry`]: myEntry, [`${enemySlot}_entry`]: enemyEntry, current_turn: enemySlot, turn_count: nextTurnCount })
         return res.status(200).json({ ok: true })
       }
       const chosen = candidates[Math.floor(Math.random() * candidates.length)]
-      await addLog(logsRef, `${enePokemon.name}${josa(enePokemon.name, "은는")} 물러났다!`)
-      await addLog(logsRef, `${chosen.p.name}${josa(chosen.p.name, "이가")} 나왔다!`)
-      await roomRef.update({ [`${mySlot}_entry`]: myEntry, [`${enemySlot}_entry`]: enemyEntry, [`${enemySlot}_active_idx`]: chosen.i, current_turn: enemySlot, turn_count: nextTurnCount, dice_event: null })
+      await log(logsRef, `${enePokemon.name}${josa(enePokemon.name, "은는")} 물러났다!`)
+      await log(logsRef, `${chosen.p.name}${josa(chosen.p.name, "이가")} 나왔다!`)
+      await roomRef.update({ [`${mySlot}_entry`]: myEntry, [`${enemySlot}_entry`]: enemyEntry, [`${enemySlot}_active_idx`]: chosen.i, current_turn: enemySlot, turn_count: nextTurnCount })
       return res.status(200).json({ ok: true })
     }
 
     // ── 신비의부적
     if (moveInfo?.amulet) {
       myPokemon.amuletTurns = 3
-      await addLog(logsRef, `${myPokemon.name}${josa(myPokemon.name, "은는")} 신비의 부적으로 몸을 감쌌다!`)
-      await roomRef.update({ [`${mySlot}_entry`]: myEntry, [`${enemySlot}_entry`]: enemyEntry, current_turn: enemySlot, turn_count: nextTurnCount, dice_event: null })
+      await log(logsRef, `${myPokemon.name}${josa(myPokemon.name, "은는")} 신비의 부적으로 몸을 감쌌다!`)
+      await roomRef.update({ [`${mySlot}_entry`]: myEntry, [`${enemySlot}_entry`]: enemyEntry, current_turn: enemySlot, turn_count: nextTurnCount })
       return res.status(200).json({ ok: true })
     }
 
     // ── 희망사항
     if (moveInfo?.wish) {
       myPokemon.wishTurns = 2
-      await addLog(logsRef, `${myPokemon.name}${josa(myPokemon.name, "은는")} 희망사항을 빌었다!`)
-      await roomRef.update({ [`${mySlot}_entry`]: myEntry, [`${enemySlot}_entry`]: enemyEntry, current_turn: enemySlot, turn_count: nextTurnCount, dice_event: null })
+      await log(logsRef, `${myPokemon.name}${josa(myPokemon.name, "은는")} 희망사항을 빌었다!`)
+      await roomRef.update({ [`${mySlot}_entry`]: myEntry, [`${enemySlot}_entry`]: enemyEntry, current_turn: enemySlot, turn_count: nextTurnCount })
       return res.status(200).json({ ok: true })
     }
 
@@ -252,26 +262,27 @@ export default async function handler(req, res) {
       const rollPower = rollTurn === 1 ? 30 : rollTurn === 2 ? 60 : 120
       const { hit, hitType } = calcHit(myPokemon, moveInfo, enePokemon)
       if (!hit) {
-        await addLog(logsRef, hitType === "evaded" ? `${enePokemon.name}에게는 맞지 않았다!` : `그러나 ${myPokemon.name}의 공격은 빗나갔다!`)
+        await log(logsRef, hitType === "evaded" ? `${enePokemon.name}에게는 맞지 않았다!` : `그러나 ${myPokemon.name}의 공격은 빗나갔다!`, hitType === "evaded" ? "evade" : "normal")
         myPokemon.rollState = { active: false, turn: 0 }
       } else if (enePokemon.defending) {
-        await addLog(logsRef, `${enePokemon.name}${josa(enePokemon.name, "은는")} 방어했다!`)
+        await log(logsRef, `${enePokemon.name}${josa(enePokemon.name, "은는")} 방어했다!`)
         myPokemon.rollState = { active: false, turn: 0 }
       } else {
+        await log(logsRef, "", "attack") // 공격 플래시
         const dmg = calcRolloutDamage(moveData.name, enePokemon, rollPower)
-        await roomRef.update({ hit_event: { defender: enemySlot, ts: Date.now() } })
         enePokemon.hp = Math.max(0, enePokemon.hp - dmg)
-        await addLog(logsRef, `구르기 ${rollTurn}번째 (${rollPower} 데미지)!`)
-        if (enePokemon.hp <= 0) await addLog(logsRef, `${enePokemon.name}${josa(enePokemon.name, "은는")} 쓰러졌다!`)
+        await log(logsRef, "", "hit", { defender: enemySlot }) // 피격
+        await log(logsRef, `구르기 ${rollTurn}번째 (${rollPower} 데미지)!`)
+        if (enePokemon.hp <= 0) await log(logsRef, `${enePokemon.name}${josa(enePokemon.name, "은는")} 쓰러졌다!`, "faint")
         myPokemon.rollState = rollTurn >= 3 ? { active: false, turn: 0 } : { active: true, turn: rollTurn }
       }
       const expMsgs = tickMyRanks(myPokemon); clearRankStack(myPokemon)
-      for (const msg of expMsgs) await addLog(logsRef, msg)
+      for (const msg of expMsgs) await log(logsRef, msg)
       if (isAllFainted(enemyEntry)) {
-        await roomRef.update({ [`${mySlot}_entry`]: myEntry, [`${enemySlot}_entry`]: enemyEntry, turn_count: nextTurnCount, game_over: true, winner: myName, current_turn: null, dice_event: null, hit_event: null })
-        await addLog(logsRef, `${myName}의 승리!`)
+        await roomRef.update({ [`${mySlot}_entry`]: myEntry, [`${enemySlot}_entry`]: enemyEntry, turn_count: nextTurnCount, game_over: true, winner: myName, current_turn: null })
+        await log(logsRef, `${myName}의 승리!`, "win")
       } else {
-        await roomRef.update({ [`${mySlot}_entry`]: myEntry, [`${enemySlot}_entry`]: enemyEntry, current_turn: enemySlot, turn_count: nextTurnCount, dice_event: null, hit_event: null })
+        await roomRef.update({ [`${mySlot}_entry`]: myEntry, [`${enemySlot}_entry`]: enemyEntry, current_turn: enemySlot, turn_count: nextTurnCount })
       }
       return res.status(200).json({ ok: true })
     }
@@ -283,24 +294,27 @@ export default async function handler(req, res) {
       if (targetsEnemy) {
         const { hit, hitType } = calcHit(myPokemon, moveInfo, enePokemon)
         if (!hit) {
-          await addLog(logsRef, hitType === "evaded" ? `${enePokemon.name}에게는 맞지 않았다!` : `그러나 ${myPokemon.name}의 공격은 빗나갔다!`)
-          await roomRef.update({ [`${mySlot}_entry`]: myEntry, [`${enemySlot}_entry`]: enemyEntry, current_turn: enemySlot, turn_count: nextTurnCount, dice_event: null })
+          await log(logsRef, hitType === "evaded" ? `${enePokemon.name}에게는 맞지 않았다!` : `그러나 ${myPokemon.name}의 공격은 빗나갔다!`, hitType === "evaded" ? "evade" : "normal")
+          await roomRef.update({ [`${mySlot}_entry`]: myEntry, [`${enemySlot}_entry`]: enemyEntry, current_turn: enemySlot, turn_count: nextTurnCount })
           return res.status(200).json({ ok: true })
         }
       } else {
         if (!moveInfo?.alwaysHit && Math.random() * 100 >= (moveInfo?.accuracy ?? 100)) {
-          await addLog(logsRef, `그러나 ${myPokemon.name}의 기술은 실패했다!`)
-          await roomRef.update({ [`${mySlot}_entry`]: myEntry, [`${enemySlot}_entry`]: enemyEntry, current_turn: enemySlot, turn_count: nextTurnCount, dice_event: null })
+          await log(logsRef, `그러나 ${myPokemon.name}의 기술은 실패했다!`)
+          await roomRef.update({ [`${mySlot}_entry`]: myEntry, [`${enemySlot}_entry`]: enemyEntry, current_turn: enemySlot, turn_count: nextTurnCount })
           return res.status(200).json({ ok: true })
         }
       }
-      if (moveInfo?.clearSmog) { enePokemon.ranks = defaultRanks(); await addLog(logsRef, `${enePokemon.name}${josa(enePokemon.name, "의")} 능력 변화가 원래대로 돌아왔다!`) }
+      if (moveInfo?.clearSmog) {
+        enePokemon.ranks = defaultRanks()
+        await log(logsRef, `${enePokemon.name}${josa(enePokemon.name, "의")} 능력 변화가 원래대로 돌아왔다!`)
+      }
       const rankMsgs = applyRankChanges(r, myPokemon, enePokemon, moveData.name)
-      for (const msg of rankMsgs) await addLog(logsRef, msg)
+      for (const msg of rankMsgs) await log(logsRef, msg)
       const rankEffectMsgs = applyMoveEffect(moveInfo?.effect, myPokemon, enePokemon, 0)
-      for (const msg of rankEffectMsgs) await addLog(logsRef, msg)
+      for (const msg of rankEffectMsgs) await log(logsRef, msg)
       enePokemon.defending = false; enePokemon.defendTurns = 0
-      await roomRef.update({ [`${mySlot}_entry`]: myEntry, [`${enemySlot}_entry`]: enemyEntry, current_turn: enemySlot, turn_count: nextTurnCount, dice_event: null })
+      await roomRef.update({ [`${mySlot}_entry`]: myEntry, [`${enemySlot}_entry`]: enemyEntry, current_turn: enemySlot, turn_count: nextTurnCount })
       return res.status(200).json({ ok: true })
     }
 
@@ -312,46 +326,60 @@ export default async function handler(req, res) {
     const wasDefending = enePokemon.defending ?? false
     enePokemon.defending = false; enePokemon.defendTurns = 0
 
+    await log(logsRef, "", "attack") // 공격 플래시
+
     if (wasDefending) {
-      await addLog(logsRef, `${enePokemon.name}${josa(enePokemon.name, "은는")} 방어했다!`)
+      await log(logsRef, `${enePokemon.name}${josa(enePokemon.name, "은는")} 방어했다!`)
       if (moveInfo?.jumpKick) {
         const selfDmg = Math.max(1, Math.floor((myPokemon.maxHp ?? myPokemon.hp) * 0.25))
         myPokemon.hp = Math.max(0, myPokemon.hp - selfDmg)
-        await addLog(logsRef, `${myPokemon.name}${josa(myPokemon.name, "은는")} 반동으로 ${selfDmg} 데미지를 입었다!`)
+        await log(logsRef, "", "hit_self") // 자해 피격
+        await log(logsRef, `${myPokemon.name}${josa(myPokemon.name, "은는")} 반동으로 ${selfDmg} 데미지를 입었다!`)
       }
     } else {
       const { hit, hitType } = calcHit(myPokemon, moveInfo, enePokemon)
       if (!hit) {
-        await addLog(logsRef, hitType === "evaded" ? `${enePokemon.name}에게는 맞지 않았다!` : `그러나 ${myPokemon.name}의 공격은 빗나갔다!`)
+        if (hitType === "evaded") {
+          await log(logsRef, `${enePokemon.name}에게는 맞지 않았다!`, "evade")
+        } else {
+          await log(logsRef, `그러나 ${myPokemon.name}의 공격은 빗나갔다!`)
+        }
         if (moveInfo?.jumpKick) {
           const selfDmg = Math.max(1, Math.floor((myPokemon.maxHp ?? myPokemon.hp) * 0.25))
           myPokemon.hp = Math.max(0, myPokemon.hp - selfDmg)
-          await addLog(logsRef, `${myPokemon.name}${josa(myPokemon.name, "은는")} 반동으로 ${selfDmg} 데미지를 입었다!`)
+          await log(logsRef, "", "hit_self")
+          await log(logsRef, `${myPokemon.name}${josa(myPokemon.name, "은는")} 반동으로 ${selfDmg} 데미지를 입었다!`)
         }
       } else {
         const revengeReady = freshData[`revenge_ready_${mySlot}`] ?? false
         const powerOverride = (moveInfo?.revenge && revengeReady) ? 70 : null
         const { damage, multiplier, critical } = calcDamage(myPokemon, moveData.name, enePokemon, atkRank, defRankEne, powerOverride)
         if (multiplier === 0) {
-          await addLog(logsRef, `${enePokemon.name}에게는 효과가 없다…`)
+          await log(logsRef, `${enePokemon.name}에게는 효과가 없다…`)
         } else {
-          await roomRef.update({ hit_event: { defender: enemySlot, ts: Date.now() } })
           enePokemon.hp = Math.max(0, enePokemon.hp - damage)
-          if (multiplier > 1) await addLog(logsRef, "효과가 굉장했다!")
-          if (multiplier < 1) await addLog(logsRef, "효과가 별로인 듯하다…")
-          if (critical) await addLog(logsRef, "급소에 맞았다!")
-          if (moveInfo?.clearSmog) { enePokemon.ranks = defaultRanks(); await addLog(logsRef, `${enePokemon.name}${josa(enePokemon.name, "의")} 능력 변화가 원래대로 돌아왔다!`) }
+          await log(logsRef, "", "hit", { defender: enemySlot }) // 피격 애니메이션
+          if (multiplier > 1) await log(logsRef, "효과가 굉장했다!")
+          if (multiplier < 1) await log(logsRef, "효과가 별로인 듯하다…")
+          if (critical) await log(logsRef, "급소에 맞았다!", "critical")
+          if (moveInfo?.clearSmog) {
+            enePokemon.ranks = defaultRanks()
+            await log(logsRef, `${enePokemon.name}${josa(enePokemon.name, "의")} 능력 변화가 원래대로 돌아왔다!`)
+          }
           const effectMsgs = applyMoveEffect(moveInfo?.effect, myPokemon, enePokemon, damage)
-          for (const msg of effectMsgs) await addLog(logsRef, msg)
-          if (moveInfo?.rank) { const rankMsgs = applyRankChanges(moveInfo.rank, myPokemon, enePokemon, null); for (const msg of rankMsgs) await addLog(logsRef, msg) }
+          for (const msg of effectMsgs) await log(logsRef, msg)
+          if (moveInfo?.rank) {
+            const rankMsgs = applyRankChanges(moveInfo.rank, myPokemon, enePokemon, null)
+            for (const msg of rankMsgs) await log(logsRef, msg)
+          }
           if (!moveInfo?.lastResort) myPokemon.usedMoves = [...new Set([...(myPokemon.usedMoves ?? []), moveData.name])]
-          if (enePokemon.hp <= 0) await addLog(logsRef, `${enePokemon.name}${josa(enePokemon.name, "은는")} 쓰러졌다!`)
+          if (enePokemon.hp <= 0) await log(logsRef, `${enePokemon.name}${josa(enePokemon.name, "은는")} 쓰러졌다!`, "faint")
         }
       }
     }
 
     const weatherResult = applyWeatherEffect(moveInfo?.effect)
-    if (weatherResult.weather) for (const msg of weatherResult.msgs) await addLog(logsRef, msg)
+    if (weatherResult.weather) for (const msg of weatherResult.msgs) await log(logsRef, msg)
 
     const expiredMsgs = tickMyRanks(myPokemon)
     clearRankStack(myPokemon)
@@ -362,35 +390,35 @@ export default async function handler(req, res) {
     const nextTurn = nextTurnCount
     if (nextTurn % 2 === 0) {
       const { msgs: eotMsgs, anyFainted } = applyEndOfTurnDamage([myEntry, enemyEntry])
-      for (const msg of eotMsgs) await addLog(logsRef, msg)
+      for (const msg of eotMsgs) await log(logsRef, msg)
       if (anyFainted) {
         const enemyFainted = isAllFainted(enemyEntry), myFainted = isAllFainted(myEntry)
         if (!enemyFainted && anyFainted) revengeUpdate[`revenge_ready_${enemySlot}`] = true
         if (enemyFainted) {
-          await roomRef.update({ [`${mySlot}_entry`]: myEntry, [`${enemySlot}_entry`]: enemyEntry, turn_count: nextTurn, game_over: true, winner: myName, current_turn: null, dice_event: null, hit_event: null, ...revengeUpdate, ...(weatherResult.weather ? { weather: weatherResult.weather } : {}) })
-          await addLog(logsRef, `${myName}의 승리!`)
+          await roomRef.update({ [`${mySlot}_entry`]: myEntry, [`${enemySlot}_entry`]: enemyEntry, turn_count: nextTurn, game_over: true, winner: myName, current_turn: null, ...revengeUpdate, ...(weatherResult.weather ? { weather: weatherResult.weather } : {}) })
+          await log(logsRef, `${myName}의 승리!`, "win")
           return res.status(200).json({ ok: true })
         } else if (myFainted) {
-          await roomRef.update({ [`${mySlot}_entry`]: myEntry, [`${enemySlot}_entry`]: enemyEntry, turn_count: nextTurn, game_over: true, winner: enemyName, current_turn: null, dice_event: null, hit_event: null, ...revengeUpdate, ...(weatherResult.weather ? { weather: weatherResult.weather } : {}) })
-          await addLog(logsRef, `${enemyName}의 승리!`)
+          await roomRef.update({ [`${mySlot}_entry`]: myEntry, [`${enemySlot}_entry`]: enemyEntry, turn_count: nextTurn, game_over: true, winner: enemyName, current_turn: null, ...revengeUpdate, ...(weatherResult.weather ? { weather: weatherResult.weather } : {}) })
+          await log(logsRef, `${enemyName}의 승리!`, "win")
           return res.status(200).json({ ok: true })
         }
       }
     }
 
-    for (const msg of expiredMsgs) await addLog(logsRef, msg)
+    for (const msg of expiredMsgs) await log(logsRef, msg)
 
     if (enePokemon.hp <= 0) revengeUpdate[`revenge_ready_${enemySlot}`] = false
     if (myPokemon.hp <= 0) revengeUpdate[`revenge_ready_${enemySlot}`] = true
 
     if (isAllFainted(enemyEntry)) {
-      await roomRef.update({ [`${mySlot}_entry`]: myEntry, [`${enemySlot}_entry`]: enemyEntry, turn_count: nextTurn, game_over: true, winner: myName, current_turn: null, dice_event: null, hit_event: null, ...revengeUpdate, ...(weatherResult.weather ? { weather: weatherResult.weather } : {}) })
-      await addLog(logsRef, `${myName}의 승리!`)
+      await roomRef.update({ [`${mySlot}_entry`]: myEntry, [`${enemySlot}_entry`]: enemyEntry, turn_count: nextTurn, game_over: true, winner: myName, current_turn: null, ...revengeUpdate, ...(weatherResult.weather ? { weather: weatherResult.weather } : {}) })
+      await log(logsRef, `${myName}의 승리!`, "win")
     } else if (isAllFainted(myEntry)) {
-      await roomRef.update({ [`${mySlot}_entry`]: myEntry, [`${enemySlot}_entry`]: enemyEntry, turn_count: nextTurn, game_over: true, winner: enemyName, current_turn: null, dice_event: null, hit_event: null, ...revengeUpdate, ...(weatherResult.weather ? { weather: weatherResult.weather } : {}) })
-      await addLog(logsRef, `${enemyName}의 승리!`)
+      await roomRef.update({ [`${mySlot}_entry`]: myEntry, [`${enemySlot}_entry`]: enemyEntry, turn_count: nextTurn, game_over: true, winner: enemyName, current_turn: null, ...revengeUpdate, ...(weatherResult.weather ? { weather: weatherResult.weather } : {}) })
+      await log(logsRef, `${enemyName}의 승리!`, "win")
     } else {
-      await roomRef.update({ [`${mySlot}_entry`]: myEntry, [`${enemySlot}_entry`]: enemyEntry, current_turn: enemySlot, turn_count: nextTurn, dice_event: null, hit_event: null, ...revengeUpdate, ...(weatherResult.weather ? { weather: weatherResult.weather } : {}) })
+      await roomRef.update({ [`${mySlot}_entry`]: myEntry, [`${enemySlot}_entry`]: enemyEntry, current_turn: enemySlot, turn_count: nextTurn, ...revengeUpdate, ...(weatherResult.weather ? { weather: weatherResult.weather } : {}) })
     }
 
     return res.status(200).json({ ok: true })
