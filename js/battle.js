@@ -213,9 +213,6 @@ let renderedLogIds = new Set()
 let logQueue = []
 let isProcessing = false
 
-// listenRoom에서 HP 즉시 업데이트 막는 플래그
-let suppressHpUpdate = false
-
 function processLogQueue() {
   if (isProcessing || logQueue.length === 0) return
   isProcessing = true
@@ -238,33 +235,29 @@ async function handleLogEntry({ text, type, meta }) {
       break
     }
     case "attack": {
+      // 넉백 + 화면 흔들림
       await triggerAttackEffect("my", "enemy")
       break
     }
     case "hit": {
-      // 피격 애니메이션 + HP바 업데이트
+      // 깜빡 → HP바 업데이트 순서
       const { defender, hp, maxHp } = meta ?? {}
       const prefix = defender === mySlot ? "my" : "enemy"
-      suppressHpUpdate = true
       await triggerBlink(prefix)
-      // 애니메이션 후 HP바 업데이트
       if (hp !== undefined && maxHp !== undefined) {
         const showNumbers = prefix === "my"
         updateHpBar(`${prefix}-hp-bar`, `${prefix}-active-hp`, hp, maxHp, showNumbers)
       }
-      suppressHpUpdate = false
-      await wait(300)
+      await wait(200)
       break
     }
     case "hit_self": {
       const { hp, maxHp } = meta ?? {}
-      suppressHpUpdate = true
       await triggerBlink("my")
       if (hp !== undefined && maxHp !== undefined) {
         updateHpBar("my-hp-bar", "my-active-hp", hp, maxHp, true)
       }
-      suppressHpUpdate = false
-      await wait(300)
+      await wait(200)
       break
     }
     case "critical": {
@@ -452,15 +445,9 @@ function listenRoom() {
     if (!data.p1_entry || !data.p2_entry) return
     const enemySlot = mySlot === "p1" ? "p2" : "p1"
 
-    // HP바는 suppressHpUpdate가 false일 때만 업데이트
-    if (!suppressHpUpdate) {
-      updateActiveUI(mySlot, data, "my")
-      updateActiveUI(enemySlot, data, "enemy")
-    } else {
-      // 이름/상태이상 텍스트는 항상 업데이트
-      updateActiveUINameOnly(mySlot, data, "my")
-      updateActiveUINameOnly(enemySlot, data, "enemy")
-    }
+    // 이름/상태이상/포트레이트만 업데이트 — HP바는 로그 큐에서만 업데이트!
+    updateActiveUINoHp(mySlot, data, "my")
+    updateActiveUINoHp(enemySlot, data, "enemy")
 
     if (data.game_over) { showGameOver(data); return }
     if (!data.current_turn) {
@@ -482,6 +469,29 @@ function listenRoom() {
     }
     updateBenchButtons(data); updateMoveButtons(data)
   })
+}
+
+// HP바 업데이트 없이 이름/상태이상/포트레이트만 업데이트
+function updateActiveUINoHp(slot, data, prefix) {
+  const activeIdx = data[`${slot}_active_idx`], pokemon = data[`${slot}_entry`]?.[activeIdx]
+  if (!pokemon) return
+  const st = pokemon.status ? ` [${statusName(pokemon.status)}]` : ""
+  const cf = (pokemon.confusion ?? 0) > 0 ? " [혼란]" : ""
+  const nameEl = document.getElementById(`${prefix}-active-name`)
+  if (nameEl) nameEl.innerText = data.intro_done ? (pokemon.name + st + cf) : "???"
+  if (data.intro_done) updatePortrait(prefix, pokemon)
+}
+
+// 초기 렌더링용 (인트로 완료 직후 HP바 초기값 세팅)
+function updateActiveUIFull(slot, data, prefix) {
+  const activeIdx = data[`${slot}_active_idx`], pokemon = data[`${slot}_entry`]?.[activeIdx]
+  if (!pokemon) return
+  const st = pokemon.status ? ` [${statusName(pokemon.status)}]` : ""
+  const cf = (pokemon.confusion ?? 0) > 0 ? " [혼란]" : ""
+  const nameEl = document.getElementById(`${prefix}-active-name`)
+  if (nameEl) nameEl.innerText = data.intro_done ? (pokemon.name + st + cf) : "???"
+  updateHpBar(`${prefix}-hp-bar`, `${prefix}-active-hp`, pokemon.hp, pokemon.maxHp, prefix === "my" && !!data.intro_done)
+  if (data.intro_done) updatePortrait(prefix, pokemon)
 }
 
 function showGameOver(data) {
@@ -528,28 +538,6 @@ async function leaveGame() {
     revenge_ready_p1: false, revenge_ready_p2: false
   })
   location.href = "../main.html"
-}
-
-function updateActiveUI(slot, data, prefix) {
-  const activeIdx = data[`${slot}_active_idx`], pokemon = data[`${slot}_entry`]?.[activeIdx]
-  if (!pokemon) return
-  const st = pokemon.status ? ` [${statusName(pokemon.status)}]` : ""
-  const cf = (pokemon.confusion ?? 0) > 0 ? " [혼란]" : ""
-  const nameEl = document.getElementById(`${prefix}-active-name`)
-  if (nameEl) nameEl.innerText = data.intro_done ? (pokemon.name + st + cf) : "???"
-  updateHpBar(`${prefix}-hp-bar`, `${prefix}-active-hp`, pokemon.hp, pokemon.maxHp, prefix === "my" && !!data.intro_done)
-  if (data.intro_done) updatePortrait(prefix, pokemon)
-}
-
-// HP바 업데이트 없이 이름/상태만 업데이트
-function updateActiveUINameOnly(slot, data, prefix) {
-  const activeIdx = data[`${slot}_active_idx`], pokemon = data[`${slot}_entry`]?.[activeIdx]
-  if (!pokemon) return
-  const st = pokemon.status ? ` [${statusName(pokemon.status)}]` : ""
-  const cf = (pokemon.confusion ?? 0) > 0 ? " [혼란]" : ""
-  const nameEl = document.getElementById(`${prefix}-active-name`)
-  if (nameEl) nameEl.innerText = data.intro_done ? (pokemon.name + st + cf) : "???"
-  if (data.intro_done) updatePortrait(prefix, pokemon)
 }
 
 function updateMoveButtons(data) {
