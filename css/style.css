@@ -1,0 +1,201 @@
+/* 기본 리셋 */
+* {
+  margin: 0;
+  padding: 0;
+  box-sizing: border-box;
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+}
+
+/* 배경 */
+.login-page {
+  height: 100vh;
+  background: #ffffff;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+}
+
+/* 컨테이너 */
+.login-container {
+  width: 100%;
+  max-width: 400px;
+  padding: 40px 24px;
+  text-align: center;
+}
+
+/* 타이틀 */
+.login-container h2 {
+  font-size: 28px;
+  font-weight: 600;
+  margin-bottom: 32px;
+  color: #111;
+}
+
+/* 박스 */
+.login-box {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+/* 인풋 */
+.login-box input {
+  padding: 14px 16px;
+  border: 1px solid #ddd;
+  border-radius: 8px;
+  font-size: 14px;
+  transition: 0.2s;
+}
+
+/* 포커스 */
+.login-box input:focus {
+  outline: none;
+  border-color: #000;
+}
+
+/* 버튼 */
+.btn {
+  padding: 14px;
+  border: none;
+  border-radius: 8px;
+  background: #000;
+  color: #fff;
+  font-weight: 600;
+  cursor: pointer;
+  transition: 0.2s;
+}
+
+/* 버튼 hover */
+.btn:hover {
+  background: #222;
+}
+
+/* 버튼 active */
+.btn:active {
+  transform: scale(0.98);
+}
+
+/* 모바일 대응 */
+@media (max-width: 480px) {
+  .login-container {
+    padding: 24px 16px;
+  }
+
+  .login-container h2 {
+    font-size: 24px;
+  }
+
+  .login-box input {
+    padding: 12px;
+  }
+
+  .btn {
+    padding: 12px;
+  }
+}
+
+/* 전체 컨테이너 */
+.container {
+  max-width: 420px;
+  margin: 0 auto;
+  padding: 24px 16px;
+}
+
+/* 프로필 카드 */
+.profile {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+
+  padding: 20px;
+  border: 1px solid #ddd;
+  border-radius: 12px;
+  background: #fff;
+
+  margin-bottom: 20px;
+}
+
+/* 닉네임 */
+#nickname {
+  font-size: 18px;
+  font-weight: 600;
+  color: #111;
+}
+
+/* 코인 */
+#coins {
+  font-size: 14px;
+  color: #666;
+}
+
+/* 갤러리 박스 */
+.gallery-box {
+  border: 1px solid #ddd;
+  border-radius: 12px;
+  padding: 16px;
+  background: #fff;
+}
+
+/* 제목 */
+.gallery-box h2 {
+  font-size: 16px;
+  font-weight: 600;
+  margin-bottom: 8px;
+  color: #111;
+}
+
+/* 구분선 */
+.gallery-box hr {
+  border: none;
+  border-top: 1px solid #eee;
+  margin-bottom: 12px;
+}
+
+/* 스크롤 영역 */
+.gallery-box {
+  max-height: 400px;
+  overflow-y: auto;
+}
+
+/* 갤러리 */
+#gallery {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 8px;
+}
+
+/* 이미지 */
+#gallery img {
+  width: 100%;
+  aspect-ratio: 1 / 1;
+  object-fit: cover;
+
+  border-radius: 8px;
+  border: 1px solid #eee;
+
+  transition: 0.2s;
+}
+
+/* hover */
+#gallery img:hover {
+  transform: scale(1.03);
+}
+
+/* 모바일 대응 */
+@media (max-width: 480px) {
+  .container {
+    padding: 16px 12px;
+  }
+
+  #gallery {
+    grid-template-columns: repeat(2, 1fr);
+  }
+
+  .profile {
+    padding: 16px;
+  }
+
+  .gallery-box {
+    padding: 14px;
+  }
+}
