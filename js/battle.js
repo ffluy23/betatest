@@ -540,23 +540,25 @@ async function switchPokemon(newIdx) {
 
 async function useMove(moveIdx, data) {
   if (isSpectator || !myTurn || actionDone || gameOver) return
-  actionDone = true; updateMoveButtons(data)
+  actionDone = true
+  updateMoveButtons(data)
 
-  const snap = await getDoc(roomRef), freshData = snap.data()
-  const enemySlot = mySlot === "p1" ? "p2" : "p1"
-  const myActiveIdx = freshData[`${mySlot}_active_idx`], eneActiveIdx = freshData[`${enemySlot}_active_idx`]
+  const res = await fetch("https://betatest-ten.vercel.app/api/use-move", {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({
+      roomId: ROOM_ID,
+      mySlot,
+      moveIdx
+    })
+  })
 
-  const myEntry = freshData[`${mySlot}_entry`].map(p => ({ ...p, moves: (p.moves ?? []).map(m => ({ ...m })), ranks: { ...defaultRanks(), ...(p.ranks ?? {}) } }))
-  const enemyEntry = freshData[`${enemySlot}_entry`].map(p => ({ ...p, ranks: { ...defaultRanks(), ...(p.ranks ?? {}) } }))
-  const myPokemon = myEntry[myActiveIdx], enePokemon = enemyEntry[eneActiveIdx]
-
-  if (myPokemon.hp <= 0) { actionDone = false; return }
-  const moveData = myPokemon.moves[moveIdx]
-  if (!moveData || moveData.pp <= 0) { actionDone = false; return }
-
-  const myName = mySlot === "p1" ? freshData.player1_name : freshData.player2_name
-  const enemyName = enemySlot === "p1" ? freshData.player1_name : freshData.player2_name
-  const nextTurnCount = (freshData.turn_count ?? 1) + 1
+  const result = await res.json()
+  if (!result.ok) {
+    console.error("기술 사용 실패:", result.error)
+    actionDone = false
+  }
+}
 
   // 희망사항 회복 체크 (내 턴 시작 시)
   const wishMsgs = tickVolatiles(myPokemon)
