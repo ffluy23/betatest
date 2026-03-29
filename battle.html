@@ -1,0 +1,118 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Battle</title>
+<link rel="stylesheet" href="css/style.css">
+<style>
+
+
+/* 배틀 입장 페이지 */
+.battle-entry-page {
+  min-height: 100vh;
+  background: #fff;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+}
+
+/* 컨테이너 */
+.battle-entry-container {
+  width: 100%;
+  max-width: 420px;
+  padding: 32px 20px;
+  text-align: center;
+}
+
+/* 제목 */
+.title {
+  font-size: 24px;
+  font-weight: 700;
+  margin-bottom: 16px;
+  color: #111;
+}
+
+/* 설명 */
+.desc {
+  font-size: 13px;
+  color: #666;
+  line-height: 1.6;
+  margin-bottom: 30px;
+}
+
+/* 버튼 영역 */
+.battleroom {
+  display: flex;
+  justify-content: center;
+}
+
+/* 큰 버튼 */
+.btn.large {
+  width: 100%;
+  max-width: 260px;
+  padding: 16px;
+
+  font-size: 15px;
+  font-weight: 600;
+
+  border-radius: 10px;
+  background: #000;
+  color: #fff;
+
+  transition: 0.2s;
+}
+
+.btn.large:hover {
+  background: #222;
+}
+
+.btn.large:active {
+  transform: scale(0.97);
+}
+
+/* 모바일 */
+@media (max-width: 480px) {
+  .battle-entry-container {
+    padding: 24px 16px;
+  }
+
+  .title {
+    font-size: 20px;
+  }
+
+  .desc {
+    font-size: 12px;
+  }
+
+  .btn.large {
+    padding: 14px;
+  }
+}
+
+
+</style>
+
+    <body class="battle-entry-page">
+
+  <div class="battle-entry-container">
+
+    <h2 class="title">Battleroom</h2>
+
+    <p class="desc">
+      방에 입장하기 전 프로필 탭에서 자신의 정보를 확인해주시기 바랍니다.<br>
+      이상이 있을 시 즉시 메리프 괄진에게 문의해주세요.
+    </p>
+
+    <div class="battleroom">
+      <button class="btn large" onclick="enterRoom(1)">ENTER</button>
+    </div>
+
+  </div>
+
+ 
+
+<script type="module" src="js/firebase.js"></script>
+<script type="module" src="js/main.js"></script>
+</body>
+</html>
