@@ -1,10 +1,28 @@
 import { db } from "./_firebase.js"
 
+function josa(word, type) {
+  if (!word) return type === "은는" ? "은" : type === "이가" ? "이" : type === "을를" ? "을" : type === "과와" ? "과" : "으로"
+  const code = word.charCodeAt(word.length - 1)
+  if (code < 0xAC00 || code > 0xD7A3) {
+    return type === "은는" ? "은" : type === "이가" ? "이" : type === "을를" ? "을" : type === "과와" ? "과" : "으로"
+  }
+  const hasFinal = (code - 0xAC00) % 28 !== 0
+  if (type === "은는") return hasFinal ? "은" : "는"
+  if (type === "이가") return hasFinal ? "이" : "가"
+  if (type === "을를") return hasFinal ? "을" : "를"
+  if (type === "과와") return hasFinal ? "과" : "와"
+  if (type === "으로") return hasFinal ? "으로" : "로"
+  return ""
+}
+
+function defaultRanks() {
+  return { atk: 0, atkTurns: 0, def: 0, defTurns: 0, spd: 0, spdTurns: 0 }
+}
+
 export default async function handler(req, res) {
   res.setHeader("Access-Control-Allow-Origin", "*")
   res.setHeader("Access-Control-Allow-Methods", "POST, OPTIONS")
   res.setHeader("Access-Control-Allow-Headers", "Content-Type")
-
   if (req.method === "OPTIONS") return res.status(200).end()
   if (req.method !== "POST") return res.status(405).json({ error: "Method not allowed" })
 
@@ -15,6 +33,7 @@ export default async function handler(req, res) {
     }
 
     const roomRef = db.collection("rooms").doc(roomId)
+    const logsRef = roomRef.collection("logs")
     const snap = await roomRef.get()
     const data = snap.data()
 
@@ -24,7 +43,7 @@ export default async function handler(req, res) {
     const enemySlot = mySlot === "p1" ? "p2" : "p1"
     const myEntry = data[`${mySlot}_entry`].map(p => ({
       ...p,
-      ranks: { atk: 0, atkTurns: 0, def: 0, defTurns: 0, spd: 0, spdTurns: 0, ...(p.ranks ?? {}) }
+      ranks: { ...defaultRanks(), ...(p.ranks ?? {}) }
     }))
 
     const myPokemon = myEntry[data[`${mySlot}_active_idx`]]
@@ -42,17 +61,28 @@ export default async function handler(req, res) {
       myPokemon.ranks.def = 0; myPokemon.ranks.defTurns = 0
       myPokemon.ranks.spd = 0; myPokemon.ranks.spdTurns = 0
     }
+    // 구르기 초기화
+    myPokemon.rollState = { active: false, turn: 0 }
 
     const myName = mySlot === "p1" ? data.player1_name : data.player2_name
     const prev = myPokemon.name
     const next = newPokemon.name
     const nextTurnCount = (data.turn_count ?? 1) + 1
 
-    // 로그 추가
-    const logsRef = db.collection("rooms").doc(roomId).collection("logs")
-    const base = Date.now()
-    await logsRef.add({ text: `돌아와, ${prev}!`, ts: base })
-    await logsRef.add({ text: `${myName}은(는) ${next}을(를) 내보냈다!`, ts: base + 1 })
+    let ts = Date.now()
+
+    // 돌아가는 로그
+    await logsRef.add({ text: `돌아와, ${prev}!`, type: "normal", ts: ts++ })
+
+    // 새 포켓몬 교체 로그 — HP 정보 포함해서 클라이언트가 HP바 세팅할 수 있게
+    await logsRef.add({
+      text: `${myName}${josa(myName, "은는")} ${next}${josa(next, "을를")} 내보냈다!`,
+      type: "switch",
+      slot: mySlot,
+      hp: newPokemon.hp,
+      maxHp: newPokemon.maxHp ?? newPokemon.hp,
+      ts: ts++
+    })
 
     await roomRef.update({
       [`${mySlot}_entry`]: myEntry,

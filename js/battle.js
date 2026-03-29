@@ -47,6 +47,7 @@ function showBattlePopup(prefix, type) {
 let mySlot   = null, myUid  = null, myTurn = false
 let gameStarted = false, diceShown = false, actionDone = false, gameOver = false
 let introSequenceStarted = false
+let pendingGameOver = null  // game_over 감지됐지만 큐 소진 대기 중인 data
 
 const isSpectator = new URLSearchParams(location.search).get("spectator") === "true"
 
@@ -219,6 +220,13 @@ function processLogQueue() {
   const entry = logQueue.shift()
   handleLogEntry(entry).then(() => {
     isProcessing = false
+    // 큐 소진 후 game_over 대기 중이면 처리
+    if (logQueue.length === 0 && pendingGameOver) {
+      const data = pendingGameOver
+      pendingGameOver = null
+      showGameOver(data)
+      return
+    }
     setTimeout(processLogQueue, 50)
   })
 }
@@ -228,20 +236,30 @@ async function handleLogEntry({ text, type, meta }) {
 
   switch (type) {
     case "intro_wait": {
-      // 포트레이트 표시 + 3초 대기
       const snap = await getDoc(roomRef)
       const data = snap.data()
       if (data) {
         const enemySlot = mySlot === "p1" ? "p2" : "p1"
         updatePortrait("my", data[`${mySlot}_entry`]?.[0], true)
         updatePortrait("enemy", data[`${enemySlot}_entry`]?.[0], true)
-        // HP바 초기값 세팅
         const myPkmn = data[`${mySlot}_entry`]?.[0]
         const enePkmn = data[`${enemySlot}_entry`]?.[0]
         if (myPkmn) updateHpBar("my-hp-bar", "my-active-hp", myPkmn.hp, myPkmn.maxHp, true)
         if (enePkmn) updateHpBar("enemy-hp-bar", "enemy-active-hp", enePkmn.hp, enePkmn.maxHp, false)
       }
       await wait(3000)
+      break
+    }
+    case "switch": {
+      // 교체 시 새 포켓몬 HP바 초기값 세팅
+      const { slot, hp, maxHp } = meta ?? {}
+      const prefix = slot === mySlot ? "my" : "enemy"
+      const showNumbers = prefix === "my"
+      if (hp !== undefined && maxHp !== undefined) {
+        updateHpBar(`${prefix}-hp-bar`, `${prefix}-active-hp`, hp, maxHp, showNumbers)
+      }
+      if (text) await typeText(log, text)
+      await wait(150)
       break
     }
     case "dice": {
@@ -292,10 +310,8 @@ async function handleLogEntry({ text, type, meta }) {
       break
     }
     case "win": {
-      // 승리 문구는 faint 다음에 오니까 자연스럽게 처리됨
       await typeText(log, text)
       await wait(500)
-      // 게임 오버 UI는 listenRoom의 game_over 감지가 처리
       break
     }
     default: {
@@ -456,21 +472,25 @@ function listenRoom() {
     if (spectEl) { const n = data.spectator_names ?? []; spectEl.innerText = n.length > 0 ? "관전: " + n.join(", ") : "" }
     if (!data.p1_entry || !data.p2_entry) return
 
-    // 이름/상태이상/포트레이트만 업데이트 — HP바는 로그 큐에서만!
+    // 이름/상태이상/포트레이트만 — HP바는 로그 큐에서만!
     updateActiveUINoHp(mySlot, data, "my")
     updateActiveUINoHp(mySlot === "p1" ? "p2" : "p1", data, "enemy")
 
-    if (data.game_over) { showGameOver(data); return }
+    if (data.game_over) {
+      // 로그 큐 소진 후 game_over 처리
+      if (logQueue.length === 0 && !isProcessing) {
+        showGameOver(data)
+      } else {
+        pendingGameOver = data
+      }
+      return
+    }
 
     if (!data.current_turn) {
-      // init-turn: p1 클라이언트가 호출 (서버가 트랜잭션으로 딱 한 번만 처리)
       if (!isSpectator && mySlot === "p1" && !gameStarted) await initTurn(data)
-
-      // 선공 다이스 애니메이션
       if (!diceShown && data.p1_dice && data.p2_dice && data.first_slot) {
         diceShown = true
         animateDualDice(data.p1_dice, data.p2_dice, async () => {
-          // 인트로 시퀀스: p1 클라이언트가 서버에 요청 (서버가 트랜잭션으로 딱 한 번만)
           if (!isSpectator && mySlot === "p1" && !data.intro_done) {
             await runBattleIntroSequence()
           }
@@ -479,13 +499,11 @@ function listenRoom() {
       return
     }
 
-    // 턴 표시는 HP바 업데이트 이후에 — 로그 큐가 다 소진된 뒤에 업데이트되게
     if (!isSpectator) {
       const wasMine = myTurn
       myTurn = data.current_turn === mySlot
       if (!wasMine && myTurn) {
         actionDone = false
-        // 로그 큐 소진 후 턴 표시 업데이트
         waitForQueueThenUpdateTurn(data)
       } else if (wasMine && !myTurn) {
         updateTurnUI(data)
@@ -497,7 +515,6 @@ function listenRoom() {
   })
 }
 
-// 로그 큐가 비워질 때까지 기다렸다가 턴 UI 업데이트
 function waitForQueueThenUpdateTurn(data) {
   if (logQueue.length === 0 && !isProcessing) {
     updateTurnUI(data)
@@ -517,6 +534,8 @@ function updateActiveUINoHp(slot, data, prefix) {
 }
 
 function showGameOver(data) {
+  if (gameOver) return
+  gameOver = true
   fadeBgmOut(2000)
   const td = document.getElementById("turn-display")
   if (isSpectator) {
@@ -526,6 +545,7 @@ function showGameOver(data) {
     const enemyName = mySlot === "p1" ? data.player2_name : data.player1_name
     const win = data.winner === myName
     if (td) { td.innerText = win ? `${enemyName}${josa(enemyName,"과와")}의 전투에서 승리했다!` : `${enemyName}${josa(enemyName,"과와")}의 전투에서 패배했다…`; td.style.color = win ? "gold" : "red" }
+    grantWinCoins(data.winner, data)
   }
   for (let i = 0; i < 4; i++) { const b = document.getElementById(`move-btn-${i}`); if (b) { b.disabled = true; b.onclick = null } }
   const bench = document.getElementById("bench-container"); if (bench) bench.innerHTML = ""
