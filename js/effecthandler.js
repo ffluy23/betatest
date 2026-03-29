@@ -23,6 +23,8 @@ export function josa(word, type) {
 export function applyStatus(pokemon, status) {
   if (pokemon.status) return []
   if (pokemon.hp <= 0) return []
+  // 신비의부적: 상태이상 무효
+  if ((pokemon.amuletTurns ?? 0) > 0) return [`${pokemon.name}${josa(pokemon.name, "은는")} 신비의 부적으로 상태이상을 막았다!`]
   pokemon.status = status
   return [`${pokemon.name}${josa(pokemon.name, "은는")} ${statusName(status)} 상태가 됐다!`]
 }
@@ -42,13 +44,11 @@ export function applyVolatile(pokemon, volatile) {
   return []
 }
 
-// ── damage 파라미터 추가 → drain75 지원
 export function applyMoveEffect(moveEffect, attacker, defender, damage = 0) {
   if (!moveEffect) return []
-
   const msgs = []
 
-  // 흡수: defender가 기절해도 가한 피해만큼은 회복해야 하므로 hp 체크 전에 처리
+  // 흡수
   if (moveEffect.drain) {
     const heal = Math.floor(damage * moveEffect.drain)
     if (heal > 0) {
@@ -58,8 +58,21 @@ export function applyMoveEffect(moveEffect, attacker, defender, damage = 0) {
     return msgs
   }
 
-  // 이하 상태이상/상태변화 부여는 defender가 살아있을 때만
+  // HP 회복 (태만함 / HP회복)
+  if (moveEffect.heal) {
+    const heal = Math.max(1, Math.floor((attacker.maxHp ?? attacker.hp) * moveEffect.heal))
+    attacker.hp = Math.min(attacker.maxHp ?? attacker.hp, attacker.hp + heal)
+    msgs.push(`${attacker.name}${josa(attacker.name, "은는")} HP를 회복했다! (+${heal})`)
+    return msgs
+  }
+
   if (defender.hp <= 0) return []
+
+  // 불꽃세례: 얼음 해제
+  if (moveEffect.thawEnemy && defender.status === "frozen") {
+    defender.status = null
+    msgs.push(`${defender.name}${josa(defender.name, "은는")} 얼음 상태에서 회복됐다!`)
+  }
 
   // 상태이상 부여
   if (moveEffect.status && Math.random() < moveEffect.chance) {
@@ -119,6 +132,31 @@ export function checkConfusion(pokemon) {
     return { selfHit: true, damage, msgs, fainted }
   }
   return { selfHit: false, damage: 0, msgs: [], fainted: false }
+}
+
+// 턴 시작 시 각종 volatile 턴 수 감소
+export function tickVolatiles(pokemon) {
+  const msgs = []
+  // 신비의부적
+  if ((pokemon.amuletTurns ?? 0) > 0) {
+    pokemon.amuletTurns--
+    if (!pokemon.amuletTurns) msgs.push(`${pokemon.name}${josa(pokemon.name, "의")} 신비의 부적 효과가 사라졌다!`)
+  }
+  // 방어 턴 수
+  if ((pokemon.defendTurns ?? 0) > 0) {
+    pokemon.defendTurns--
+    if (!pokemon.defendTurns) pokemon.defending = false
+  }
+  // 희망사항 회복
+  if ((pokemon.wishTurns ?? 0) > 0) {
+    pokemon.wishTurns--
+    if (!pokemon.wishTurns) {
+      const heal = Math.max(1, Math.floor((pokemon.maxHp ?? pokemon.hp) * 0.12))
+      pokemon.hp = Math.min(pokemon.maxHp ?? pokemon.hp, pokemon.hp + heal)
+      msgs.push(`${pokemon.name}${josa(pokemon.name, "은는")} 희망사항으로 HP를 회복했다! (+${heal})`)
+    }
+  }
+  return msgs
 }
 
 export function applyEndOfTurnDamage(entries) {
