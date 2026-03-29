@@ -44,10 +44,9 @@ function showBattlePopup(prefix, type) {
   el.addEventListener("animationend", () => el.remove(), { once: true })
 }
 
-let mySlot   = null, myUid  = null, myTurn = false
-let gameStarted = false, diceShown = false, actionDone = false, gameOver = false
-let introSequenceStarted = false
-let pendingGameOver = null  // game_over 감지됐지만 큐 소진 대기 중인 data
+let mySlot = null, myUid = null, myTurn = false
+let diceShown = false, actionDone = false, gameOver = false
+let pendingGameOver = null
 
 const isSpectator = new URLSearchParams(location.search).get("spectator") === "true"
 
@@ -220,7 +219,6 @@ function processLogQueue() {
   const entry = logQueue.shift()
   handleLogEntry(entry).then(() => {
     isProcessing = false
-    // 큐 소진 후 game_over 대기 중이면 처리
     if (logQueue.length === 0 && pendingGameOver) {
       const data = pendingGameOver
       pendingGameOver = null
@@ -236,6 +234,7 @@ async function handleLogEntry({ text, type, meta }) {
 
   switch (type) {
     case "intro_wait": {
+      // 포트레이트 + HP바 초기값 세팅 + 3초 대기
       const snap = await getDoc(roomRef)
       const data = snap.data()
       if (data) {
@@ -251,12 +250,10 @@ async function handleLogEntry({ text, type, meta }) {
       break
     }
     case "switch": {
-      // 교체 시 새 포켓몬 HP바 초기값 세팅
       const { slot, hp, maxHp } = meta ?? {}
       const prefix = slot === mySlot ? "my" : "enemy"
-      const showNumbers = prefix === "my"
       if (hp !== undefined && maxHp !== undefined) {
-        updateHpBar(`${prefix}-hp-bar`, `${prefix}-active-hp`, hp, maxHp, showNumbers)
+        updateHpBar(`${prefix}-hp-bar`, `${prefix}-active-hp`, hp, maxHp, prefix === "my")
       }
       if (text) await typeText(log, text)
       await wait(150)
@@ -443,26 +440,6 @@ function waitForBattleReady() {
   obs.observe(screen, { attributes: true, attributeFilter: ["class"] })
 }
 
-async function initTurn(data) {
-  if (gameStarted) return
-  gameStarted = true
-  await fetch(`${API}/api/init-turn`, {
-    method: "POST",
-    headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({ roomId: ROOM_ID })
-  })
-}
-
-async function runBattleIntroSequence() {
-  if (introSequenceStarted) return
-  introSequenceStarted = true
-  await fetch(`${API}/api/run-intro`, {
-    method: "POST",
-    headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({ roomId: ROOM_ID })
-  })
-}
-
 function listenRoom() {
   onSnapshot(roomRef, async snap => {
     const data = snap.data(); if (!data) return
@@ -477,7 +454,6 @@ function listenRoom() {
     updateActiveUINoHp(mySlot === "p1" ? "p2" : "p1", data, "enemy")
 
     if (data.game_over) {
-      // 로그 큐 소진 후 game_over 처리
       if (logQueue.length === 0 && !isProcessing) {
         showGameOver(data)
       } else {
@@ -487,14 +463,10 @@ function listenRoom() {
     }
 
     if (!data.current_turn) {
-      if (!isSpectator && mySlot === "p1" && !gameStarted) await initTurn(data)
+      // 다이스 애니메이션만 — 서버가 이미 세팅해뒀으니까
       if (!diceShown && data.p1_dice && data.p2_dice && data.first_slot) {
         diceShown = true
-        animateDualDice(data.p1_dice, data.p2_dice, async () => {
-          if (!isSpectator && mySlot === "p1" && !data.intro_done) {
-            await runBattleIntroSequence()
-          }
-        }, data.player1_name, data.player2_name)
+        animateDualDice(data.p1_dice, data.p2_dice, () => {}, data.player1_name, data.player2_name)
       }
       return
     }
