@@ -32,7 +32,6 @@ export default async function handler(req, res) {
     const roomRef = db.collection("rooms").doc(roomId)
     const logsRef = roomRef.collection("logs")
 
-    // 트랜잭션으로 레디 처리
     const result = await db.runTransaction(async (t) => {
       const snap = await t.get(roomRef)
       const room = snap.data()
@@ -53,13 +52,11 @@ export default async function handler(req, res) {
     if (result.alreadyStarted) return res.status(200).json({ ok: true, started: true })
     if (!result.bothReady) return res.status(200).json({ ok: true, waiting: true })
 
-    // ── 둘 다 레디! 모든 게임 시작 로직을 서버가 처리 ──
     const room = result.room
     const p1Uid = room.player1_uid
     const p2Uid = room.player2_uid
     if (!p1Uid || !p2Uid) return res.status(400).json({ error: "플레이어 uid 없음" })
 
-    // 두 플레이어 entry 읽기
     const [p1Snap, p2Snap] = await Promise.all([
       db.collection("users").doc(p1Uid).get(),
       db.collection("users").doc(p2Uid).get()
@@ -71,7 +68,6 @@ export default async function handler(req, res) {
       return res.status(400).json({ error: "엔트리가 비어있음" })
     }
 
-    // 선공 다이스 계산
     const r1 = rollD10()
     const r2 = rollD10()
     const p1Speed = p1Entry[0]?.speed ?? 3
@@ -87,7 +83,7 @@ export default async function handler(req, res) {
     const batch = db.batch()
     const logs = [
       { text: `${p1Name}${josa(p1Name, "과와")} ${p2Name}의 승부가 시작됐다!`, type: "normal", ts: ts++ },
-      { text: "", type: "intro_wait", ts: ts++ },
+      { text: "", type: "intro_wait", ts: ts++ }, // 클라이언트가 3초 대기 + intro_done 세팅
       { text: `${p1Name}${josa(p1Name, "은는")} ${p1Entry[0].name}${josa(p1Entry[0].name, "을를")} 내보냈다!`, type: "normal", ts: ts++ },
       { text: `${p2Name}${josa(p2Name, "은는")} ${p2Entry[0].name}${josa(p2Entry[0].name, "을를")} 내보냈다!`, type: "normal", ts: ts++ },
       { text: `${firstPokemonName}의 선공!`, type: "normal", ts: ts++ },
@@ -97,7 +93,7 @@ export default async function handler(req, res) {
     }
     await batch.commit()
 
-    // game_started + entry + 다이스 + intro_done + current_turn 한 번에
+    // intro_done은 false — 클라이언트 인트로 끝나고 나서 true로 바꿈
     await roomRef.update({
       player1_ready: true,
       player2_ready: true,
@@ -112,7 +108,7 @@ export default async function handler(req, res) {
       p2_dice: r2,
       current_turn: firstSlot,
       turn_count: 1,
-      intro_done: true
+      intro_done: false  // 인트로 끝나고 클라이언트가 true로 세팅
     })
 
     return res.status(200).json({ ok: true, started: true })

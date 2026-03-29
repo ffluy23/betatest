@@ -247,6 +247,8 @@ async function handleLogEntry({ text, type, meta }) {
         if (enePkmn) updateHpBar("enemy-hp-bar", "enemy-active-hp", enePkmn.hp, enePkmn.maxHp, false)
       }
       await wait(3000)
+      // 인트로 끝 — 누가 먼저 써도 상관없음 (true로만 바뀌면 됨)
+      await updateDoc(roomRef, { intro_done: true })
       break
     }
     case "switch": {
@@ -462,14 +464,7 @@ function listenRoom() {
       return
     }
 
-    if (!data.current_turn) {
-      // 다이스 애니메이션만 — 서버가 이미 세팅해뒀으니까
-      if (!diceShown && data.p1_dice && data.p2_dice && data.first_slot) {
-        diceShown = true
-        animateDualDice(data.p1_dice, data.p2_dice, () => {}, data.player1_name, data.player2_name)
-      }
-      return
-    }
+    if (!data.current_turn) return
 
     if (!isSpectator) {
       const wasMine = myTurn
