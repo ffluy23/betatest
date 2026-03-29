@@ -558,3 +558,4 @@ async function useMove(moveIdx, data) {
     console.error("기술 사용 실패:", result.error)
     actionDone = false
   }
+}
