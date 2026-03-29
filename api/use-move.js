@@ -121,7 +121,6 @@ function calcRolloutDamage(moveName, defender, power) {
   return Math.floor(power * multiplier)
 }
 
-// 로그 추가 헬퍼 - type 필드로 클라이언트 애니메이션 제어
 let logTs = Date.now()
 function nextTs() { return logTs++ }
 
@@ -142,8 +141,6 @@ export default async function handler(req, res) {
 
     const roomRef = db.collection("rooms").doc(roomId)
     const logsRef = roomRef.collection("logs")
-
-    // ts 기준점을 현재 시각으로 초기화
     logTs = Date.now()
 
     const snap = await roomRef.get()
@@ -169,6 +166,17 @@ export default async function handler(req, res) {
     const nextTurnCount = (freshData.turn_count ?? 1) + 1
     const moveInfo = moves[moveData.name]
 
+    // HP 정보 포함한 hit 로그 헬퍼
+    const hitLog = (defender, pokemon) => log(logsRef, "", "hit", {
+      defender,
+      hp: pokemon.hp,
+      maxHp: pokemon.maxHp ?? pokemon.hp
+    })
+    const hitSelfLog = () => log(logsRef, "", "hit_self", {
+      hp: myPokemon.hp,
+      maxHp: myPokemon.maxHp ?? myPokemon.hp
+    })
+
     // 희망사항 회복
     const wishMsgs = tickVolatiles(myPokemon)
     for (const msg of wishMsgs) await log(logsRef, msg)
@@ -188,8 +196,7 @@ export default async function handler(req, res) {
     for (const msg of confResult.msgs) await log(logsRef, msg)
     if (confResult.selfHit) {
       resetRankStack(myPokemon)
-      // 혼란 자해 시 hit 애니메이션 (자신)
-      await log(logsRef, "", "hit_self")
+      await hitSelfLog()
       if (isAllFainted(myEntry)) {
         await roomRef.update({ [`${mySlot}_entry`]: myEntry, turn_count: nextTurnCount, game_over: true, winner: enemyName, current_turn: null })
         await log(logsRef, `${enemyName}의 승리!`, "win")
@@ -202,7 +209,6 @@ export default async function handler(req, res) {
     myPokemon.moves[moveIdx] = { ...moveData, pp: moveData.pp - 1 }
     await log(logsRef, `${myPokemon.name}의 ${moveData.name}!`)
 
-    // 다이스 로그 - 클라이언트가 이걸 보고 다이스 애니메이션 실행
     const diceRoll = rollD10()
     await log(logsRef, "", "dice", { slot: mySlot, roll: diceRoll })
 
@@ -268,10 +274,10 @@ export default async function handler(req, res) {
         await log(logsRef, `${enePokemon.name}${josa(enePokemon.name, "은는")} 방어했다!`)
         myPokemon.rollState = { active: false, turn: 0 }
       } else {
-        await log(logsRef, "", "attack") // 공격 플래시
+        await log(logsRef, "", "attack")
         const dmg = calcRolloutDamage(moveData.name, enePokemon, rollPower)
         enePokemon.hp = Math.max(0, enePokemon.hp - dmg)
-        await log(logsRef, "", "hit", { defender: enemySlot }) // 피격
+        await hitLog(enemySlot, enePokemon)
         await log(logsRef, `구르기 ${rollTurn}번째 (${rollPower} 데미지)!`)
         if (enePokemon.hp <= 0) await log(logsRef, `${enePokemon.name}${josa(enePokemon.name, "은는")} 쓰러졌다!`, "faint")
         myPokemon.rollState = rollTurn >= 3 ? { active: false, turn: 0 } : { active: true, turn: rollTurn }
@@ -326,14 +332,14 @@ export default async function handler(req, res) {
     const wasDefending = enePokemon.defending ?? false
     enePokemon.defending = false; enePokemon.defendTurns = 0
 
-    await log(logsRef, "", "attack") // 공격 플래시
+    await log(logsRef, "", "attack")
 
     if (wasDefending) {
       await log(logsRef, `${enePokemon.name}${josa(enePokemon.name, "은는")} 방어했다!`)
       if (moveInfo?.jumpKick) {
         const selfDmg = Math.max(1, Math.floor((myPokemon.maxHp ?? myPokemon.hp) * 0.25))
         myPokemon.hp = Math.max(0, myPokemon.hp - selfDmg)
-        await log(logsRef, "", "hit_self") // 자해 피격
+        await hitSelfLog()
         await log(logsRef, `${myPokemon.name}${josa(myPokemon.name, "은는")} 반동으로 ${selfDmg} 데미지를 입었다!`)
       }
     } else {
@@ -347,7 +353,7 @@ export default async function handler(req, res) {
         if (moveInfo?.jumpKick) {
           const selfDmg = Math.max(1, Math.floor((myPokemon.maxHp ?? myPokemon.hp) * 0.25))
           myPokemon.hp = Math.max(0, myPokemon.hp - selfDmg)
-          await log(logsRef, "", "hit_self")
+          await hitSelfLog()
           await log(logsRef, `${myPokemon.name}${josa(myPokemon.name, "은는")} 반동으로 ${selfDmg} 데미지를 입었다!`)
         }
       } else {
@@ -358,7 +364,7 @@ export default async function handler(req, res) {
           await log(logsRef, `${enePokemon.name}에게는 효과가 없다…`)
         } else {
           enePokemon.hp = Math.max(0, enePokemon.hp - damage)
-          await log(logsRef, "", "hit", { defender: enemySlot }) // 피격 애니메이션
+          await hitLog(enemySlot, enePokemon)
           if (multiplier > 1) await log(logsRef, "효과가 굉장했다!")
           if (multiplier < 1) await log(logsRef, "효과가 별로인 듯하다…")
           if (critical) await log(logsRef, "급소에 맞았다!", "critical")

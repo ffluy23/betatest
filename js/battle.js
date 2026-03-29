@@ -208,10 +208,13 @@ function triggerBlink(prefix) {
   })
 }
 
-// ── 로그 큐 시스템 (타입별 애니메이션 처리)
+// ── 로그 큐 시스템
 let renderedLogIds = new Set()
-let logQueue = []      // { id, text, type, meta } 순서대로 쌓임
+let logQueue = []
 let isProcessing = false
+
+// listenRoom에서 HP 즉시 업데이트 막는 플래그
+let suppressHpUpdate = false
 
 function processLogQueue() {
   if (isProcessing || logQueue.length === 0) return
@@ -228,7 +231,6 @@ async function handleLogEntry({ text, type, meta }) {
 
   switch (type) {
     case "dice": {
-      // 다이스 애니메이션
       const { slot, roll } = meta ?? {}
       const snap = await getDoc(roomRef)
       const d = snap.data()
@@ -236,19 +238,33 @@ async function handleLogEntry({ text, type, meta }) {
       break
     }
     case "attack": {
-      // 공격 플래시 (공격자 my, 방어 enemy 기준 — 항상 내가 공격하는 거)
       await triggerAttackEffect("my", "enemy")
       break
     }
     case "hit": {
-      // 피격 애니메이션
-      const defender = meta?.defender
+      // 피격 애니메이션 + HP바 업데이트
+      const { defender, hp, maxHp } = meta ?? {}
       const prefix = defender === mySlot ? "my" : "enemy"
+      suppressHpUpdate = true
       await triggerBlink(prefix)
+      // 애니메이션 후 HP바 업데이트
+      if (hp !== undefined && maxHp !== undefined) {
+        const showNumbers = prefix === "my"
+        updateHpBar(`${prefix}-hp-bar`, `${prefix}-active-hp`, hp, maxHp, showNumbers)
+      }
+      suppressHpUpdate = false
+      await wait(300)
       break
     }
     case "hit_self": {
+      const { hp, maxHp } = meta ?? {}
+      suppressHpUpdate = true
       await triggerBlink("my")
+      if (hp !== undefined && maxHp !== undefined) {
+        updateHpBar("my-hp-bar", "my-active-hp", hp, maxHp, true)
+      }
+      suppressHpUpdate = false
+      await wait(300)
       break
     }
     case "critical": {
@@ -435,7 +451,17 @@ function listenRoom() {
     if (spectEl) { const n = data.spectator_names ?? []; spectEl.innerText = n.length > 0 ? "관전: " + n.join(", ") : "" }
     if (!data.p1_entry || !data.p2_entry) return
     const enemySlot = mySlot === "p1" ? "p2" : "p1"
-    updateActiveUI(mySlot, data, "my"); updateActiveUI(enemySlot, data, "enemy")
+
+    // HP바는 suppressHpUpdate가 false일 때만 업데이트
+    if (!suppressHpUpdate) {
+      updateActiveUI(mySlot, data, "my")
+      updateActiveUI(enemySlot, data, "enemy")
+    } else {
+      // 이름/상태이상 텍스트는 항상 업데이트
+      updateActiveUINameOnly(mySlot, data, "my")
+      updateActiveUINameOnly(enemySlot, data, "enemy")
+    }
+
     if (data.game_over) { showGameOver(data); return }
     if (!data.current_turn) {
       if (!isSpectator && mySlot === "p1" && !gameStarted) await initTurn(data)
@@ -515,6 +541,17 @@ function updateActiveUI(slot, data, prefix) {
   if (data.intro_done) updatePortrait(prefix, pokemon)
 }
 
+// HP바 업데이트 없이 이름/상태만 업데이트
+function updateActiveUINameOnly(slot, data, prefix) {
+  const activeIdx = data[`${slot}_active_idx`], pokemon = data[`${slot}_entry`]?.[activeIdx]
+  if (!pokemon) return
+  const st = pokemon.status ? ` [${statusName(pokemon.status)}]` : ""
+  const cf = (pokemon.confusion ?? 0) > 0 ? " [혼란]" : ""
+  const nameEl = document.getElementById(`${prefix}-active-name`)
+  if (nameEl) nameEl.innerText = data.intro_done ? (pokemon.name + st + cf) : "???"
+  if (data.intro_done) updatePortrait(prefix, pokemon)
+}
+
 function updateMoveButtons(data) {
   const typeColors = {
     "노말": "#949495", "불": "#e56c3e", "물": "#5185c5", "전기": "#fbb917", "풀": "#66a945",
@@ -578,7 +615,6 @@ function updateTurnUI(data) {
 async function switchPokemon(newIdx) {
   if (isSpectator || !myTurn || actionDone || gameOver) return
   actionDone = true
-
   const res = await fetch(`${API}/api/switch-pokemon`, {
     method: "POST",
     headers: { "Content-Type": "application/json" },
@@ -595,7 +631,6 @@ async function useMove(moveIdx, data) {
   if (isSpectator || !myTurn || actionDone || gameOver) return
   actionDone = true
   updateMoveButtons(data)
-
   const res = await fetch(`${API}/api/use-move`, {
     method: "POST",
     headers: { "Content-Type": "application/json" },
