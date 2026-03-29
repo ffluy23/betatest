@@ -604,7 +604,7 @@ async function useMove(moveIdx, data) {
     if (prevDefend && stack >= 1) chance = stack >= 2 ? 0.25 : 0.5
     if (Math.random() < chance) {
       myPokemon.defending = true
-      myPokemon.defendTurns = 2
+      myPokemon.defendTurns = 1
       myPokemon.lastDefendMove = "방어"
       myPokemon.defendStack = prevDefend ? Math.min(2, stack + 1) : 1
       await addLog(`${myPokemon.name}${josa(myPokemon.name, "은는")} 방어 태세에 들어갔다!`)
