@@ -66,7 +66,7 @@ export const moves = {
 
   // ───── 물 ─────
   "거품광선":     { power: 40, type: "물", accuracy: 100, alwaysHit: false, effect: null },
-  "껍질에숨기":     { power: 40, type: "물", accuracy: 100, alwaysHit: true, targetSelf: true , effect: null, rank: { def: 1, turns: 1 } },
+  "껍질에숨기":     { power: 0, type: "물", accuracy: 100, alwaysHit: true, targetSelf: true , effect: null, rank: { def: 1, turns: 1 } },
   "거품":         { power: 40, type: "물", accuracy: 100, alwaysHit: false, effect: null },
   "파도타기":     { power: 40, type: "물", accuracy: 100, alwaysHit: false, effect: null },
   "물대포":       { power: 40, type: "물", accuracy: 100, alwaysHit: false, effect: null },
