@@ -334,10 +334,11 @@ function waitForBattleReady() {
 async function initTurn(data) {
   if (gameStarted) return
   gameStarted = true
-  const p1 = data.p1_entry[0], p2 = data.p2_entry[0]
-  const r1 = rollD10(), r2 = rollD10()
-  const fs = (p1.speed ?? 3) + r1 >= (p2.speed ?? 3) + r2 ? "p1" : "p2"
-  await updateDoc(roomRef, { first_slot: fs, first_pokemon_name: fs === "p1" ? p1.name : p2.name, p1_dice: r1, p2_dice: r2 })
+  await fetch("https://betatest-ten.vercel.app/api/init-turn", {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ roomId: ROOM_ID })
+  })
 }
 
 async function runBattleIntroSequence(data) {
