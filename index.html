@@ -1,0 +1,124 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<style>
+    /* 기본 리셋 */
+* {
+  margin: 0;
+  padding: 0;
+  box-sizing: border-box;
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+}
+
+/* 배경 */
+.login-page {
+  height: 100vh;
+  background: #ffffff;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+}
+
+/* 컨테이너 */
+.login-container {
+  width: 100%;
+  max-width: 400px;
+  padding: 40px 24px;
+  text-align: center;
+}
+
+/* 타이틀 */
+.login-container h2 {
+  font-size: 28px;
+  font-weight: 600;
+  margin-bottom: 32px;
+  color: #111;
+}
+
+/* 박스 */
+.login-box {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+/* 인풋 */
+.login-box input {
+  padding: 14px 16px;
+  border: 1px solid #ddd;
+  border-radius: 8px;
+  font-size: 14px;
+  transition: 0.2s;
+}
+
+/* 포커스 */
+.login-box input:focus {
+  outline: none;
+  border-color: #000;
+}
+
+/* 버튼 */
+.btn {
+  padding: 14px;
+  border: none;
+  border-radius: 8px;
+  background: #000;
+  color: #fff;
+  font-weight: 600;
+  cursor: pointer;
+  transition: 0.2s;
+}
+
+/* 버튼 hover */
+.btn:hover {
+  background: #222;
+}
+
+/* 버튼 active */
+.btn:active {
+  transform: scale(0.98);
+}
+
+/* 모바일 대응 */
+@media (max-width: 480px) {
+  .login-container {
+    padding: 24px 16px;
+  }
+
+  .login-container h2 {
+    font-size: 24px;
+  }
+
+  .login-box input {
+    padding: 12px;
+  }
+
+  .btn {
+    padding: 12px;
+  }
+}
+    
+</style>
+<title>Login</title>
+</head>
+<body class="login-page">
+
+  <div class="login-container">
+    <h2>Login</h2>
+    <div class="login-box">
+      <input id="email" type="email" placeholder="email">
+      <input id="password" type="password" placeholder="password">
+      <button class="btn" id="loginBtn">ENTER</button>
+    </div>
+  </div>
+
+
+  
+
+
+<script type="module" src="js/main.js"></script>
+
+</body>
+</html>
