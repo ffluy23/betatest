@@ -46,7 +46,7 @@ function showBattlePopup(prefix, type) {
 
 let mySlot   = null, myUid  = null, myTurn = false
 let gameStarted = false, diceShown = false, actionDone = false, gameOver = false
-let battleIntroSequenceStarted = false
+let introSequenceStarted = false
 
 const isSpectator = new URLSearchParams(location.search).get("spectator") === "true"
 
@@ -219,7 +219,7 @@ function processLogQueue() {
   const entry = logQueue.shift()
   handleLogEntry(entry).then(() => {
     isProcessing = false
-    setTimeout(processLogQueue, 80)
+    setTimeout(processLogQueue, 50)
   })
 }
 
@@ -227,6 +227,23 @@ async function handleLogEntry({ text, type, meta }) {
   const log = document.getElementById("battle-log")
 
   switch (type) {
+    case "intro_wait": {
+      // 포트레이트 표시 + 3초 대기
+      const snap = await getDoc(roomRef)
+      const data = snap.data()
+      if (data) {
+        const enemySlot = mySlot === "p1" ? "p2" : "p1"
+        updatePortrait("my", data[`${mySlot}_entry`]?.[0], true)
+        updatePortrait("enemy", data[`${enemySlot}_entry`]?.[0], true)
+        // HP바 초기값 세팅
+        const myPkmn = data[`${mySlot}_entry`]?.[0]
+        const enePkmn = data[`${enemySlot}_entry`]?.[0]
+        if (myPkmn) updateHpBar("my-hp-bar", "my-active-hp", myPkmn.hp, myPkmn.maxHp, true)
+        if (enePkmn) updateHpBar("enemy-hp-bar", "enemy-active-hp", enePkmn.hp, enePkmn.maxHp, false)
+      }
+      await wait(3000)
+      break
+    }
     case "dice": {
       const { slot, roll } = meta ?? {}
       const snap = await getDoc(roomRef)
@@ -235,18 +252,15 @@ async function handleLogEntry({ text, type, meta }) {
       break
     }
     case "attack": {
-      // 넉백 + 화면 흔들림
       await triggerAttackEffect("my", "enemy")
       break
     }
     case "hit": {
-      // 깜빡 → HP바 업데이트 순서
       const { defender, hp, maxHp } = meta ?? {}
       const prefix = defender === mySlot ? "my" : "enemy"
       await triggerBlink(prefix)
       if (hp !== undefined && maxHp !== undefined) {
-        const showNumbers = prefix === "my"
-        updateHpBar(`${prefix}-hp-bar`, `${prefix}-active-hp`, hp, maxHp, showNumbers)
+        updateHpBar(`${prefix}-hp-bar`, `${prefix}-active-hp`, hp, maxHp, prefix === "my")
       }
       await wait(200)
       break
@@ -263,29 +277,31 @@ async function handleLogEntry({ text, type, meta }) {
     case "critical": {
       showBattlePopup("enemy", "critical")
       await typeText(log, text)
-      await wait(280)
+      await wait(200)
       break
     }
     case "evade": {
       showBattlePopup("enemy", "evade")
       await typeText(log, text)
-      await wait(280)
+      await wait(200)
       break
     }
     case "faint": {
       await typeText(log, text)
-      await wait(400)
+      await wait(500)
       break
     }
     case "win": {
+      // 승리 문구는 faint 다음에 오니까 자연스럽게 처리됨
       await typeText(log, text)
       await wait(500)
+      // 게임 오버 UI는 listenRoom의 game_over 감지가 처리
       break
     }
     default: {
       if (text) {
         await typeText(log, text)
-        await wait(200)
+        await wait(150)
       }
       break
     }
@@ -421,18 +437,14 @@ async function initTurn(data) {
   })
 }
 
-async function runBattleIntroSequence(data) {
-  const p1Name = data.player1_name, p2Name = data.player2_name
-  await addLog(`${p1Name}${josa(p1Name, "과와")} ${p2Name}의 승부가 시작됐다!`)
-  await wait(3000)
-  const base = Date.now()
-  await addDoc(logsRef, { text: `${p1Name}${josa(p1Name, "은는")} ${data.p1_entry[0].name}${josa(data.p1_entry[0].name, "을를")} 내보냈다!`, type: "normal", ts: base })
-  await addDoc(logsRef, { text: `${p2Name}${josa(p2Name, "은는")} ${data.p2_entry[0].name}${josa(data.p2_entry[0].name, "을를")} 내보냈다!`, type: "normal", ts: base + 1 })
-  updatePortrait("my", data[`${mySlot}_entry`][0], true)
-  updatePortrait("enemy", data[`${mySlot === "p1" ? "p2" : "p1"}_entry`][0], true)
-  await wait(800)
-  await addLog(`${data.first_pokemon_name}의 선공!`)
-  await updateDoc(roomRef, { current_turn: data.first_slot, turn_count: 1, intro_done: true })
+async function runBattleIntroSequence() {
+  if (introSequenceStarted) return
+  introSequenceStarted = true
+  await fetch(`${API}/api/run-intro`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ roomId: ROOM_ID })
+  })
 }
 
 function listenRoom() {
@@ -443,35 +455,57 @@ function listenRoom() {
     const spectEl = document.getElementById("spectator-list")
     if (spectEl) { const n = data.spectator_names ?? []; spectEl.innerText = n.length > 0 ? "관전: " + n.join(", ") : "" }
     if (!data.p1_entry || !data.p2_entry) return
-    const enemySlot = mySlot === "p1" ? "p2" : "p1"
 
-    // 이름/상태이상/포트레이트만 업데이트 — HP바는 로그 큐에서만 업데이트!
+    // 이름/상태이상/포트레이트만 업데이트 — HP바는 로그 큐에서만!
     updateActiveUINoHp(mySlot, data, "my")
-    updateActiveUINoHp(enemySlot, data, "enemy")
+    updateActiveUINoHp(mySlot === "p1" ? "p2" : "p1", data, "enemy")
 
     if (data.game_over) { showGameOver(data); return }
+
     if (!data.current_turn) {
+      // init-turn: p1 클라이언트가 호출 (서버가 트랜잭션으로 딱 한 번만 처리)
       if (!isSpectator && mySlot === "p1" && !gameStarted) await initTurn(data)
+
+      // 선공 다이스 애니메이션
       if (!diceShown && data.p1_dice && data.p2_dice && data.first_slot) {
         diceShown = true
         animateDualDice(data.p1_dice, data.p2_dice, async () => {
-          if (!isSpectator && mySlot === "p1" && !data.intro_done && !battleIntroSequenceStarted) {
-            battleIntroSequenceStarted = true; await runBattleIntroSequence(data)
+          // 인트로 시퀀스: p1 클라이언트가 서버에 요청 (서버가 트랜잭션으로 딱 한 번만)
+          if (!isSpectator && mySlot === "p1" && !data.intro_done) {
+            await runBattleIntroSequence()
           }
         }, data.player1_name, data.player2_name)
       }
       return
     }
+
+    // 턴 표시는 HP바 업데이트 이후에 — 로그 큐가 다 소진된 뒤에 업데이트되게
     if (!isSpectator) {
-      const wasMine = myTurn; myTurn = data.current_turn === mySlot
-      if (!wasMine && myTurn) actionDone = false
-      updateTurnUI(data)
+      const wasMine = myTurn
+      myTurn = data.current_turn === mySlot
+      if (!wasMine && myTurn) {
+        actionDone = false
+        // 로그 큐 소진 후 턴 표시 업데이트
+        waitForQueueThenUpdateTurn(data)
+      } else if (wasMine && !myTurn) {
+        updateTurnUI(data)
+      }
     }
-    updateBenchButtons(data); updateMoveButtons(data)
+
+    updateBenchButtons(data)
+    updateMoveButtons(data)
   })
 }
 
-// HP바 업데이트 없이 이름/상태이상/포트레이트만 업데이트
+// 로그 큐가 비워질 때까지 기다렸다가 턴 UI 업데이트
+function waitForQueueThenUpdateTurn(data) {
+  if (logQueue.length === 0 && !isProcessing) {
+    updateTurnUI(data)
+    return
+  }
+  setTimeout(() => waitForQueueThenUpdateTurn(data), 100)
+}
+
 function updateActiveUINoHp(slot, data, prefix) {
   const activeIdx = data[`${slot}_active_idx`], pokemon = data[`${slot}_entry`]?.[activeIdx]
   if (!pokemon) return
@@ -479,18 +513,6 @@ function updateActiveUINoHp(slot, data, prefix) {
   const cf = (pokemon.confusion ?? 0) > 0 ? " [혼란]" : ""
   const nameEl = document.getElementById(`${prefix}-active-name`)
   if (nameEl) nameEl.innerText = data.intro_done ? (pokemon.name + st + cf) : "???"
-  if (data.intro_done) updatePortrait(prefix, pokemon)
-}
-
-// 초기 렌더링용 (인트로 완료 직후 HP바 초기값 세팅)
-function updateActiveUIFull(slot, data, prefix) {
-  const activeIdx = data[`${slot}_active_idx`], pokemon = data[`${slot}_entry`]?.[activeIdx]
-  if (!pokemon) return
-  const st = pokemon.status ? ` [${statusName(pokemon.status)}]` : ""
-  const cf = (pokemon.confusion ?? 0) > 0 ? " [혼란]" : ""
-  const nameEl = document.getElementById(`${prefix}-active-name`)
-  if (nameEl) nameEl.innerText = data.intro_done ? (pokemon.name + st + cf) : "???"
-  updateHpBar(`${prefix}-hp-bar`, `${prefix}-active-hp`, pokemon.hp, pokemon.maxHp, prefix === "my" && !!data.intro_done)
   if (data.intro_done) updatePortrait(prefix, pokemon)
 }
 
@@ -596,8 +618,12 @@ function updateBenchButtons(data) {
 
 function updateTurnUI(data) {
   const el = document.getElementById("turn-display")
-  if (el && !isSpectator) { el.innerText = myTurn ? "내 턴!" : "상대 턴..."; el.style.color = myTurn ? "green" : "gray" }
-  const tc = document.getElementById("turn-count"); if (tc) tc.innerText = `${data.turn_count ?? 1}턴`
+  if (el && !isSpectator) {
+    el.innerText = myTurn ? "내 턴!" : "상대 턴..."
+    el.style.color = myTurn ? "green" : "gray"
+  }
+  const tc = document.getElementById("turn-count")
+  if (tc) tc.innerText = `${data.turn_count ?? 1}턴`
 }
 
 async function switchPokemon(newIdx) {
