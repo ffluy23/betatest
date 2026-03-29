@@ -1,0 +1,705 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>배틀룸 1</title>
+  <link rel="stylesheet" href="../css/style.css">
+  <style>
+    /* ══ 인트로 오버레이 ══ */
+    #intro-overlay {
+      position: fixed; inset: 0; z-index: 1000;
+      background: #000; overflow: hidden;
+      transition: opacity 0.8s ease;
+    }
+    #intro-overlay.fade-out { opacity: 0; pointer-events: none; }
+    #intro-overlay.hidden   { display: none; }
+
+    #touch-screen {
+      position: absolute; inset: 0;
+      display: flex; flex-direction: column;
+      align-items: center; justify-content: center;
+    }
+    #touch-prompt {
+      color: #fff; font-size: clamp(1rem,4vw,1.6rem);
+      letter-spacing: 0.2em;
+      animation: blink 1.4s ease-in-out infinite;
+    }
+    #touch-ready-status {
+      margin-top: 2vh; color: rgba(255,255,255,0.45);
+      font-size: clamp(0.7rem,2.5vw,1rem); letter-spacing: 0.1em;
+    }
+    @keyframes blink { 0%,100%{opacity:.2} 50%{opacity:1} }
+
+    #vs-screen { position: absolute; inset: 0; display: none; }
+    #vs-screen.show { display: block; }
+
+    .vs-bg-line {
+      position: absolute; width: 300%; height: 300%;
+      background: repeating-linear-gradient(
+        45deg, rgba(255,255,255,.08) 0px, rgba(255,255,255,.08) 2px,
+        transparent 2px, transparent 25px);
+      animation: moveBg .8s linear infinite;
+    }
+    @keyframes moveBg { from{transform:translate(0,0)} to{transform:translate(-300px,-300px)} }
+
+    .vs-flash {
+      position: absolute; width: 100%; height: 100%;
+      background: white; opacity: 0; z-index: 5; pointer-events: none;
+    }
+    .vs-flash.show { animation: flashBoom .25s ease-out; }
+    @keyframes flashBoom { 0%{opacity:1} 100%{opacity:0} }
+
+    .vs-burst {
+      position: absolute; top: 50%; left: 50%;
+      width: clamp(20px,5vw,60px); height: clamp(20px,5vw,60px);
+      border-radius: 50%; border: 4px solid rgba(255,255,255,.7);
+      transform: translate(-50%,-50%) scale(0); z-index: 9; pointer-events: none;
+    }
+    .vs-burst.show { animation: burst .5s ease-out forwards; }
+    @keyframes burst {
+      0%   { transform:translate(-50%,-50%) scale(0); opacity:1; }
+      100% { transform:translate(-50%,-50%) scale(8); opacity:0; }
+    }
+
+    .vs-slide {
+      position: absolute; inset: 0;
+      display: flex; align-items: center; justify-content: space-between;
+      padding: 0 clamp(10px,5vw,80px); box-sizing: border-box;
+    }
+    .vs-left, .vs-right { width: 42%; color: white; opacity: 0; }
+    .vs-left  { transform: translateX(-150%) scale(1.2); text-align: left; }
+    .vs-right { transform: translateX( 150%) scale(1.2); text-align: right; }
+    .vs-left.show  { animation: slideLeft  .4s cubic-bezier(.2,1.2,.3,1) forwards; }
+    .vs-right.show { animation: slideRight .4s cubic-bezier(.2,1.2,.3,1) forwards; }
+    @keyframes slideLeft  { 80%{transform:translateX(10%) scale(1.05);opacity:1} 100%{transform:translateX(0) scale(1);opacity:1} }
+    @keyframes slideRight { 80%{transform:translateX(-10%) scale(1.05);opacity:1} 100%{transform:translateX(0) scale(1);opacity:1} }
+
+    .vs-label {
+      position: absolute; top: 50%; left: 50%;
+      transform: translate(-50%,-50%) scale(0);
+      font-size: clamp(3rem,10vw,7rem); font-weight: bold;
+      color: #ffcc00; text-shadow: 0 0 20px red, 0 0 60px orange;
+      z-index: 10; pointer-events: none;
+    }
+    .vs-label.show { animation: vsImpact .4s cubic-bezier(.2,1.5,.3,1) forwards; }
+    @keyframes vsImpact {
+      0%  {transform:translate(-50%,-50%) scale(0)}
+      60% {transform:translate(-50%,-50%) scale(1.6)}
+      80% {transform:translate(-50%,-50%) scale(.9)}
+      100%{transform:translate(-50%,-50%) scale(1)}
+    }
+    .vs-name { font-size: clamp(1.2rem,4vw,2.8rem); font-weight: bold; letter-spacing: .15em; }
+    .vs-inner { display: inline-block; }
+    .vs-shake { animation: vsShake .25s; }
+    @keyframes vsShake {
+      0%  {transform:translate(0,0)}   25%{transform:translate(-1vw,.5vh)}
+      50% {transform:translate(1vw,-.5vh)} 75%{transform:translate(-.6vw,.3vh)}
+      100%{transform:translate(0,0)}
+    }
+    .drift-left  { animation: driftLeft  20s linear infinite alternate; }
+    .drift-right { animation: driftRight 20s linear infinite alternate; }
+    @keyframes driftLeft  { from{transform:translateY(0)} to{transform:translateY(40px)} }
+    @keyframes driftRight { from{transform:translateY(0)} to{transform:translateY(-40px)} }
+
+    @media (max-width:430px) {
+      .vs-slide { flex-direction:column; justify-content:center; gap:8vh; }
+      .vs-left,.vs-right { width:100%; text-align:center; }
+      .vs-left  { transform:translateY(-150%) scale(1.2); }
+      .vs-right { transform:translateY( 150%) scale(1.2); }
+      @keyframes slideLeft  { 80%{transform:translateY(10%) scale(1.05);opacity:1} 100%{transform:translateY(0) scale(1);opacity:1} }
+      @keyframes slideRight { 80%{transform:translateY(-10%) scale(1.05);opacity:1} 100%{transform:translateY(0) scale(1);opacity:1} }
+      @keyframes driftLeft  { from{transform:translateX(0)} to{transform:translateX(-40px)} }
+      @keyframes driftRight { from{transform:translateX(0)} to{transform:translateX(40px)} }
+    }
+
+    /* ══════════════════════════════════════
+       공통 베이스 스타일 (PC 기준)
+    ══════════════════════════════════════ */
+    body {
+      background-color: #1a1a2e;
+      background-size: cover; background-position: center; background-repeat: no-repeat;
+      transition: background-image 0.5s ease;
+      padding: 0; min-height: 100vh;
+      display: flex; align-items: center; justify-content: center;
+      font-family: 'Mona12', sans-serif;
+    }
+
+    #battle-wrapper {
+      background-color: #fff; width: 960px; max-width: 98vw;
+      padding: 18px; box-sizing: border-box;
+      border: 1px solid #444; border-radius: 12px;
+    }
+
+    #battle-screen {
+      opacity: 0; transition: opacity 0.8s ease;
+      display: flex; flex-direction: column;
+      gap: 12px; width: 100%; box-sizing: border-box;
+    }
+    #battle-screen.visible { opacity: 1; }
+
+    /* 상단 가로 행 */
+    #battle-top {
+      display: flex; flex-direction: row; align-items: flex-start;
+      gap: 14px; width: 100%;
+    }
+
+    /* 하단 로그 */
+    #battle-bottom {
+      display: flex; flex-direction: column; gap: 6px; width: 100%;
+    }
+    #battle-log {
+      width: 100%; height: 160px; overflow-y: auto;
+      border: 1px solid #444; border-radius: 6px;
+      padding: 8px; font-size: 13px; box-sizing: border-box; line-height: 1.6;
+    }
+    #battle-log p { margin: 2px 0; }
+    #spectator-list {
+      width: 100%; padding: 6px 8px;
+      border: 1px solid #333; border-radius: 6px;
+      font-size: 12px; color: #888; box-sizing: border-box;
+    }
+
+    .section-label { font-size: 11px; color: #999; margin: 0 0 4px 2px; }
+
+    /* ══ 왼쪽 칼럼 ══ */
+    #my-col {
+      display: flex; flex-direction: column;
+      align-items: flex-start; gap: 8px; flex: 0 0 300px;
+    }
+    #my-pokemon-area {
+      display: flex; flex-direction: column;
+      align-items: flex-start; gap: 6px; width: 100%;
+    }
+
+    /* 급소/회피 팝업 */
+    .battle-popup {
+      position: absolute;
+      left: 50%; top: 50%;
+      transform: translate(-50%, -50%) scale(0.9);
+      font-size: 22px; font-weight: 900;
+      pointer-events: none; opacity: 0; z-index: 10;
+      white-space: nowrap;
+    }
+    .battle-popup.critical { color: #ff3b3b; text-shadow: 0 0 6px #ff0000; }
+    .battle-popup.evade    { color: #2ecc71; text-shadow: 0 0 6px #00ff88; }
+    @keyframes popSimple {
+      0%   { opacity: 0; transform: translate(-50%,-50%) scale(0.9) translateY(4px); }
+      20%  { opacity: 1; transform: translate(-50%,-50%) scale(1.15) translateY(0); }
+      40%  { transform: translate(-50%,-50%) scale(1) translateY(-2px); }
+      100% { opacity: 0; transform: translate(-50%,-50%) scale(1) translateY(-10px); }
+    }
+    .battle-popup.show { animation: popSimple 0.7s ease-out forwards; }
+
+    /* 기술 버튼 */
+    #move-buttons {
+      display: grid; grid-template-columns: 1fr 1fr;
+      gap: 6px; width: 100%;
+    }
+    #move-buttons button {
+      height: 50px; padding: 0 10px;
+      border-radius: 999px; border: none;
+      color: white; white-space: normal; text-align: center; line-height: 1.2;
+      cursor: pointer;
+      --btn-color: #a0a0a0;
+      background: var(--btn-color);
+      box-shadow: inset 0 0 0 2px white, 0 0 0 2px var(--btn-color);
+      text-shadow: 0 1px 2px rgba(0,0,0,0.45);
+      transition: filter 0.15s ease, transform 0.1s ease;
+      display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 2px;
+    }
+    #move-buttons button:disabled { opacity: 0.4; cursor: not-allowed; }
+    #move-buttons button:not(:disabled):hover  { filter: brightness(1.1); transform: scale(1.05); }
+    #move-buttons button:not(:disabled):active { filter: brightness(0.9); transform: scale(0.97); }
+
+    /* 교체 버튼 */
+    #bench-section { display: flex; flex-direction: column; align-items: flex-start; gap: 4px; }
+    #bench-container { display: flex; flex-direction: row; flex-wrap: wrap; gap: 6px; justify-content: flex-start; }
+    #bench-container button {
+      position: relative; width: 64px; height: 64px; padding: 0;
+      background-color: transparent; border: none; cursor: pointer; color: #fff;
+      text-shadow: 1px 1px 4px rgba(0,0,0,0.95); text-align: center;
+      box-sizing: border-box; display: flex; flex-direction: column;
+      align-items: center; justify-content: center; gap: 2px;
+      overflow: hidden; transition: filter 0.2s ease;
+    }
+    #bench-container button::before {
+      content: ''; position: absolute; inset: 0;
+      background-image: url('https://regular-azure-qtbkpkmn9y.edgeone.app/%EC%A0%9C%EB%AA%A9%20%EC%97%86%EC%9D%8C-5.png');
+      background-size: contain; background-repeat: no-repeat; background-position: center;
+      opacity: 0.35; transition: opacity 0.2s ease; pointer-events: none; z-index: 1;
+    }
+    #bench-container button:not(:disabled):hover::before { opacity: 1; }
+    #bench-container button:not(:disabled):hover { filter: brightness(1.1); }
+    #bench-container button:disabled { opacity: 0.5; cursor: not-allowed; }
+    #bench-container button:disabled::before { opacity: 0.2; }
+    .bench-name, .bench-hp {
+      position: relative; z-index: 0;
+      transition: opacity 0.2s ease;
+      white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 85%;
+    }
+    .bench-name { font-size: 10px; font-weight: bold; }
+    .bench-hp   { font-size: 8px; opacity: 0.85; }
+    #bench-container button:not(:disabled):hover .bench-name,
+    #bench-container button:not(:disabled):hover .bench-hp { opacity: 0; }
+
+    /* ── 포트레이트 + placeholder ── */
+    .portrait-wrap {
+      position: relative; width: 120px; height: 120px; flex-shrink: 0;
+    }
+    .portrait-placeholder {
+      position: absolute; inset: 0;
+      background: #282B42; border-radius: 5px;
+    }
+    .portrait-img {
+      position: absolute; inset: 0;
+      width: 120px; height: 120px; object-fit: contain;
+      border-radius: 5px;
+      display: none; opacity: 0; transition: opacity 0.35s ease;
+    }
+    .portrait-img.visible { display: block; opacity: 1; }
+
+    /* ══ 가운데 칼럼: 턴 + 주사위 ══ */
+    #center-col {
+      display: flex; flex-direction: column;
+      align-items: center; justify-content: flex-start;
+      gap: 8px; flex: 1;
+    }
+
+    /* ══ 우측 칼럼: 상대 포켓몬 ══ */
+    #enemy-col {
+      display: flex; flex-direction: column;
+      align-items: flex-end; gap: 8px; flex: 0 0 300px;
+    }
+    #enemy-pokemon-area { display: flex; flex-direction: column; align-items: flex-end; gap: 6px; width: 100%; }
+    #turn-area { text-align: center; width: 100%; }
+    #turn-display { font-size: 15px; font-weight: bold; color: #fff; }
+    #turn-count   { font-size: 12px; color: #888; }
+
+    #dice-wrap {
+      display: none; flex-direction: row;
+      align-items: center; justify-content: center; gap: 24px; width: 100%;
+    }
+    .dice-box { text-align: center; }
+    .dice-box span { display: block; font-size: 10px; color: #888; margin-bottom: 2px; }
+    .dice-num { font-size: 48px; font-weight: bold; color: #e63946; min-width: 56px; text-align: center; }
+
+    #player-names-row { display: flex; justify-content: space-between; font-size: 12px; color: #aaa; }
+
+    /* ── HP 카드 ── */
+    .hp-card {
+      width: 100%; max-width: 240px;
+      padding: 7px 14px 8px; box-sizing: border-box;
+      border: 1.5px solid #555; border-radius: 16px;
+      display: flex; flex-direction: column; gap: 5px;
+      background: rgba(255,255,255,0.04);
+    }
+    .hp-card-top { display: flex; justify-content: space-between; align-items: center; }
+    .hp-card-name { font-size: 12px; color: #333; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 58%; }
+    .hp-card-number { font-size: 11px; color: #333; white-space: nowrap; }
+    .hp-bar-wrap { width: 100%; background: rgba(0,0,0,0.15); border-radius: 999px; height: 6px; overflow: hidden; }
+    .hp-bar { height: 100%; width: 100%; background: #4caf50; border-radius: 999px; transition: width 0.5s ease, background-color 0.4s ease; }
+
+    #leaveBtn {
+      display: none; margin-top: 8px; padding: 7px 16px;
+      background: #c0392b; color: #fff; border: none;
+      border-radius: 6px; font-size: 13px; cursor: pointer; font-weight: bold;
+    }
+    #leaveBtn:hover { background: #e74c3c; }
+
+    /* 공격 이펙트 */
+    .attacker-flash { animation: attackerPulse 0.25s ease-out; }
+    @keyframes attackerPulse { 0%{filter:brightness(1)} 40%{filter:brightness(2.8) saturate(1.6)} 100%{filter:brightness(1)} }
+    .defender-hit { animation: defenderHit 0.35s ease; }
+    @keyframes defenderHit { 0%{transform:translateX(0)} 20%{transform:translateX(-14px)} 45%{transform:translateX(11px)} 65%{transform:translateX(-8px)} 85%{transform:translateX(5px)} 100%{transform:translateX(0)} }
+    .blink-damage { animation: blinkDamage 0.18s steps(1) 3; }
+    @keyframes blinkDamage { 0%,100%{opacity:1} 50%{opacity:0} }
+    @keyframes slideInLeft  { from{opacity:0;transform:translateX(-40px)} to{opacity:1;transform:translateX(0)} }
+    @keyframes slideInRight { from{opacity:0;transform:translateX( 40px)} to{opacity:1;transform:translateX(0)} }
+    .slide-in-my    { animation: slideInLeft  0.4s ease forwards; }
+    .slide-in-enemy { animation: slideInRight 0.4s ease forwards; }
+
+    /* 주사위 팝 */
+    .pop { animation: pop 0.1s ease-out; }
+    @keyframes pop { 0%{transform:scale(1)} 40%{transform:scale(1.4)} 100%{transform:scale(1)} }
+
+    /* 화면 흔들림 */
+    .screen-shake { animation: screenShake 0.3s ease; }
+    @keyframes screenShake {
+      0%  { transform: translate(0,0); }
+      20% { transform: translate(-3px,1px); }
+      40% { transform: translate(3px,-1px); }
+      60% { transform: translate(-2px,1px); }
+      80% { transform: translate(2px,-1px); }
+      100%{ transform: translate(0,0); }
+    }
+
+
+    /* ══════════════════════════════════════
+       모바일 반응형 (max-width: 600px)
+    ══════════════════════════════════════ */
+    @media (max-width: 600px) {
+
+      body {
+        align-items: flex-start;
+        padding: 0;
+        -webkit-tap-highlight-color: transparent;
+      }
+
+      #battle-wrapper {
+        width: 100%;
+        max-width: 100%;
+        padding: 10px 8px 20px;
+        border-radius: 0;
+        border-left: none;
+        border-right: none;
+      
+        min-height: 100dvh;
+        box-sizing: border-box;
+      }
+
+      /* ── 상단 3컬럼 → 세로 재배치 ── */
+      #battle-top {
+        flex-direction: column;
+        gap: 0;
+      }
+
+
+      #enemy-col  { order: 1; }
+      #center-col { order: 2; }
+      #my-col     { order: 3; }
+
+    
+      #enemy-col {
+        flex: none;
+        width: 100%;
+        align-items: flex-start;
+        flex-direction: row;
+        align-items: center;
+        gap: 10px;
+        padding: 8px 4px;
+        background: rgba(0,0,0,0.04);
+        border-radius: 10px;
+        margin-bottom: 6px;
+        box-sizing: border-box;
+      }
+
+      #enemy-pokemon-area {
+        flex-direction: row;
+        align-items: center;
+        justify-content: flex-start;
+        gap: 10px;
+        width: 100%;
+      }
+
+      /* 상대 포트레이트 작게 */
+      #enemy-col .portrait-wrap {
+        width: 72px;
+        height: 72px;
+        flex-shrink: 0;
+      }
+      #enemy-col .portrait-img {
+        width: 72px;
+        height: 72px;
+      }
+
+      /* 상대 HP 카드 가득 채우기 */
+      #enemy-col .hp-card {
+        max-width: none;
+        flex: 1;
+      }
+
+      /* ── 가운데 턴/주사위 영역 ── */
+      #center-col {
+        flex: none;
+        width: 100%;
+        flex-direction: row;
+        justify-content: space-between;
+        align-items: center;
+        padding: 4px 2px;
+        box-sizing: border-box;
+      }
+
+      #turn-area {
+        text-align: left;
+        flex: 1;
+      }
+
+      #turn-display {
+        font-size: 14px;
+      }
+
+      #player-names-row {
+        font-size: 11px;
+        gap: 6px;
+      }
+
+      /* 주사위 영역: 턴 옆에 붙임 */
+      #dice-wrap {
+        gap: 14px;
+      }
+      .dice-num {
+        font-size: 36px;
+        min-width: 40px;
+      }
+
+      /* ── 내 포켓몬 영역 ── */
+      #my-col {
+        flex: none;
+        width: 100%;
+        align-items: stretch;
+        gap: 10px;
+      }
+
+      /* 내 포켓몬: 가로로 (초상화 + HP카드) */
+      #my-pokemon-area {
+        flex-direction: row;
+        align-items: center;
+        gap: 10px;
+        width: 100%;
+      }
+
+      #my-col .portrait-wrap {
+        width: 88px;
+        height: 88px;
+        flex-shrink: 0;
+      }
+      #my-col .portrait-img {
+        width: 88px;
+        height: 88px;
+      }
+
+      #my-col .hp-card {
+        max-width: none;
+        flex: 1;
+      }
+
+      /* ── 기술 버튼: 2x2 그리드 유지, 높이만 키움 ── */
+      #move-buttons {
+        width: 100%;
+        gap: 8px;
+      }
+
+      #move-buttons button {
+        height: 56px;
+        font-size: 13px;
+        border-radius: 14px; /* 모바일은 pill 대신 넓은 라운드 */
+        touch-action: manipulation;
+      }
+
+      /* ── 교체 버튼 영역 ── */
+      #bench-section {
+        width: 100%;
+        align-items: flex-start;
+      }
+
+      #bench-container {
+        gap: 8px;
+        flex-wrap: wrap;
+      }
+
+      #bench-container button {
+        width: 60px;
+        height: 60px;
+        touch-action: manipulation;
+      }
+
+      /* ── 배틀 로그: 높이 줄임 ── */
+      #battle-log {
+        height: 110px;
+        font-size: 12px;
+      }
+
+      /* ── 방 나가기 버튼 ── */
+      #leaveBtn {
+        width: 100%;
+        padding: 10px;
+        font-size: 14px;
+        border-radius: 8px;
+        margin-top: 4px;
+      }
+
+      /* ── 볼륨 컨트롤 ── */
+      #volume-control {
+        margin-top: 8px;
+      }
+
+      /* ── section-label 모바일 ── */
+      .section-label {
+        font-size: 10px;
+      }
+
+      /* ── 슬라이드인 애니메이션 모바일 ── */
+      @keyframes slideInLeft  { from{opacity:0;transform:translateY(20px)} to{opacity:1;transform:translateY(0)} }
+      @keyframes slideInRight { from{opacity:0;transform:translateY(-20px)} to{opacity:1;transform:translateY(0)} }
+
+      /* ── 화면 흔들림 모바일용 ── */
+      @keyframes screenShake {
+        0%  { transform: translate(0,0); }
+        20% { transform: translate(-2px,1px); }
+        40% { transform: translate(2px,-1px); }
+        60% { transform: translate(-1px,1px); }
+        80% { transform: translate(1px,-1px); }
+        100%{ transform: translate(0,0); }
+      }
+    }
+
+  
+    @media (max-width: 380px) {
+      #move-buttons button {
+        height: 50px;
+        font-size: 12px;
+      }
+
+      #bench-container button {
+        width: 52px;
+        height: 52px;
+      }
+
+      #my-col .portrait-wrap {
+        width: 72px;
+        height: 72px;
+      }
+      #my-col .portrait-img {
+        width: 72px;
+        height: 72px;
+      }
+
+      .dice-num {
+        font-size: 30px;
+        min-width: 34px;
+      }
+
+      #battle-log {
+        height: 90px;
+        font-size: 11px;
+      }
+    }
+
+  </style>
+</head>
+<body>
+
+  <!-- ══ 인트로 오버레이 ══ -->
+  <div id="intro-overlay">
+    <div id="touch-screen">
+      <div id="touch-prompt">아무데나 터치하여 시작!</div>
+      <div id="touch-ready-status"></div>
+    </div>
+    <div id="vs-screen">
+      <div class="vs-bg-line"></div>
+      <div class="vs-flash"  id="vs-flash"></div>
+      <div class="vs-burst"  id="vs-burst"></div>
+      <div class="vs-slide">
+        <div class="vs-left" id="vs-left">
+          <div class="vs-inner" id="vs-inner-left">
+            <div class="vs-name" id="vs-name-left">PLAYER1</div>
+          </div>
+        </div>
+        <div class="vs-right" id="vs-right">
+          <div class="vs-inner" id="vs-inner-right">
+            <div class="vs-name" id="vs-name-right">PLAYER2</div>
+          </div>
+        </div>
+      </div>
+      <div class="vs-label" id="vs-label">VS</div>
+    </div>
+  </div>
+
+  <!-- ══ 배틀 화면 ══ -->
+  <div id="battle-wrapper">
+  <div id="battle-screen">
+
+    <!-- 상단 가로 행 -->
+    <div id="battle-top">
+
+      <!-- ① 좌측: 내 포켓몬 -->
+      <div id="my-col">
+        <div id="my-pokemon-area">
+          <div class="portrait-wrap">
+            <div class="portrait-placeholder" id="my-portrait-placeholder"></div>
+            <img id="my-portrait" class="portrait-img" alt="" />
+          </div>
+          <div class="hp-card">
+            <div class="hp-card-top">
+              <span class="hp-card-name" id="my-active-name">-</span>
+              <span class="hp-card-number" id="my-active-hp">-/-</span>
+            </div>
+            <div class="hp-bar-wrap"><div class="hp-bar" id="my-hp-bar"></div></div>
+          </div>
+        </div>
+        <div id="move-buttons">
+          <button id="move-btn-0" disabled>-</button>
+          <button id="move-btn-1" disabled>-</button>
+          <button id="move-btn-2" disabled>-</button>
+          <button id="move-btn-3" disabled>-</button>
+        </div>
+        <div id="bench-section">
+          <p class="section-label">교체</p>
+          <div id="bench-container"></div>
+        </div>
+        <button id="leaveBtn">방 나가기</button>
+      </div>
+
+      <!-- ② 가운데: 턴 + 주사위 -->
+      <div id="center-col">
+        <div id="turn-area">
+          <div id="player-names-row">
+            <span id="p1-name">Player1</span>
+            <span id="p2-name">Player2</span>
+          </div>
+          <div id="turn-display">대기 중...</div>
+          <div id="turn-count"></div>
+        </div>
+        <div id="dice-wrap">
+          <div class="dice-box" id="dice-box-p1">
+            <span id="p1-name-dice">Player1</span>
+            <div class="dice-num" id="dice-p1">?</div>
+          </div>
+          <div class="dice-box" id="dice-box-p2">
+            <span id="p2-name-dice">Player2</span>
+            <div class="dice-num" id="dice-p2">?</div>
+          </div>
+        </div>
+      </div>
+
+      <!-- ③ 우측: 상대 포켓몬 -->
+      <div id="enemy-col">
+        <div id="enemy-pokemon-area">
+          <div class="hp-card">
+            <div class="hp-card-top">
+              <span class="hp-card-name" id="enemy-active-name">-</span>
+              <span class="hp-card-number" id="enemy-active-hp"></span>
+            </div>
+            <div class="hp-bar-wrap"><div class="hp-bar" id="enemy-hp-bar"></div></div>
+          </div>
+          <div class="portrait-wrap">
+            <div class="portrait-placeholder" id="enemy-portrait-placeholder"></div>
+            <img id="enemy-portrait" class="portrait-img" alt="" />
+          </div>
+        </div>
+      </div>
+
+    </div>
+
+    <!-- 하단: 배틀 로그 전체 너비 -->
+    <div id="battle-bottom">
+      <p class="section-label">배틀 로그</p>
+      <div id="battle-log"></div>
+      <div id="spectator-list"></div>
+      <div id="volume-control" style="display:flex; align-items:center; gap:6px; margin-top:6px;">
+        <span style="font-size:11px; color:#999;">🎵</span>
+        <input type="range" id="bgm-volume" min="0" max="1" step="0.05" value="1"
+          style="flex:1; accent-color:#555; cursor:pointer;">
+        <span id="bgm-volume-label" style="font-size:11px; color:#999; min-width:28px;">100%</span>
+      </div>
+    </div>
+
+  </div>
+  </div>
+
+  <script>const ROOM_ID = "battleroom1"</script>
+  <script type="module" src="../js/intro.js"></script>
+  <script type="module" src="../js/battle.js"></script>
+</body>
+</html>
