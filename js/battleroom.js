@@ -102,7 +102,6 @@ function listenRoom() {
   })
 }
 
-// 플레이어 목록 렌더링 — 교체 요청 버튼 포함
 function renderPlayerList(room, mySlot) {
   const p1El = document.getElementById("player1")
   const p2El = document.getElementById("player2")
@@ -113,9 +112,6 @@ function renderPlayerList(room, mySlot) {
 
   if (p1El) {
     const name = room.player1_name ?? "대기..."
-    // 관전자 → player1에게 교체 요청 버튼
-    // player2 → player1에게 교체 요청 버튼
-    // player1 본인은 버튼 없음
     const showBtn = (isSpectator || isPlayer2) && room.player1_uid
     p1El.innerHTML = `<span>Player1: ${name}</span>${showBtn ? `<button onclick="window.requestSwapTo('player1')" style="margin-left:8px;font-size:11px;padding:2px 8px;">교체 요청</button>` : ""}`
   }
@@ -127,7 +123,6 @@ function renderPlayerList(room, mySlot) {
   }
 }
 
-// 관전자 목록 렌더링 — 플레이어가 관전자에게 교체 요청 버튼 포함
 function renderSpectatorList(room, mySlot) {
   const el = document.getElementById("spectator-list")
   if (!el) return
@@ -142,7 +137,6 @@ function renderSpectatorList(room, mySlot) {
   }
 
   if (!isPlayer) {
-    // 관전자/플레이어 아닌 경우 그냥 이름만
     el.innerText = "관전자: " + spectatorNames.join(", ")
     return
   }
@@ -155,12 +149,9 @@ function renderSpectatorList(room, mySlot) {
 }
 
 function updateButtonsBySlot(room, mySlot) {
-  const isPlayer    = mySlot === "player1" || mySlot === "player2"
-  const isSpectator = mySlot === "spectator"
-
+  const isPlayer = mySlot === "player1" || mySlot === "player2"
   const readyBtn = document.getElementById("readyBtn")
   const leaveBtn = document.getElementById("leaveBtn")
-
   if (readyBtn) readyBtn.style.display = isPlayer ? "inline-block" : "none"
   if (leaveBtn) leaveBtn.disabled = isPlayer && !!room.game_started
 }
@@ -172,11 +163,10 @@ function renderSwapRequest(room, mySlot) {
 
   if (!req) { el.innerHTML = ""; return }
 
-  // 요청 대상인지 확인
   const isTarget =
     (req.toSlot === "player1" && mySlot === "player1") ||
     (req.toSlot === "player2" && mySlot === "player2") ||
-    (req.toUid === myUid)  // 특정 uid 대상인 경우 (관전자 → 플레이어 교체)
+    (req.toUid === myUid)
 
   if (isTarget && req.from !== myUid) {
     el.innerHTML = `
@@ -192,7 +182,7 @@ function renderSwapRequest(room, mySlot) {
   }
 }
 
-// 관전자 → 플레이어 슬롯 교체 요청
+// 관전자 → 플레이어 슬롯 교체 요청 (또는 플레이어끼리)
 window.requestSwapTo = async function(targetSlot) {
   const roomSnap = await getDoc(roomRef)
   const room = roomSnap.data()
@@ -202,15 +192,29 @@ window.requestSwapTo = async function(targetSlot) {
     return
   }
 
+  const mySlot = calcMySlot(room)
   await updateDoc(roomRef, {
-    swap_request: { from: myUid, fromName: myDisplayName, toSlot: targetSlot }
+    swap_request: {
+      from: myUid,
+      fromName: myDisplayName,
+      fromSlot: mySlot,   // ← 요청자 슬롯 저장
+      toSlot: targetSlot
+    }
   })
 }
 
 // 플레이어 → 특정 관전자 교체 요청
 window.requestSwapToSpectator = async function(targetUid, targetName) {
+  const roomSnap = await getDoc(roomRef)
+  const mySlot = calcMySlot(roomSnap.data())
   await updateDoc(roomRef, {
-    swap_request: { from: myUid, fromName: myDisplayName, toUid: targetUid, toName: targetName }
+    swap_request: {
+      from: myUid,
+      fromName: myDisplayName,
+      fromSlot: mySlot,   // ← 요청자(플레이어) 슬롯 저장
+      toUid: targetUid,
+      toName: targetName
+    }
   })
 }
 
@@ -225,20 +229,23 @@ window.acceptSwap = async function() {
   const spectatorNames = room.spectator_names ?? []
 
   if (req.toUid) {
-    // 플레이어 → 관전자 교체: 플레이어(나)가 관전자로, 요청자가 플레이어로
-    // 내 현재 슬롯을 요청자에게 넘김
+    // 플레이어 → 관전자 교체
+    // 요청자(플레이어)의 슬롯을 수락자(관전자)에게 넘김
+    const fromSlot = req.fromSlot  // 요청자 플레이어 슬롯
     await updateDoc(roomRef, {
-      [`${mySlot}_uid`]:  req.from,
-      [`${mySlot}_name`]: req.fromName,
-      spectators:      [...spectators.filter(u => u !== req.from), myUid],
-      spectator_names: [...spectatorNames.filter(n => n !== req.fromName), myDisplayName],
+      [`${fromSlot}_uid`]:  myUid,          // 수락자(관전자)가 플레이어로
+      [`${fromSlot}_name`]: myDisplayName,
+      spectators:      [...spectators.filter(u => u !== myUid), req.from],
+      spectator_names: [...spectatorNames.filter(n => n !== myDisplayName), req.fromName],
       swap_request: null
     })
   } else {
-    // 관전자 → 플레이어 교체: 기존 방식
+    // 관전자/플레이어 → 플레이어 슬롯 교체
+    // 요청자가 targetSlot으로, 수락자(현재 그 슬롯)가 관전자로
+    const toSlot = req.toSlot
     await updateDoc(roomRef, {
-      [`${req.toSlot}_uid`]:  req.from,
-      [`${req.toSlot}_name`]: req.fromName,
+      [`${toSlot}_uid`]:  req.from,
+      [`${toSlot}_name`]: req.fromName,
       spectators:      [...spectators.filter(u => u !== req.from), myUid],
       spectator_names: [...spectatorNames.filter(n => n !== req.fromName), myDisplayName],
       swap_request: null
