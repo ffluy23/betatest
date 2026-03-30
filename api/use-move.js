@@ -408,7 +408,7 @@ export default async function handler(req, res) {
           myPokemon.type = types.filter(t => t !== "비행")
           if (myPokemon.type.length === 0) myPokemon.type = ["노말"]
         }
-        myPokemon.roostTurn = nextTurnCount  // 이 턴 번호 기억 → 다음 턴에 복원
+        myPokemon.roostTurns = 1  // 1턴 후 복원
         await log(logsRef, `${myPokemon.name}${josa(myPokemon.name, "은는")} 땅에 내려앉아 비행 타입이 사라졌다!`)
         await roomRef.update({ [`${mySlot}_entry`]: myEntry, [`${enemySlot}_entry`]: enemyEntry, current_turn: enemySlot, turn_count: nextTurnCount })
         return res.status(200).json({ ok: true })
@@ -432,12 +432,6 @@ export default async function handler(req, res) {
       if (enePokemon.chainBound.turnsLeft <= 0) enePokemon.chainBound = null
     }
 
-    // 날개쉬기 타입 복원 (다음 턴에 적용)
-    if (myPokemon.roostTurn !== undefined && myPokemon.roostTurn < nextTurnCount) {
-      if (myPokemon._origType) myPokemon.type = myPokemon._origType
-      myPokemon._origType = undefined
-      myPokemon.roostTurn = undefined
-    }
 
     const atkRank = getActiveRank(myPokemon, "atk")
     const defRankEne = getActiveRank(enePokemon, "def")
@@ -562,9 +556,10 @@ export default async function handler(req, res) {
         // 보복: 직전 피해 있으면 1.5배
         const comebackReady = freshData[`comeback_ready_${mySlot}`] ?? false
         const comebackMult = (moveInfo?.comeback && comebackReady) ? 1.5 : 1.0
+        const sickMult = (moveInfo?.sickPower && enePokemon.status) ? 1.2 : 1.0
 
         const { damage: rawDmg, multiplier, critical } = calcDamage(myPokemon, moveData.name, enePokemon, atkRank, defRankEne, powerOverride, atkStatOverride)
-        const damage = Math.floor(rawDmg * comebackMult)
+        const damage = Math.floor(rawDmg * comebackMult * sickMult)
 
         if (multiplier === 0) {
           await log(logsRef, `${enePokemon.name}에게는 효과가 없다…`)

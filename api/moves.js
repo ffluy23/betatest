@@ -34,7 +34,7 @@ export const moves = {
   "스피드스타":   { power: 35, type: "노말", accuracy: 100, alwaysHit: true,  effect: null },
   "할퀴기":   { power: 30, type: "노말", accuracy: 100, alwaysHit: false,  effect: null },
   "몸통박치기": { power: 30, type: "노말", accuracy: 100, alwaysHit: false, effect: null },
-  "하이퍼보이스": { power: 40, type: "노말", accuracy: 100, alwaysHit: false, effect: null },
+  "하이퍼보이스": { power: 50, type: "노말", accuracy: 100, alwaysHit: false, effect: null },
   "할퀴기":     { power: 40, type: "노말", accuracy: 100, alwaysHit: false, effect: null },
   "속이기":     { power: 30, type: "노말", accuracy: 50, alwaysHit: false, skipEvasion: true,
                   effect: { chance: 1, volatile: "풀죽음" } },
@@ -83,7 +83,7 @@ export const moves = {
   "충전": { power: 0, type: "전기", accuracy: 100, alwaysHit: true, targetSelf: true, effect: null, rank: { atk: 2, def: 1, turns: 1 } },
 
   // ───── 풀 ─────
-  "에너지볼":   { power: 40, type: "풀", accuracy: 100, alwaysHit: false, effect: null },
+  "에너지볼":   { power: 40, type: "풀", accuracy: 100, alwaysHit: false, effect: null, rank: { chance: 0.1, targetDef: -1, turns: 1 } },
   "솔라빔":     { power: 40, type: "풀", accuracy: 100, alwaysHit: false, effect: null },
   "나뭇잎": { power: 30, type: "풀", accuracy: 100, alwaysHit: false, effect: null },
   "씨폭탄":     { power: 40, type: "풀", accuracy: 100, alwaysHit: false, effect: null },
@@ -132,8 +132,9 @@ export const moves = {
 
 
   // ───── 에스퍼 ─────
-  "사이코키네시스": { power: 50, type: "에스퍼", accuracy: 100, alwaysHit: false, effect: null, },
-  "염동력": { power: 40, type: "에스퍼", accuracy: 100, alwaysHit: false, effect: { chance: 0.1, volatile: "혼란" }, rank: { targetDef: -1, turns: 1 } },
+  "사이코키네시스": { power: 50, type: "에스퍼", accuracy: 100, alwaysHit: false, effect: null, rank: { chance: 0.1, targetDef: -1, turns: 1 } },
+  "사이코쇼크": { power: 50, type: "에스퍼", accuracy: 100, alwaysHit: false, effect: null, },
+  "염동력": { power: 40, type: "에스퍼", accuracy: 100, alwaysHit: false, effect: { chance: 0.1, volatile: "혼란" } },
   "미래예지":       { power: 40, type: "에스퍼", accuracy: 100, alwaysHit: false, effect: null },
   "사념의박치기": { power: 50, type: "에스퍼", accuracy: 100, alwaysHit: false, effect: { chance: 0.2, volatile: "풀죽음" }  },
 
@@ -143,10 +144,13 @@ export const moves = {
 
   // ───── 고스트 ─────
   "섀도볼":     { power: 50, type: "고스트", accuracy: 100, alwaysHit: false, effect: null,
-                  rank: { targetDef: -1, turns: 2 } },
+                  rank: { chance: 0.2, targetDef: -1, turns: 2 } },
+  "섀도크루":     { power: 55, type: "고스트", accuracy: 100, alwaysHit: false, effect: null },
   "나이트헤드": { power: 40, type: "고스트", accuracy: 100, alwaysHit: true,  effect: null },
   "섀도스니크": { power: 40, type: "고스트", accuracy: 100, alwaysHit: false, effect: null },
   "이상한빛":   { power: 0, type: "고스트", accuracy: 100, alwaysHit: false, effect: { chance: 1, volatile: "혼란" } },
+  "핥기":   { power: 30, type: "고스트", accuracy: 100, alwaysHit: false, effect: { chance: 0.3, status: "마비" } },
+  "야습":   { power: 45, type: "고스트", accuracy: 100, alwaysHit: true,  effect: null },
 
   // ───── 드래곤 ─────
   "드래곤크루": { power: 40, type: "드래곤", accuracy: 100, alwaysHit: false, effect: null },
@@ -170,6 +174,7 @@ export const moves = {
 
   // ───── 페어리 ─────
   "문포스":     { power: 40, type: "페어리", accuracy: 100, alwaysHit: false, effect: null },
+  "치근거리기":     { power: 50, type: "페어리", accuracy: 90, alwaysHit: false, effect: null, rank: { chance: 0.1, targetAtk: -1, turns: 1 } },
   "차밍보이스": { power: 35, type: "페어리", accuracy: 100, alwaysHit: true, effect: null },
   "매지컬샤인": { power: 40, type: "페어리", accuracy: 100, alwaysHit: true,  effect: null },
   "드레인키스": { power: 40, type: "페어리", accuracy: 100, alwaysHit: false, effect: { drain: 0.2 } },
@@ -199,11 +204,11 @@ export const moves = {
 
   // ───── 특수 기술 추가분 ─────
   "속임수":       { power: 50, type: "악", accuracy: 100, alwaysHit: false, effect: null, trickster: true },
-  "날개쉬기":     { power: 0, type: "비행", accuracy: 100, alwaysHit: true, effect: { heal: 0.5, removeFlying: true }, targetSelf: true },
-  "이판사판태클": { power: 60, type: "노말", accuracy: 100, alwaysHit: false, effect: { recoil: 0.33 } },
+  "날개쉬기":     { power: 0, type: "비행", accuracy: 100, alwaysHit: true, effect: { heal: 0.12, removeFlying: true }, targetSelf: true },
+  "이판사판태클": { power: 70, type: "노말", accuracy: 100, alwaysHit: false, effect: { recoil: 0.33 } },
   "보복":         { power: 50, type: "노말", accuracy: 100, alwaysHit: false, effect: null, comeback: true },
-  "마구찌르기": { power: 1, type: "노말", accuracy: 100, alwaysHit: false, effect: null,
-  multiHit: { min: 1, max: 5, fixedDamage: 10 } },
+  "마구찌르기": { power: 1, type: "노말", accuracy: 100, alwaysHit: false, effect: null, multiHit: { min: 1, max: 5, fixedDamage: 10 } },
   "사슬묶기":     { power: 0, type: "노말", accuracy: 90, alwaysHit: false, effect: null, chainBind: true, targetSelf: false },
   "드래곤테일":   { power: 40, type: "드래곤", accuracy: 90, alwaysHit: false, effect: null, dragonTail: true },
+  "병상첨병": { power: 40, type: "노말", accuracy: 100, alwaysHit: false, effect: null, sickPower: true },
 }

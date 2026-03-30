@@ -142,6 +142,14 @@ export function tickVolatiles(pokemon) {
     pokemon.amuletTurns--
     if (!pokemon.amuletTurns) msgs.push(`${pokemon.name}${josa(pokemon.name, "의")} 신비의 부적 효과가 사라졌다!`)
   }
+  // 날개쉬기: 비행 타입 복원
+  if ((pokemon.roostTurns ?? 0) > 0) {
+    pokemon.roostTurns--
+    if (!pokemon.roostTurns && pokemon._origType) {
+      pokemon.type = pokemon._origType
+      pokemon._origType = undefined
+    }
+  }
   // 방어 턴 수
   if ((pokemon.defendTurns ?? 0) > 0) {
     pokemon.defendTurns--
