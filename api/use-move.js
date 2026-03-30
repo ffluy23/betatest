@@ -460,31 +460,28 @@ export default async function handler(req, res) {
         await log(logsRef, `${enePokemon.name}${josa(enePokemon.name, "은는")} 방어했다!`)
       } else {
         const hits = Math.floor(Math.random() * (max - min + 1)) + min
-        let totalDmg = 0
-        let anyMiss = false
+        let totalDmg = 0, anyNoEffect = false, lastMultiplier = 1
         for (let h = 0; h < hits; h++) {
           let dmg, critical = false, multiplier = 1
           if (fixedDamage !== undefined) {
-            // 고정 데미지: 타입상성만 적용
             const defTypes = Array.isArray(enePokemon.type) ? enePokemon.type : [enePokemon.type]
-            multiplier = 1
             for (const dt of defTypes) multiplier *= getTypeMultiplier(moves[moveData.name]?.type, dt)
             dmg = multiplier === 0 ? 0 : Math.floor(fixedDamage * multiplier)
           } else {
-            // 일반 데미지 계산 (매 타격 독립)
             const result = calcDamage(myPokemon, moveData.name, enePokemon, atkRank, defRankEne)
             dmg = result.damage; critical = result.critical; multiplier = result.multiplier
           }
-          if (multiplier === 0) { await log(logsRef, `${enePokemon.name}에게는 효과가 없다…`); anyMiss = true; break }
+          lastMultiplier = multiplier
+          if (multiplier === 0) { await log(logsRef, `${enePokemon.name}에게는 효과가 없다…`); anyNoEffect = true; break }
           enePokemon.hp = Math.max(0, enePokemon.hp - dmg)
           totalDmg += dmg
           await hitLog(enemySlot, enePokemon)
           if (critical) await log(logsRef, "급소에 맞았다!", "critical")
           if (enePokemon.hp <= 0) break
         }
-        if (!anyMiss) {
-          if (multiplier > 1) await log(logsRef, "효과가 굉장했다!")
-          if (multiplier < 1) await log(logsRef, "효과가 별로인 듯하다…")
+        if (!anyNoEffect) {
+          if (lastMultiplier > 1) await log(logsRef, "효과가 굉장했다!")
+          if (lastMultiplier < 1) await log(logsRef, "효과가 별로인 듯하다…")
           await log(logsRef, `${hits}번 공격했다! (총 ${totalDmg} 데미지)`)
         }
         if (enePokemon.hp <= 0) await log(logsRef, `${enePokemon.name}${josa(enePokemon.name, "은는")} 쓰러졌다!`, "faint")
