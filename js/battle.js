@@ -45,9 +45,9 @@ function showBattlePopup(prefix, type) {
 }
 
 let mySlot = null, myUid = null, myTurn = false
-let diceShown = false, actionDone = false, gameOver = false
+let actionDone = false, gameOver = false
 let pendingGameOver = null
-let introDone = false  // 인트로 끝났는지 (관전자 포함)
+let startBattleCalled = false  // start-battle 중복 호출 방지
 
 const isSpectator = new URLSearchParams(location.search).get("spectator") === "true"
 
@@ -215,22 +215,10 @@ let logQueue = []
 let isProcessing = false
 let lastRoomData = null
 
-// dice 로그는 intro_done 전까지 보류
-let pendingDiceLogs = []
-
 function processLogQueue() {
   if (isProcessing || logQueue.length === 0) return
   isProcessing = true
   const entry = logQueue.shift()
-
-  // dice 로그는 introDone 전까지 보류
-  if (entry.type === "dice" && !introDone) {
-    pendingDiceLogs.push(entry)
-    isProcessing = false
-    setTimeout(processLogQueue, 50)
-    return
-  }
-
   handleLogEntry(entry).then(() => {
     isProcessing = false
     if (logQueue.length === 0 && pendingGameOver) {
@@ -251,33 +239,12 @@ async function handleLogEntry({ text, type, meta }) {
   const log = document.getElementById("battle-log")
 
   switch (type) {
-    case "intro_wait": {
+    case "intro_dice": {
+      // 인트로 끝난 후 선공 주사위 — 양쪽 다이스 모두 표시
       const snap = await getDoc(roomRef)
       const data = snap.data()
-      if (data) {
-        const enemySlot = mySlot === "p1" ? "p2" : "p1"
-        updatePortrait("my", data[`${mySlot}_entry`]?.[0], true)
-        updatePortrait("enemy", data[`${enemySlot}_entry`]?.[0], true)
-        const myPkmn = data[`${mySlot}_entry`]?.[0]
-        const enePkmn = data[`${enemySlot}_entry`]?.[0]
-        if (myPkmn) updateHpBar("my-hp-bar", "my-active-hp", myPkmn.hp, myPkmn.maxHp, true)
-        if (enePkmn) updateHpBar("enemy-hp-bar", "enemy-active-hp", enePkmn.hp, enePkmn.maxHp, false)
-      }
-      await wait(3000)
-      await updateDoc(roomRef, { intro_done: true })
-      introDone = true
-
-      // 선공 다이스 애니메이션 (인트로 끝난 후)
-      const freshSnap = await getDoc(roomRef)
-      const freshData = freshSnap.data()
-      if (freshData?.p1_dice && freshData?.p2_dice) {
-        await animateDualDiceAsync(freshData.p1_dice, freshData.p2_dice, freshData.player1_name, freshData.player2_name)
-      }
-
-      // 보류된 dice 로그 큐 앞에 삽입
-      if (pendingDiceLogs.length > 0) {
-        logQueue.unshift(...pendingDiceLogs)
-        pendingDiceLogs = []
+      if (data?.p1_dice && data?.p2_dice) {
+        await animateDualDiceAsync(data.p1_dice, data.p2_dice, data.player1_name, data.player2_name)
       }
       break
     }
@@ -292,7 +259,7 @@ async function handleLogEntry({ text, type, meta }) {
       break
     }
     case "dice": {
-      // 공격 주사위 — 현재 공격자 슬롯의 다이스만 표시 (관전자도 동일)
+      // 공격 주사위 — 공격자 슬롯만 표시 (관전자도 동일)
       const { slot, roll } = meta ?? {}
       const snap = await getDoc(roomRef)
       const d = snap.data()
@@ -412,8 +379,6 @@ function animateDualDiceAsync(p1Roll, p2Roll, p1Name, p2Name) {
   })
 }
 
-// 공격 주사위 — 공격자 슬롯 기준으로 해당 다이스만 표시
-// 관전자도 동일하게 공격자 쪽 다이스만 보임
 function animateDiceSingle(slot, finalRoll, p1Name, p2Name) {
   return new Promise(resolve => {
     const wrap = document.getElementById("dice-wrap")
@@ -422,12 +387,9 @@ function animateDiceSingle(slot, finalRoll, p1Name, p2Name) {
     const diceEl = document.getElementById(slot === "p1" ? "dice-p1" : "dice-p2")
     const nameEl = document.getElementById(slot === "p1" ? "p1-name-dice" : "p2-name-dice")
     if (!wrap || !diceEl) { resolve(); return }
-
-    // 공격자 쪽 다이스만 표시 (관전자도 동일)
     if (p1Box) p1Box.style.display = slot === "p1" ? "block" : "none"
     if (p2Box) p2Box.style.display = slot === "p2" ? "block" : "none"
     if (nameEl) nameEl.innerText = slot === "p1" ? (p1Name ?? "Player1") : (p2Name ?? "Player2")
-
     wrap.style.display = "flex"
     let count = 0
     const iv = setInterval(() => {
@@ -469,9 +431,6 @@ onAuthStateChanged(auth, async user => {
   const roomSnap = await getDoc(roomRef), room = roomSnap.data()
   mySlot = room.player1_uid === myUid ? "p1" : "p2"
 
-  // 관전자이거나 이미 intro_done이면 introDone = true
-  if (isSpectator || room.intro_done) introDone = true
-
   if (isSpectator) {
     const td = document.getElementById("turn-display")
     if (td) { td.innerText = "관전 중"; td.style.color = "gray" }
@@ -485,8 +444,37 @@ onAuthStateChanged(auth, async user => {
 function waitForBattleReady() {
   const screen = document.getElementById("battle-screen")
   if (screen.classList.contains("visible")) { listenRoom(); return }
-  const obs = new MutationObserver(() => { if (screen.classList.contains("visible")) { obs.disconnect(); listenRoom() } })
+  const obs = new MutationObserver(() => {
+    if (screen.classList.contains("visible")) {
+      obs.disconnect()
+      // 인트로 끝난 직후 배틀 시작 — p1이 서버 호출
+      // (트랜잭션으로 딱 한 번만 처리됨)
+      if (!isSpectator && mySlot === "p1") {
+        callStartBattleAfterIntro()
+      }
+      listenRoom()
+    }
+  })
   obs.observe(screen, { attributes: true, attributeFilter: ["class"] })
+}
+
+// 인트로 끝나고 배틀 화면이 visible 되면 호출
+async function callStartBattleAfterIntro() {
+  if (startBattleCalled) return
+  startBattleCalled = true
+
+  // 잠깐 대기 후 호출 (포트레이트 표시 등 클라이언트 처리 시간)
+  await wait(500)
+
+  const snap = await getDoc(roomRef)
+  const data = snap.data()
+  if (data?.intro_done) return  // 이미 처리됨
+
+  await fetch(`${API}/api/start-battle`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ roomId: ROOM_ID })
+  })
 }
 
 function listenRoom() {
@@ -501,17 +489,6 @@ function listenRoom() {
 
     updateActiveUINoHp(mySlot, data, "my")
     updateActiveUINoHp(mySlot === "p1" ? "p2" : "p1", data, "enemy")
-
-    // intro_done 감지 → 관전자도 introDone 동기화
-    if (data.intro_done && !introDone) {
-      introDone = true
-      // 보류된 dice 로그 처리
-      if (pendingDiceLogs.length > 0) {
-        logQueue.unshift(...pendingDiceLogs)
-        pendingDiceLogs = []
-        processLogQueue()
-      }
-    }
 
     if (data.game_over) {
       if (logQueue.length === 0 && !isProcessing) {
