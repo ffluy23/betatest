@@ -47,6 +47,7 @@ function showBattlePopup(prefix, type) {
 let mySlot = null, myUid = null, myTurn = false
 let diceShown = false, actionDone = false, gameOver = false
 let pendingGameOver = null
+let introDone = false  // 인트로 끝났는지 추적
 
 const isSpectator = new URLSearchParams(location.search).get("spectator") === "true"
 
@@ -212,6 +213,7 @@ function triggerBlink(prefix) {
 let renderedLogIds = new Set()
 let logQueue = []
 let isProcessing = false
+let lastRoomData = null  // 최신 room 데이터 캐시
 
 function processLogQueue() {
   if (isProcessing || logQueue.length === 0) return
@@ -224,6 +226,11 @@ function processLogQueue() {
       pendingGameOver = null
       showGameOver(data)
       return
+    }
+    // 큐 소진 시 버튼 상태 갱신
+    if (logQueue.length === 0 && lastRoomData) {
+      updateMoveButtons(lastRoomData)
+      updateBenchButtons(lastRoomData)
     }
     setTimeout(processLogQueue, 50)
   })
@@ -247,8 +254,15 @@ async function handleLogEntry({ text, type, meta }) {
         if (enePkmn) updateHpBar("enemy-hp-bar", "enemy-active-hp", enePkmn.hp, enePkmn.maxHp, false)
       }
       await wait(3000)
-      // 인트로 끝 — 누가 먼저 써도 상관없음 (true로만 바뀌면 됨)
+      // 인트로 끝 → intro_done 세팅 + 선공 다이스 애니메이션
       await updateDoc(roomRef, { intro_done: true })
+      introDone = true
+      // 선공 다이스 애니메이션 (인트로 끝난 후)
+      const freshSnap = await getDoc(roomRef)
+      const freshData = freshSnap.data()
+      if (freshData?.p1_dice && freshData?.p2_dice && freshData?.first_slot) {
+        await animateDualDiceAsync(freshData.p1_dice, freshData.p2_dice, freshData.player1_name, freshData.player2_name)
+      }
       break
     }
     case "switch": {
@@ -262,9 +276,11 @@ async function handleLogEntry({ text, type, meta }) {
       break
     }
     case "dice": {
+      // 공격 주사위 — 관전자 포함 모두에게 보임
       const { slot, roll } = meta ?? {}
       const snap = await getDoc(roomRef)
       const d = snap.data()
+      // 관전자는 공격자가 누구든 양쪽 다이스 박스 모두 표시
       await animateDiceSingle(slot, roll, d?.player1_name, d?.player2_name)
       break
     }
@@ -375,6 +391,13 @@ async function saveGameLog() {
   } catch(e) { console.warn("게임 로그 저장 실패", e) }
 }
 
+// 선공 다이스 — 양쪽 모두 보이는 버전 (Promise 반환)
+function animateDualDiceAsync(p1Roll, p2Roll, p1Name, p2Name) {
+  return new Promise(resolve => {
+    animateDualDice(p1Roll, p2Roll, resolve, p1Name, p2Name)
+  })
+}
+
 function animateDiceSingle(slot, finalRoll, p1Name, p2Name) {
   return new Promise(resolve => {
     const wrap = document.getElementById("dice-wrap")
@@ -382,9 +405,21 @@ function animateDiceSingle(slot, finalRoll, p1Name, p2Name) {
     const diceEl = document.getElementById(slot === "p1" ? "dice-p1" : "dice-p2")
     const nameEl = document.getElementById(slot === "p1" ? "p1-name-dice" : "p2-name-dice")
     if (!wrap || !diceEl) { resolve(); return }
-    if (p1Box) p1Box.style.display = slot === "p1" ? "block" : "none"
-    if (p2Box) p2Box.style.display = slot === "p2" ? "block" : "none"
-    if (nameEl) nameEl.innerText = slot === "p1" ? (p1Name ?? "Player1") : (p2Name ?? "Player2")
+
+    // 관전자는 공격자 슬롯과 상관없이 양쪽 다 표시
+    if (isSpectator) {
+      if (p1Box) p1Box.style.display = "block"
+      if (p2Box) p2Box.style.display = "block"
+      const p1NameEl = document.getElementById("p1-name-dice")
+      const p2NameEl = document.getElementById("p2-name-dice")
+      if (p1NameEl) p1NameEl.innerText = p1Name ?? "Player1"
+      if (p2NameEl) p2NameEl.innerText = p2Name ?? "Player2"
+    } else {
+      if (p1Box) p1Box.style.display = slot === "p1" ? "block" : "none"
+      if (p2Box) p2Box.style.display = slot === "p2" ? "block" : "none"
+      if (nameEl) nameEl.innerText = slot === "p1" ? (p1Name ?? "Player1") : (p2Name ?? "Player2")
+    }
+
     wrap.style.display = "flex"
     let count = 0
     const iv = setInterval(() => {
@@ -445,13 +480,13 @@ function waitForBattleReady() {
 function listenRoom() {
   onSnapshot(roomRef, async snap => {
     const data = snap.data(); if (!data) return
+    lastRoomData = data  // 최신 데이터 캐시
     document.getElementById("p1-name").innerText = data.player1_name ?? "대기..."
     document.getElementById("p2-name").innerText = data.player2_name ?? "대기..."
     const spectEl = document.getElementById("spectator-list")
     if (spectEl) { const n = data.spectator_names ?? []; spectEl.innerText = n.length > 0 ? "관전: " + n.join(", ") : "" }
     if (!data.p1_entry || !data.p2_entry) return
 
-    // 이름/상태이상/포트레이트만 — HP바는 로그 큐에서만!
     updateActiveUINoHp(mySlot, data, "my")
     updateActiveUINoHp(mySlot === "p1" ? "p2" : "p1", data, "enemy")
 
@@ -471,23 +506,30 @@ function listenRoom() {
       myTurn = data.current_turn === mySlot
       if (!wasMine && myTurn) {
         actionDone = false
-        waitForQueueThenUpdateTurn(data)
+        // 버튼 활성화는 큐 소진 후에
+        waitForQueueThenUpdateButtons(data)
       } else if (wasMine && !myTurn) {
         updateTurnUI(data)
+        updateMoveButtons(data)
+        updateBenchButtons(data)
       }
+    } else {
+      // 관전자는 바로 업데이트
+      updateBenchButtons(data)
+      updateMoveButtons(data)
     }
-
-    updateBenchButtons(data)
-    updateMoveButtons(data)
   })
 }
 
-function waitForQueueThenUpdateTurn(data) {
+// 로그 큐 소진 후 버튼 + 턴 UI 업데이트
+function waitForQueueThenUpdateButtons(data) {
   if (logQueue.length === 0 && !isProcessing) {
     updateTurnUI(data)
+    updateMoveButtons(data)
+    updateBenchButtons(data)
     return
   }
-  setTimeout(() => waitForQueueThenUpdateTurn(data), 100)
+  setTimeout(() => waitForQueueThenUpdateButtons(data), 100)
 }
 
 function updateActiveUINoHp(slot, data, prefix) {
@@ -572,7 +614,9 @@ function updateMoveButtons(data) {
     const color = typeColors[moveInfo?.type] ?? "#a0a0a0"
     btn.style.setProperty("--btn-color", color); btn.style.background = color
     btn.style.boxShadow = `inset 0 0 0 2px white, 0 0 0 2px ${color}`
-    const disabled = isSpectator || fainted || move.pp <= 0 || !myTurn || actionDone || !lrUnlocked || lockedByRoll
+    // 큐가 비어있을 때만 활성화
+    const queueBusy = logQueue.length > 0 || isProcessing
+    const disabled = isSpectator || fainted || move.pp <= 0 || !myTurn || actionDone || !lrUnlocked || lockedByRoll || queueBusy
     if (disabled) { btn.disabled = true; btn.onclick = null }
     else { btn.disabled = false; btn.onclick = () => { playSound(SFX_BTN); useMove(i, data) } }
   }
@@ -596,7 +640,8 @@ function updateBenchButtons(data) {
     if (pkmn.hp <= 0) { btn.innerHTML = `<span class="bench-name">${pkmn.name}</span><span class="bench-hp">기절</span>`; btn.disabled = true }
     else {
       btn.innerHTML = `<span class="bench-name">${pkmn.name}</span><span class="bench-hp">HP: ${pkmn.hp}/${pkmn.maxHp}</span>`
-      btn.disabled = isSpectator || !myTurn || actionDone
+      const queueBusy = logQueue.length > 0 || isProcessing
+      btn.disabled = isSpectator || !myTurn || actionDone || queueBusy
       if (!isSpectator) btn.onclick = () => { playSound(SFX_BTN); switchPokemon(idx) }
     }
     bench.appendChild(btn)

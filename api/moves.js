@@ -143,7 +143,7 @@ export const moves = {
 
   // ───── 고스트 ─────
   "섀도볼":     { power: 50, type: "고스트", accuracy: 100, alwaysHit: false, effect: null,
-                  rank: { targetDef: -1, turns: 2 } },
+                  rank: { chance: 0.2, targetDef: -1, turns: 2 } },
   "나이트헤드": { power: 40, type: "고스트", accuracy: 100, alwaysHit: true,  effect: null },
   "섀도스니크": { power: 40, type: "고스트", accuracy: 100, alwaysHit: false, effect: null },
   "이상한빛":   { power: 0, type: "고스트", accuracy: 100, alwaysHit: false, effect: { chance: 1, volatile: "혼란" } },
