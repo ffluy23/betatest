@@ -395,7 +395,8 @@ export default async function handler(req, res) {
       }
       // 날개쉬기: HP 회복 + 비행 타입 임시 제거
       if (moveInfo?.effect?.removeFlying) {
-        const heal = Math.max(1, Math.floor((myPokemon.maxHp ?? myPokemon.hp) * 0.5))
+        const healRate = moveInfo.effect.heal ?? 0.5
+        const heal = Math.max(1, Math.floor((myPokemon.maxHp ?? myPokemon.hp) * healRate))
         myPokemon.hp = Math.min(myPokemon.maxHp ?? myPokemon.hp, myPokemon.hp + heal)
         await log(logsRef, "", "heal_self", { hp: myPokemon.hp, maxHp: myPokemon.maxHp ?? myPokemon.hp })
         await log(logsRef, `${myPokemon.name}${josa(myPokemon.name, "은는")} HP를 회복했다! (+${heal})`)
