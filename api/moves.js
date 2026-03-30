@@ -143,7 +143,7 @@ export const moves = {
 
   // ───── 고스트 ─────
   "섀도볼":     { power: 50, type: "고스트", accuracy: 100, alwaysHit: false, effect: null,
-                  rank: { chance: 0.2, targetDef: -1, turns: 2 } },
+                  rank: { targetDef: -1, turns: 2 } },
   "나이트헤드": { power: 40, type: "고스트", accuracy: 100, alwaysHit: true,  effect: null },
   "섀도스니크": { power: 40, type: "고스트", accuracy: 100, alwaysHit: false, effect: null },
   "이상한빛":   { power: 0, type: "고스트", accuracy: 100, alwaysHit: false, effect: { chance: 1, volatile: "혼란" } },
@@ -194,4 +194,15 @@ export const moves = {
   "태만함":     { power: 0,  type: "노말", accuracy: 100, alwaysHit: true,  effect: { heal: 0.12 }, targetSelf: true },
   "HP회복":     { power: 0,  type: "노말", accuracy: 100, alwaysHit: true,  effect: { heal: 0.12 }, targetSelf: true },
   "희망사항":   { power: 0,  type: "노말", accuracy: 100, alwaysHit: true,  effect: null, wish: true, targetSelf: true },
+
+  
+
+  // ───── 특수 기술 추가분 ─────
+  "속임수":       { power: 50, type: "악", accuracy: 100, alwaysHit: false, effect: null, trickster: true },
+  "날개쉬기":     { power: 0, type: "비행", accuracy: 100, alwaysHit: true, effect: { heal: 0.5, removeFlying: true }, targetSelf: true },
+  "이판사판태클": { power: 60, type: "노말", accuracy: 100, alwaysHit: false, effect: { recoil: 0.33 } },
+  "보복":         { power: 50, type: "노말", accuracy: 100, alwaysHit: false, effect: null, comeback: true },
+  "마구찌르기":   { power: 0, type: "노말", accuracy: 100, alwaysHit: false, effect: null, pinMissile: true },
+  "사슬묶기":     { power: 0, type: "노말", accuracy: 90, alwaysHit: false, effect: null, chainBind: true, targetSelf: false },
+  "드래곤테일":   { power: 40, type: "드래곤", accuracy: 90, alwaysHit: false, effect: null, dragonTail: true },
 }
