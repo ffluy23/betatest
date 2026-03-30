@@ -47,7 +47,7 @@ function showBattlePopup(prefix, type) {
 let mySlot = null, myUid = null, myTurn = false
 let actionDone = false, gameOver = false
 let pendingGameOver = null
-let startBattleCalled = false  // start-battle 중복 호출 방지
+let startBattleCalled = false
 
 const isSpectator = new URLSearchParams(location.search).get("spectator") === "true"
 
@@ -240,7 +240,6 @@ async function handleLogEntry({ text, type, meta }) {
 
   switch (type) {
     case "intro_dice": {
-      // 인트로 끝난 후 선공 주사위 — 양쪽 다이스 모두 표시
       const snap = await getDoc(roomRef)
       const data = snap.data()
       if (data?.p1_dice && data?.p2_dice) {
@@ -259,7 +258,6 @@ async function handleLogEntry({ text, type, meta }) {
       break
     }
     case "dice": {
-      // 공격 주사위 — 공격자 슬롯만 표시 (관전자도 동일)
       const { slot, roll } = meta ?? {}
       const snap = await getDoc(roomRef)
       const d = snap.data()
@@ -447,8 +445,6 @@ function waitForBattleReady() {
   const obs = new MutationObserver(() => {
     if (screen.classList.contains("visible")) {
       obs.disconnect()
-      // 인트로 끝난 직후 배틀 시작 — p1이 서버 호출
-      // (트랜잭션으로 딱 한 번만 처리됨)
       if (!isSpectator && mySlot === "p1") {
         callStartBattleAfterIntro()
       }
@@ -458,18 +454,13 @@ function waitForBattleReady() {
   obs.observe(screen, { attributes: true, attributeFilter: ["class"] })
 }
 
-// 인트로 끝나고 배틀 화면이 visible 되면 호출
 async function callStartBattleAfterIntro() {
   if (startBattleCalled) return
   startBattleCalled = true
-
-  // 잠깐 대기 후 호출 (포트레이트 표시 등 클라이언트 처리 시간)
   await wait(500)
-
   const snap = await getDoc(roomRef)
   const data = snap.data()
-  if (data?.intro_done) return  // 이미 처리됨
-
+  if (data?.intro_done) return
   await fetch(`${API}/api/start-battle`, {
     method: "POST",
     headers: { "Content-Type": "application/json" },
@@ -502,27 +493,36 @@ function listenRoom() {
     if (!data.current_turn) return
 
     if (!isSpectator) {
-  const wasMine = myTurn
-  myTurn = data.current_turn === mySlot
-  if (!wasMine && myTurn) {
-    actionDone = false
-    waitForQueueThenUpdateButtons(data)
-  } else if (wasMine && !myTurn) {
-    // 상대 턴으로 넘어갈 때도 큐 소진 후 업데이트
-    waitForQueueThenUpdateButtons(data)
-  }
-}
+      const wasMine = myTurn
+      myTurn = data.current_turn === mySlot
+      if (!wasMine && myTurn) actionDone = false
+      // 턴이 바뀔 때 항상 큐 + 딜레이 후 UI 업데이트
+      // 큐가 비어있어도 로그가 들어올 시간을 확보 (500ms)
+      waitForQueueAndDelayThenUpdate(data)
+    } else {
+      updateBenchButtons(data)
+      updateMoveButtons(data)
+    }
   })
 }
 
-function waitForQueueThenUpdateButtons(data) {
-  if (logQueue.length === 0 && !isProcessing) {
-    updateTurnUI(data)
-    updateMoveButtons(data)
-    updateBenchButtons(data)
-    return
+// 큐 소진 + 최소 500ms 대기 후 턴 UI 업데이트
+function waitForQueueAndDelayThenUpdate(data) {
+  const startTime = Date.now()
+  const minDelay = 500  // 로그가 들어올 시간 확보
+
+  function check() {
+    const elapsed = Date.now() - startTime
+    const queueEmpty = logQueue.length === 0 && !isProcessing
+    if (queueEmpty && elapsed >= minDelay) {
+      updateTurnUI(data)
+      updateMoveButtons(data)
+      updateBenchButtons(data)
+      return
+    }
+    setTimeout(check, 100)
   }
-  setTimeout(() => waitForQueueThenUpdateButtons(data), 100)
+  check()
 }
 
 function updateActiveUINoHp(slot, data, prefix) {
