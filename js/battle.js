@@ -502,20 +502,16 @@ function listenRoom() {
     if (!data.current_turn) return
 
     if (!isSpectator) {
-      const wasMine = myTurn
-      myTurn = data.current_turn === mySlot
-      if (!wasMine && myTurn) {
-        actionDone = false
-        waitForQueueThenUpdateButtons(data)
-      } else if (wasMine && !myTurn) {
-        updateTurnUI(data)
-        updateMoveButtons(data)
-        updateBenchButtons(data)
-      }
-    } else {
-      updateBenchButtons(data)
-      updateMoveButtons(data)
-    }
+  const wasMine = myTurn
+  myTurn = data.current_turn === mySlot
+  if (!wasMine && myTurn) {
+    actionDone = false
+    waitForQueueThenUpdateButtons(data)
+  } else if (wasMine && !myTurn) {
+    // 상대 턴으로 넘어갈 때도 큐 소진 후 업데이트
+    waitForQueueThenUpdateButtons(data)
+  }
+}
   })
 }
 
