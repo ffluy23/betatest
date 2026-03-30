@@ -449,8 +449,9 @@ export default async function handler(req, res) {
     const revengeUpdate = {}
     if (moveInfo?.revenge) revengeUpdate[`revenge_ready_${mySlot}`] = false
 
-    // ── 마구찌르기
-    if (moveInfo?.pinMissile) {
+    // ── 연속기 (multiHit)
+    if (moveInfo?.multiHit) {
+      const { min, max, fixedDamage } = moveInfo.multiHit
       const { hit, hitType } = calcHit(myPokemon, moveInfo, enePokemon)
       if (!hit) {
         if (hitType === "evaded") { await log(logsRef, `${enePokemon.name}에게는 맞지 않았다!`, "evade") }
@@ -458,18 +459,34 @@ export default async function handler(req, res) {
       } else if (wasDefending) {
         await log(logsRef, `${enePokemon.name}${josa(enePokemon.name, "은는")} 방어했다!`)
       } else {
-        const hits = Math.floor(Math.random() * 5) + 1  // 1~5회
+        const hits = Math.floor(Math.random() * (max - min + 1)) + min
         let totalDmg = 0
+        let anyMiss = false
         for (let h = 0; h < hits; h++) {
-          const { damage, multiplier, critical } = calcPinMissileHit(moveData.name, myPokemon, enePokemon)
-          if (multiplier === 0) { await log(logsRef, `${enePokemon.name}에게는 효과가 없다…`); break }
-          enePokemon.hp = Math.max(0, enePokemon.hp - damage)
-          totalDmg += damage
+          let dmg, critical = false, multiplier = 1
+          if (fixedDamage !== undefined) {
+            // 고정 데미지: 타입상성만 적용
+            const defTypes = Array.isArray(enePokemon.type) ? enePokemon.type : [enePokemon.type]
+            multiplier = 1
+            for (const dt of defTypes) multiplier *= getTypeMultiplier(moves[moveData.name]?.type, dt)
+            dmg = multiplier === 0 ? 0 : Math.floor(fixedDamage * multiplier)
+          } else {
+            // 일반 데미지 계산 (매 타격 독립)
+            const result = calcDamage(myPokemon, moveData.name, enePokemon, atkRank, defRankEne)
+            dmg = result.damage; critical = result.critical; multiplier = result.multiplier
+          }
+          if (multiplier === 0) { await log(logsRef, `${enePokemon.name}에게는 효과가 없다…`); anyMiss = true; break }
+          enePokemon.hp = Math.max(0, enePokemon.hp - dmg)
+          totalDmg += dmg
           await hitLog(enemySlot, enePokemon)
           if (critical) await log(logsRef, "급소에 맞았다!", "critical")
           if (enePokemon.hp <= 0) break
         }
-        await log(logsRef, `${hits}번 공격했다! (총 ${totalDmg} 데미지)`)
+        if (!anyMiss) {
+          if (multiplier > 1) await log(logsRef, "효과가 굉장했다!")
+          if (multiplier < 1) await log(logsRef, "효과가 별로인 듯하다…")
+          await log(logsRef, `${hits}번 공격했다! (총 ${totalDmg} 데미지)`)
+        }
         if (enePokemon.hp <= 0) await log(logsRef, `${enePokemon.name}${josa(enePokemon.name, "은는")} 쓰러졌다!`, "faint")
         if (!moveInfo?.lastResort) myPokemon.usedMoves = [...new Set([...(myPokemon.usedMoves ?? []), moveData.name])]
       }
