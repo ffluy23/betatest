@@ -188,6 +188,8 @@ export default async function handler(req, res) {
 
     const hitLog = (defender, pokemon) => log(logsRef, "", "hit", { defender, hp: pokemon.hp, maxHp: pokemon.maxHp ?? pokemon.hp })
     const hitSelfLog = () => log(logsRef, "", "hit_self", { slot: mySlot, hp: myPokemon.hp, maxHp: myPokemon.maxHp ?? myPokemon.hp })
+    // 카운터용 마지막 피해 기록 헬퍼
+    const recordDmg = (slot, dmg) => { revengeUpdate[`last_damage_taken_${slot}`] = dmg }
 
     // 희망사항 회복
     const wishMsgs = tickVolatiles(myPokemon)
@@ -442,6 +444,25 @@ export default async function handler(req, res) {
     const revengeUpdate = {}
     if (moveInfo?.revenge) revengeUpdate[`revenge_ready_${mySlot}`] = false
 
+    // ── 버티기
+    if (moveInfo?.endure) {
+      const prevEndure = myPokemon.lastEndureMove === "버티기"
+      const stack = myPokemon.endureStack ?? 0
+      let chance = 1.0
+      if (prevEndure && stack >= 1) chance = stack >= 2 ? 0.25 : 0.5
+      if (Math.random() < chance) {
+        myPokemon.enduring = true
+        myPokemon.lastEndureMove = "버티기"
+        myPokemon.endureStack = prevEndure ? Math.min(2, stack + 1) : 1
+        await log(logsRef, `${myPokemon.name}${josa(myPokemon.name, "은는")} 버티기 태세에 들어갔다!`)
+      } else {
+        myPokemon.lastEndureMove = null; myPokemon.endureStack = 0
+        await log(logsRef, `그러나 버티기에 실패했다!`)
+      }
+      await roomRef.update({ [`${mySlot}_entry`]: myEntry, [`${enemySlot}_entry`]: enemyEntry, current_turn: enemySlot, turn_count: nextTurnCount })
+      return res.status(200).json({ ok: true })
+    }
+
     // ── 연속기 (multiHit)
     if (moveInfo?.multiHit) {
       const { min, max, fixedDamage } = moveInfo.multiHit
@@ -557,14 +578,35 @@ export default async function handler(req, res) {
         const comebackMult = (moveInfo?.comeback && comebackReady) ? 1.5 : 1.0
         const sickMult = (moveInfo?.sickPower && enePokemon.status) ? 1.2 : 1.0
 
+        // 기사회생: HP 낮을수록 위력 증가 (HP 1/4 이하 → 2배, 1/2 이하 → 1.5배, 그 이상 → 1배)
+        let revivedMult = 1.0
+        if (moveInfo?.reversal) {
+          const hpRatio = myPokemon.hp / (myPokemon.maxHp ?? myPokemon.hp)
+          if (hpRatio <= 0.25) revivedMult = 2.0
+          else if (hpRatio <= 0.5) revivedMult = 1.5
+        }
+
+        // 카운터: 받은 마지막 데미지의 1.2배로 반격
+        let counterDamage = null
+        if (moveInfo?.counter) {
+          const lastDmg = freshData[`last_damage_taken_${mySlot}`] ?? 0
+          counterDamage = Math.max(1, Math.floor(lastDmg * 1.2))
+        }
+
         const { damage: rawDmg, multiplier, critical } = calcDamage(myPokemon, moveData.name, enePokemon, atkRank, defRankEne, powerOverride, atkStatOverride)
-        const damage = Math.floor(rawDmg * comebackMult * sickMult)
+        const damage = counterDamage ?? Math.floor(rawDmg * comebackMult * sickMult * revivedMult)
 
         if (multiplier === 0) {
           await log(logsRef, `${enePokemon.name}에게는 효과가 없다…`)
         } else {
+          // 버티기: HP가 0이 되면 1로 버팀
           enePokemon.hp = Math.max(0, enePokemon.hp - damage)
+          if (enePokemon.hp <= 0 && enePokemon.enduring) {
+            enePokemon.hp = 1
+            enePokemon.enduring = false
+          }
           await hitLog(enemySlot, enePokemon)
+          recordDmg(enemySlot, damage)  // 카운터용 피해 기록
           if (multiplier > 1) await log(logsRef, "효과가 굉장했다!")
           if (multiplier < 1) await log(logsRef, "효과가 별로인 듯하다…")
           if (critical) await log(logsRef, "급소에 맞았다!", "critical")

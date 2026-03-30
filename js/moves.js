@@ -212,4 +212,8 @@ export const moves = {
   "사슬묶기":     { power: 0, type: "노말", accuracy: 90, alwaysHit: false, effect: null, chainBind: true, targetSelf: false },
   "드래곤테일":   { power: 40, type: "드래곤", accuracy: 90, alwaysHit: false, effect: null, dragonTail: true },
   "병상첨병": { power: 40, type: "노말", accuracy: 100, alwaysHit: false, effect: null, sickPower: true },
+
+  "기사회생": { power: 40, type: "격투", accuracy: 100, alwaysHit: false, effect: null, reversal: true },
+"카운터":   { power: 1,  type: "격투", accuracy: 100, alwaysHit: false, effect: null, counter: true },
+"버티기":   { power: 0,  type: "노말", accuracy: 100, alwaysHit: true,  effect: null, endure: true, targetSelf: true },
 }
