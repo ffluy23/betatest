@@ -192,8 +192,13 @@ export default async function handler(req, res) {
     const recordDmg = (slot, dmg) => { revengeUpdate[`last_damage_taken_${slot}`] = dmg }
 
     // 희망사항 회복
+    const hpBefore = myPokemon.hp
     const wishMsgs = tickVolatiles(myPokemon)
     for (const msg of wishMsgs) await log(logsRef, msg)
+    // 희망사항 등으로 HP가 올랐으면 heal_self 이벤트
+    if (myPokemon.hp > hpBefore) {
+      await log(logsRef, "", "heal_self", { hp: myPokemon.hp, maxHp: myPokemon.maxHp ?? myPokemon.hp })
+    }
 
     // 행동 불능 체크
     const preAction = checkPreActionStatus(myPokemon)
@@ -416,8 +421,17 @@ export default async function handler(req, res) {
       }
       const rankMsgs = applyRankChanges(r, myPokemon, enePokemon, moveData.name)
       for (const msg of rankMsgs) await log(logsRef, msg)
-      const rankEffectMsgs = applyMoveEffect(moveInfo?.effect, myPokemon, enePokemon, 0)
-      for (const msg of rankEffectMsgs) await log(logsRef, msg)
+      // heal 효과 (태만함/HP회복 등) — heal_self 이벤트로 HP바 업데이트
+      if (moveInfo?.effect?.heal) {
+        const healRate = moveInfo.effect.heal
+        const heal = Math.max(1, Math.floor((myPokemon.maxHp ?? myPokemon.hp) * healRate))
+        myPokemon.hp = Math.min(myPokemon.maxHp ?? myPokemon.hp, myPokemon.hp + heal)
+        await log(logsRef, "", "heal_self", { hp: myPokemon.hp, maxHp: myPokemon.maxHp ?? myPokemon.hp })
+        await log(logsRef, `${myPokemon.name}${josa(myPokemon.name, "은는")} HP를 회복했다! (+${heal})`)
+      } else {
+        const rankEffectMsgs = applyMoveEffect(moveInfo?.effect, myPokemon, enePokemon, 0)
+        for (const msg of rankEffectMsgs) await log(logsRef, msg)
+      }
       enePokemon.defending = false; enePokemon.defendTurns = 0
       await roomRef.update({ [`${mySlot}_entry`]: myEntry, [`${enemySlot}_entry`]: enemyEntry, current_turn: enemySlot, turn_count: nextTurnCount })
       return res.status(200).json({ ok: true })
@@ -616,6 +630,10 @@ export default async function handler(req, res) {
           }
           const effectMsgs = applyMoveEffect(moveInfo?.effect, myPokemon, enePokemon, damage)
           for (const msg of effectMsgs) await log(logsRef, msg)
+          // drain 회복 시 heal_self 이벤트로 HP바 업데이트
+          if (moveInfo?.effect?.drain && damage > 0) {
+            await log(logsRef, "", "heal_self", { hp: myPokemon.hp, maxHp: myPokemon.maxHp ?? myPokemon.hp })
+          }
           if (moveInfo?.rank) {
             const rankMsgs = applyRankChanges(moveInfo.rank, myPokemon, enePokemon, null)
             for (const msg of rankMsgs) await log(logsRef, msg)
