@@ -397,7 +397,7 @@ export default async function handler(req, res) {
       if (moveInfo?.effect?.removeFlying) {
         const heal = Math.max(1, Math.floor((myPokemon.maxHp ?? myPokemon.hp) * 0.5))
         myPokemon.hp = Math.min(myPokemon.maxHp ?? myPokemon.hp, myPokemon.hp + heal)
-        await log(logsRef, "", "hit_self", { hp: myPokemon.hp, maxHp: myPokemon.maxHp ?? myPokemon.hp })
+        await log(logsRef, "", "heal_self", { hp: myPokemon.hp, maxHp: myPokemon.maxHp ?? myPokemon.hp })
         await log(logsRef, `${myPokemon.name}${josa(myPokemon.name, "은는")} HP를 회복했다! (+${heal})`)
         // 타입 임시 변경: 비행 제거
         const types = Array.isArray(myPokemon.type) ? [...myPokemon.type] : [myPokemon.type]

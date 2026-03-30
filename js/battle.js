@@ -273,6 +273,13 @@ async function handleLogEntry({ text, type, meta }) {
       if (hp !== undefined && maxHp !== undefined) updateHpBar(`${prefix}-hp-bar`, `${prefix}-active-hp`, hp, maxHp, prefix === "my")
       await wait(200); break
     }
+    case "heal_self": {
+      const { hp, maxHp } = meta ?? {}
+      if (hp !== undefined && maxHp !== undefined)
+        updateHpBar("my-hp-bar", "my-active-hp", hp, maxHp, true)
+      await wait(150)
+      break
+    }
     case "hit_self": {
       const { hp, maxHp } = meta ?? {}
       await triggerBlink("my")
