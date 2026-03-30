@@ -49,6 +49,9 @@ let actionDone = false, gameOver = false
 let pendingGameOver = null
 let startBattleCalled = false
 
+// 턴 UI 업데이트 대기 중인 data
+let pendingTurnUpdate = null
+
 const isSpectator = new URLSearchParams(location.search).get("spectator") === "true"
 
 function wait(ms) { return new Promise(r => setTimeout(r, ms)) }
@@ -163,7 +166,6 @@ function calcRolloutDamage(moveName, defender, power) {
   return Math.floor(power * multiplier)
 }
 
-// HP바 업데이트 — maxHp 없으면 빈 바로 표시
 function updateHpBar(barId, textId, hp, maxHp, showNumbers) {
   const bar = document.getElementById(barId)
   const txt = textId ? document.getElementById(textId) : null
@@ -229,16 +231,29 @@ function processLogQueue() {
   const entry = logQueue.shift()
   handleLogEntry(entry).then(() => {
     isProcessing = false
-    if (logQueue.length === 0 && pendingGameOver) {
-      const data = pendingGameOver
-      pendingGameOver = null
-      showGameOver(data)
-      return
+
+    // 큐가 비면 대기 중인 턴 UI 업데이트 실행
+    if (logQueue.length === 0) {
+      if (pendingGameOver) {
+        const data = pendingGameOver
+        pendingGameOver = null
+        showGameOver(data)
+        return
+      }
+      if (pendingTurnUpdate) {
+        const data = pendingTurnUpdate
+        pendingTurnUpdate = null
+        updateTurnUI(data)
+        updateMoveButtons(data)
+        updateBenchButtons(data)
+        return
+      }
+      if (lastRoomData) {
+        updateMoveButtons(lastRoomData)
+        updateBenchButtons(lastRoomData)
+      }
     }
-    if (logQueue.length === 0 && lastRoomData) {
-      updateMoveButtons(lastRoomData)
-      updateBenchButtons(lastRoomData)
-    }
+
     setTimeout(processLogQueue, 50)
   })
 }
@@ -248,32 +263,31 @@ async function handleLogEntry({ text, type, meta }) {
 
   switch (type) {
     case "intro_dice": {
-      // 인트로 끝난 후 — 포트레이트 + HP바 초기값 세팅 + 선공 주사위
       const snap = await getDoc(roomRef)
       const data = snap.data()
       if (data) {
         const enemySlot = mySlot === "p1" ? "p2" : "p1"
         const myPkmn = data[`${mySlot}_entry`]?.[0]
         const enePkmn = data[`${enemySlot}_entry`]?.[0]
-        // 포트레이트
         updatePortrait("my", myPkmn, true)
         updatePortrait("enemy", enePkmn, true)
-        // HP바 초기값 — maxHp 확인 후 세팅
-        if (myPkmn?.maxHp) {
-          updateHpBar("my-hp-bar", "my-active-hp", myPkmn.hp, myPkmn.maxHp, true)
-        }
-        if (enePkmn?.maxHp) {
-          updateHpBar("enemy-hp-bar", "enemy-active-hp", enePkmn.hp, enePkmn.maxHp, false)
-        }
-        // 포켓몬 이름 업데이트
+        if (myPkmn?.maxHp) updateHpBar("my-hp-bar", "my-active-hp", myPkmn.hp, myPkmn.maxHp, true)
+        if (enePkmn?.maxHp) updateHpBar("enemy-hp-bar", "enemy-active-hp", enePkmn.hp, enePkmn.maxHp, false)
         const myNameEl = document.getElementById("my-active-name")
         const eneNameEl = document.getElementById("enemy-active-name")
         if (myNameEl && myPkmn) myNameEl.innerText = myPkmn.name
         if (eneNameEl && enePkmn) eneNameEl.innerText = enePkmn.name
       }
-      // 선공 다이스 애니메이션
       if (data?.p1_dice && data?.p2_dice) {
         await animateDualDiceAsync(data.p1_dice, data.p2_dice, data.player1_name, data.player2_name)
+      }
+      // 주사위 끝난 후 pendingTurnUpdate 처리
+      if (pendingTurnUpdate) {
+        const d = pendingTurnUpdate
+        pendingTurnUpdate = null
+        updateTurnUI(d)
+        updateMoveButtons(d)
+        updateBenchButtons(d)
       }
       break
     }
@@ -475,9 +489,7 @@ function waitForBattleReady() {
   const obs = new MutationObserver(() => {
     if (screen.classList.contains("visible")) {
       obs.disconnect()
-      if (!isSpectator && mySlot === "p1") {
-        callStartBattleAfterIntro()
-      }
+      if (!isSpectator && mySlot === "p1") callStartBattleAfterIntro()
       listenRoom()
     }
   })
@@ -526,31 +538,21 @@ function listenRoom() {
       const wasMine = myTurn
       myTurn = data.current_turn === mySlot
       if (!wasMine && myTurn) actionDone = false
-      waitForQueueAndDelayThenUpdate(data)
+
+      // 턴 UI는 큐가 비워진 후에 표시
+      // 큐가 처리 중이면 pendingTurnUpdate에 저장해두고 큐 소진 후 실행
+      if (logQueue.length === 0 && !isProcessing) {
+        updateTurnUI(data)
+        updateMoveButtons(data)
+        updateBenchButtons(data)
+      } else {
+        pendingTurnUpdate = data
+      }
     } else {
       updateBenchButtons(data)
       updateMoveButtons(data)
     }
   })
-}
-
-// 큐 소진 + 최소 500ms 대기 후 턴 UI 업데이트
-function waitForQueueAndDelayThenUpdate(data) {
-  const startTime = Date.now()
-  const minDelay = 500
-
-  function check() {
-    const elapsed = Date.now() - startTime
-    const queueEmpty = logQueue.length === 0 && !isProcessing
-    if (queueEmpty && elapsed >= minDelay) {
-      updateTurnUI(data)
-      updateMoveButtons(data)
-      updateBenchButtons(data)
-      return
-    }
-    setTimeout(check, 100)
-  }
-  check()
 }
 
 function updateActiveUINoHp(slot, data, prefix) {
