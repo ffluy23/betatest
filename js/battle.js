@@ -163,10 +163,18 @@ function calcRolloutDamage(moveName, defender, power) {
   return Math.floor(power * multiplier)
 }
 
+// HP바 업데이트 — maxHp 없으면 빈 바로 표시
 function updateHpBar(barId, textId, hp, maxHp, showNumbers) {
-  const bar = document.getElementById(barId), txt = textId ? document.getElementById(textId) : null
+  const bar = document.getElementById(barId)
+  const txt = textId ? document.getElementById(textId) : null
   if (!bar) return
-  const pct = maxHp > 0 ? Math.max(0, Math.min(100, (hp / maxHp) * 100)) : 0
+  if (!maxHp || maxHp <= 0) {
+    bar.style.width = "100%"
+    bar.style.backgroundColor = "#4caf50"
+    if (txt) txt.innerText = showNumbers ? "HP: -/-" : ""
+    return
+  }
+  const pct = Math.max(0, Math.min(100, (hp / maxHp) * 100))
   bar.style.width = pct + "%"
   bar.style.backgroundColor = pct > 50 ? "#4caf50" : pct > 20 ? "#ff9800" : "#f44336"
   if (txt) txt.innerText = showNumbers ? `HP: ${hp} / ${maxHp}` : ""
@@ -240,8 +248,30 @@ async function handleLogEntry({ text, type, meta }) {
 
   switch (type) {
     case "intro_dice": {
+      // 인트로 끝난 후 — 포트레이트 + HP바 초기값 세팅 + 선공 주사위
       const snap = await getDoc(roomRef)
       const data = snap.data()
+      if (data) {
+        const enemySlot = mySlot === "p1" ? "p2" : "p1"
+        const myPkmn = data[`${mySlot}_entry`]?.[0]
+        const enePkmn = data[`${enemySlot}_entry`]?.[0]
+        // 포트레이트
+        updatePortrait("my", myPkmn, true)
+        updatePortrait("enemy", enePkmn, true)
+        // HP바 초기값 — maxHp 확인 후 세팅
+        if (myPkmn?.maxHp) {
+          updateHpBar("my-hp-bar", "my-active-hp", myPkmn.hp, myPkmn.maxHp, true)
+        }
+        if (enePkmn?.maxHp) {
+          updateHpBar("enemy-hp-bar", "enemy-active-hp", enePkmn.hp, enePkmn.maxHp, false)
+        }
+        // 포켓몬 이름 업데이트
+        const myNameEl = document.getElementById("my-active-name")
+        const eneNameEl = document.getElementById("enemy-active-name")
+        if (myNameEl && myPkmn) myNameEl.innerText = myPkmn.name
+        if (eneNameEl && enePkmn) eneNameEl.innerText = enePkmn.name
+      }
+      // 선공 다이스 애니메이션
       if (data?.p1_dice && data?.p2_dice) {
         await animateDualDiceAsync(data.p1_dice, data.p2_dice, data.player1_name, data.player2_name)
       }
@@ -496,8 +526,6 @@ function listenRoom() {
       const wasMine = myTurn
       myTurn = data.current_turn === mySlot
       if (!wasMine && myTurn) actionDone = false
-      // 턴이 바뀔 때 항상 큐 + 딜레이 후 UI 업데이트
-      // 큐가 비어있어도 로그가 들어올 시간을 확보 (500ms)
       waitForQueueAndDelayThenUpdate(data)
     } else {
       updateBenchButtons(data)
@@ -509,7 +537,7 @@ function listenRoom() {
 // 큐 소진 + 최소 500ms 대기 후 턴 UI 업데이트
 function waitForQueueAndDelayThenUpdate(data) {
   const startTime = Date.now()
-  const minDelay = 500  // 로그가 들어올 시간 확보
+  const minDelay = 500
 
   function check() {
     const elapsed = Date.now() - startTime
