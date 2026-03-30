@@ -235,10 +235,9 @@ export default async function handler(req, res) {
       const expiredMsgs = tickMyRanks(myPokemon)
       clearRankStack(myPokemon)
       const nextTurn = nextTurnCount
-      if (nextTurn % 2 === 0) {
-        const { msgs: eotMsgs, anyFainted } = applyEndOfTurnDamage([myEntry, enemyEntry])
-        for (const msg of eotMsgs) await log(logsRef, msg)
-        if (anyFainted) {
+      const { msgs: eotMsgs, anyFainted } = applyEndOfTurnDamage([myEntry, enemyEntry])
+      for (const msg of eotMsgs) await log(logsRef, msg)
+      if (anyFainted) {
           if (!isAllFainted(enemyEntry) && anyFainted) revengeUpdate[`revenge_ready_${enemySlot}`] = true
           if (isAllFainted(enemyEntry)) {
             await roomRef.update({ [`${mySlot}_entry`]: myEntry, [`${enemySlot}_entry`]: enemyEntry, turn_count: nextTurn, game_over: true, winner: myName, current_turn: null, ...revengeUpdate, ...(weatherResult.weather ? { weather: weatherResult.weather } : {}) })
@@ -248,7 +247,6 @@ export default async function handler(req, res) {
             await log(logsRef, `${enemyName}의 승리!`, "win"); return
           }
         }
-      }
       for (const msg of expiredMsgs) await log(logsRef, msg)
       if (enePokemon.hp <= 0) revengeUpdate[`revenge_ready_${enemySlot}`] = false
       if (myPokemon.hp <= 0) revengeUpdate[`revenge_ready_${enemySlot}`] = true
