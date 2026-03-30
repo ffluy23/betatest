@@ -187,7 +187,7 @@ export default async function handler(req, res) {
     const moveInfo = moves[moveData.name]
 
     const hitLog = (defender, pokemon) => log(logsRef, "", "hit", { defender, hp: pokemon.hp, maxHp: pokemon.maxHp ?? pokemon.hp })
-    const hitSelfLog = () => log(logsRef, "", "hit_self", { hp: myPokemon.hp, maxHp: myPokemon.maxHp ?? myPokemon.hp })
+    const hitSelfLog = () => log(logsRef, "", "hit_self", { slot: mySlot, hp: myPokemon.hp, maxHp: myPokemon.maxHp ?? myPokemon.hp })
 
     // 희망사항 회복
     const wishMsgs = tickVolatiles(myPokemon)

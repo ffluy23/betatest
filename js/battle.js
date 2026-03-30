@@ -281,9 +281,10 @@ async function handleLogEntry({ text, type, meta }) {
       break
     }
     case "hit_self": {
-      const { hp, maxHp } = meta ?? {}
-      await triggerBlink("my")
-      if (hp !== undefined && maxHp !== undefined) updateHpBar("my-hp-bar", "my-active-hp", hp, maxHp, true)
+      const { slot, hp, maxHp } = meta ?? {}
+      const prefix = slot === mySlot ? "my" : "enemy"
+      await triggerBlink(prefix)
+      if (hp !== undefined && maxHp !== undefined) updateHpBar(`${prefix}-hp-bar`, `${prefix}-active-hp`, hp, maxHp, prefix === "my")
       await wait(200); break
     }
     case "critical": { showBattlePopup("enemy", "critical"); await typeText(log, text); await wait(200); break }
