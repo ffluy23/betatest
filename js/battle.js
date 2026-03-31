@@ -280,6 +280,15 @@ async function handleLogEntry({ text, type, meta }) {
       await wait(150)
       break
     }
+    // slot 명시 회복 (씨뿌리기 등)
+    case "heal": {
+      const { slot, hp, maxHp } = meta ?? {}
+      const prefix = slot === mySlot ? "my" : "enemy"
+      if (hp !== undefined && maxHp !== undefined)
+        updateHpBar(`${prefix}-hp-bar`, `${prefix}-active-hp`, hp, maxHp, prefix === "my")
+      await wait(150)
+      break
+    }
     case "hit_self": {
       const { slot, hp, maxHp } = meta ?? {}
       const prefix = slot === mySlot ? "my" : "enemy"

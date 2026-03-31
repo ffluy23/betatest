@@ -281,18 +281,20 @@ export default async function handler(req, res) {
         if (enePokemon.seeded) {
           const seedMsgs = applyLeechSeed(myEntry, myActiveIdx, enemyEntry, eneActiveIdx)
           for (const msg of seedMsgs) await log(logsRef, msg)
-          if (myPokemon.hp > 0) await log(logsRef, "", "heal_self", { hp: myPokemon.hp, maxHp: myPokemon.maxHp ?? myPokemon.hp })
-          if (enePokemon.hp <= 0) await log(logsRef, "", "hit", { defender: enemySlot, hp: 0, maxHp: enePokemon.maxHp ?? enePokemon.hp })
+          // 상대 HP 감소
+          await log(logsRef, "", "hit", { defender: enemySlot, hp: enePokemon.hp, maxHp: enePokemon.maxHp ?? enePokemon.hp })
+          // 내 HP 회복 — slot 명시
+          if (myPokemon.hp > 0) await log(logsRef, "", "heal", { slot: mySlot, hp: myPokemon.hp, maxHp: myPokemon.maxHp ?? myPokemon.hp })
         }
         // 상대가 심은 씨뿌리기 (내가 당한 쪽)
         if (myPokemon.seeded) {
           const seedMsgs2 = applyLeechSeed(enemyEntry, eneActiveIdx, myEntry, myActiveIdx)
           for (const msg of seedMsgs2) await log(logsRef, msg)
-          // 내 HP 감소 반영
-          await log(logsRef, "", "hit_self", { slot: mySlot, hp: myPokemon.hp, maxHp: myPokemon.maxHp ?? myPokemon.hp })
-          // 상대 HP 회복 반영
+          // 내 HP 감소 — slot 명시
+          await log(logsRef, "", "hit", { defender: mySlot, hp: myPokemon.hp, maxHp: myPokemon.maxHp ?? myPokemon.hp })
+          // 상대 HP 회복 — slot 명시
           const eneAfter = enemyEntry[eneActiveIdx]
-          if (eneAfter && eneAfter.hp > 0) await log(logsRef, "", "hit", { defender: enemySlot, hp: eneAfter.hp, maxHp: eneAfter.maxHp ?? eneAfter.hp })
+          if (eneAfter && eneAfter.hp > 0) await log(logsRef, "", "heal", { slot: enemySlot, hp: eneAfter.hp, maxHp: eneAfter.maxHp ?? eneAfter.hp })
         }
         const { msgs: eotMsgs, anyFainted } = applyEndOfTurnDamage([myEntry, enemyEntry])
         for (const msg of eotMsgs) await log(logsRef, msg)
