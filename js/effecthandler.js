@@ -25,6 +25,14 @@ export function applyStatus(pokemon, status) {
   if (pokemon.hp <= 0) return []
   // 신비의부적: 상태이상 무효
   if ((pokemon.amuletTurns ?? 0) > 0) return [`${pokemon.name}${josa(pokemon.name, "은는")} 신비의 부적으로 상태이상을 막았다!`]
+  // 타입 면역
+  const types = Array.isArray(pokemon.type) ? pokemon.type : [pokemon.type]
+  if (status === "poison" && (types.includes("독") || types.includes("강철")))
+    return [`${pokemon.name}${josa(pokemon.name, "은는")} 독에 걸리지 않는다!`]
+  if (status === "burn" && types.includes("불"))
+    return [`${pokemon.name}${josa(pokemon.name, "은는")} 화상에 걸리지 않는다!`]
+  if (status === "frozen" && types.includes("얼음"))
+    return [`${pokemon.name}${josa(pokemon.name, "은는")} 얼음에 걸리지 않는다!`]
   pokemon.status = status
   return [`${pokemon.name}${josa(pokemon.name, "은는")} ${statusName(status)} 상태가 됐다!`]
 }
@@ -164,6 +172,23 @@ export function tickVolatiles(pokemon) {
       msgs.push(`${pokemon.name}${josa(pokemon.name, "은는")} 희망사항으로 HP를 회복했다! (+${heal})`)
     }
   }
+  return msgs
+}
+
+// 씨뿌리기 EOT: seeder entry 배열에서 회복
+// entries[0] = 씨 심은 쪽, entries[1] = 씨 당한 쪽
+export function applyLeechSeed(seederEntry, seederActiveIdx, seededEntry, seededActiveIdx) {
+  const seeder = seederEntry[seederActiveIdx]
+  const seeded = seededEntry[seededActiveIdx]
+  if (!seeded || !seeded.seeded) return []
+  if (seeded.hp <= 0) return []
+  const dmg = Math.max(1, Math.floor((seeded.maxHp ?? seeded.hp) * 0.1))
+  seeded.hp = Math.max(0, seeded.hp - dmg)
+  if (seeder && seeder.hp > 0) {
+    seeder.hp = Math.min(seeder.maxHp ?? seeder.hp, seeder.hp + dmg)
+  }
+  const msgs = [`${seeded.name}${josa(seeded.name, "은는")} 씨뿌리기로 체력을 빼앗겼다! (-${dmg})`]
+  if (seeded.hp <= 0) msgs.push(`${seeded.name}${josa(seeded.name, "은는")} 쓰러졌다!`)
   return msgs
 }
 

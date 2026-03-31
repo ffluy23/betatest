@@ -178,7 +178,7 @@ export const moves = {
   "치근거리기":     { power: 50, type: "페어리", accuracy: 90, alwaysHit: false, effect: null, rank: { chance: 0.1, targetAtk: -1, turns: 1 } },
   "차밍보이스": { power: 35, type: "페어리", accuracy: 100, alwaysHit: true, effect: null },
   "매지컬샤인": { power: 40, type: "페어리", accuracy: 100, alwaysHit: true,  effect: null },
-  "드레인키스": { power: 40, type: "페어리", accuracy: 100, alwaysHit: false, effect: { drain: 0.2 } },
+  "드레인키스": { power: 40, type: "페어리", accuracy: 100, alwaysHit: false, effect: { drain: 0.18 } },
   "애교부리기": { power: 0, type: "페어리", accuracy: 100, alwaysHit: false, targetSelf: false, effect: null, rank: { targetAtk: -1, turns: 1 } },
 
   // ───── 날씨 ─────
@@ -216,4 +216,8 @@ export const moves = {
   "기사회생": { power: 40, type: "격투", accuracy: 100, alwaysHit: false, effect: null, reversal: true },
 "카운터":   { power: 1,  type: "격투", accuracy: 100, alwaysHit: false, effect: null, counter: true },
 "버티기":   { power: 0,  type: "노말", accuracy: 100, alwaysHit: true,  effect: null, endure: true, targetSelf: true },
+
+"씨뿌리기": { power: 0, type: "풀", accuracy: 90, alwaysHit: false, effect: null, leechSeed: true, targetSelf: false },
+"치유파동": { power: 0, type: "에스퍼", accuracy: 100, alwaysHit: true, effect: null, healPulse: true, targetSelf: false },
+"참기":     { power: 0, type: "노말", accuracy: 100, alwaysHit: true, effect: null, bide: true, targetSelf: true },
 }
