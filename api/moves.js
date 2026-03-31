@@ -55,6 +55,8 @@ export const moves = {
                   rank: { spd: 1, turns: 1 } },
   "분발":   { power: 0, type: "노말", accuracy: 100, alwaysHit: true, effect: null,
                   rank: { atk: 1, turns: 1 } }, 
+  "비밀이야기":   { power: 0, type: "노말", accuracy: 100, alwaysHit: true, effect: null,
+                  rank: { targetAtk: -1, turns: 1 } }, 
   "뽐내기":     { power: 0, type: "노말", accuracy: 85, alwaysHit: false,
                   rank: { targetAtk: 2, turns: 2 }, effect: { chance: 1, volatile: "혼란" } },
   "뱀눈초리": { power: 0, type: "노말", accuracy: 90, alwaysHit: false, targetSelf: false, effect: { chance: 1, status: "마비" } },
