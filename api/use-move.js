@@ -10,19 +10,28 @@ import {
 
 function rollD10() { return Math.floor(Math.random() * 10) + 1 }
 function isAllFainted(entry) { return entry.every(p => p.hp <= 0) }
-function defaultRanks() { return { atk: 0, atkTurns: 0, def: 0, defTurns: 0, spd: 0, spdTurns: 0 } }
+function defaultRanks(pokemon) {
+  if (!pokemon) return { atk: 0, atkTurns: 0, def: 0, defTurns: 0, spd: 0, spdTurns: 0 }
+  return {
+    atk: pokemon.attack ?? 3, atkTurns: 0,
+    def: pokemon.defense ?? 3, defTurns: 0,
+    spd: pokemon.speed ?? 3, spdTurns: 0
+  }
+}
 
 function getActiveRank(pokemon, key) {
   const r = pokemon.ranks ?? {}
-  return (r[`${key}Turns`] ?? 0) > 0 ? (r[key] ?? 0) : 0
+  if ((r[`${key}Turns`] ?? 0) > 0) return r[key] ?? (pokemon[key === "atk" ? "attack" : key === "def" ? "defense" : "speed"] ?? 3)
+  // turns 만료 시 원래 스탯 반환
+  return pokemon[key === "atk" ? "attack" : key === "def" ? "defense" : "speed"] ?? 3
 }
 
 function resetRankStack(pokemon) {
   pokemon.lastRankMove = null; pokemon.rankStack = 0
   if (pokemon.ranks) {
-    pokemon.ranks.atk = 0; pokemon.ranks.atkTurns = 0
-    pokemon.ranks.def = 0; pokemon.ranks.defTurns = 0
-    pokemon.ranks.spd = 0; pokemon.ranks.spdTurns = 0
+    pokemon.ranks.atk = pokemon.attack ?? 3; pokemon.ranks.atkTurns = 0
+    pokemon.ranks.def = pokemon.defense ?? 3; pokemon.ranks.defTurns = 0
+    pokemon.ranks.spd = pokemon.speed ?? 3;   pokemon.ranks.spdTurns = 0
   }
 }
 
@@ -33,9 +42,9 @@ function clearRankStack(pokemon) {
 function tickMyRanks(pokemon) {
   if (!pokemon.ranks) return []
   const r = pokemon.ranks, msgs = []
-  if (r.atkTurns > 0) { r.atkTurns--; if (!r.atkTurns) { r.atk = 0; msgs.push(`${pokemon.name}의 공격 랭크가 원래대로 돌아왔다!`) } }
-  if (r.defTurns > 0) { r.defTurns--; if (!r.defTurns) { r.def = 0; msgs.push(`${pokemon.name}의 방어 랭크가 원래대로 돌아왔다!`) } }
-  if (r.spdTurns > 0) { r.spdTurns--; if (!r.spdTurns) { r.spd = 0; msgs.push(`${pokemon.name}의 스피드 랭크가 원래대로 돌아왔다!`) } }
+  if (r.atkTurns > 0) { r.atkTurns--; if (!r.atkTurns) { r.atk = pokemon.attack ?? 3; msgs.push(`${pokemon.name}의 공격 랭크가 원래대로 돌아왔다!`) } }
+  if (r.defTurns > 0) { r.defTurns--; if (!r.defTurns) { r.def = pokemon.defense ?? 3; msgs.push(`${pokemon.name}의 방어 랭크가 원래대로 돌아왔다!`) } }
+  if (r.spdTurns > 0) { r.spdTurns--; if (!r.spdTurns) { r.spd = pokemon.speed ?? 3;   msgs.push(`${pokemon.name}의 스피드 랭크가 원래대로 돌아왔다!`) } }
   return msgs
 }
 
@@ -44,38 +53,67 @@ function applyRankChanges(r, self, target, moveName) {
   const msgs = []
   const roll = r.chance !== undefined ? Math.random() < r.chance : true
   if (!roll) return []
-  const selfR = { ...defaultRanks(), ...(self.ranks ?? {}) }
-  const targetR = { ...defaultRanks(), ...(target.ranks ?? {}) }
+
+  // 현재 유효 랭크값 가져오기 (turns 만료 시 기본 스탯으로)
+  const getStat = (p, key) => p[key === "atk" ? "attack" : key === "def" ? "defense" : "speed"] ?? 3
+  const getR = (p, key) => {
+    const rr = p.ranks ?? {}
+    return (rr[`${key}Turns`] ?? 0) > 0 ? (rr[key] ?? getStat(p, key)) : getStat(p, key)
+  }
+
+  const selfR   = { atk: getR(self, "atk"),   atkTurns: (self.ranks ?? {}).atkTurns ?? 0,
+                    def: getR(self, "def"),   defTurns: (self.ranks ?? {}).defTurns ?? 0,
+                    spd: getR(self, "spd"),   spdTurns: (self.ranks ?? {}).spdTurns ?? 0 }
+  const targetR = { atk: getR(target, "atk"), atkTurns: (target.ranks ?? {}).atkTurns ?? 0,
+                    def: getR(target, "def"), defTurns: (target.ranks ?? {}).defTurns ?? 0,
+                    spd: getR(target, "spd"), spdTurns: (target.ranks ?? {}).spdTurns ?? 0 }
+
   const isSameMove = moveName && self.lastRankMove === moveName
   const stack = self.rankStack ?? 0
   if (moveName) {
     if (!isSameMove) { self.lastRankMove = moveName; self.rankStack = 1 }
-    else if (stack >= 2) { selfR.atk = 0; selfR.atkTurns = 0; selfR.def = 0; selfR.defTurns = 0; selfR.spd = 0; selfR.spdTurns = 0; self.rankStack = 1 }
+    else if (stack >= 2) {
+      // 랭크 스택 리셋: 기본 스탯으로 복원
+      selfR.atk = getStat(self, "atk"); selfR.atkTurns = 0
+      selfR.def = getStat(self, "def"); selfR.defTurns = 0
+      selfR.spd = getStat(self, "spd"); selfR.spdTurns = 0
+      self.rankStack = 1
+    }
     else { self.rankStack = stack + 1 }
   }
+
+  const MIN_ATK = 1, MIN_DEF = 1, MIN_SPD = 1
+  const MAX_MULT = 3  // 기본 스탯의 3배 상한
+
   if (r.atk !== undefined) {
-    if (r.atk > 0) { const p = selfR.atk; selfR.atk = Math.min(4, selfR.atk + r.atk); selfR.atkTurns = r.turns ?? 2; msgs.push(`${self.name}의 공격이 올라갔다! (+${selfR.atk - p})`) }
-    else if (r.atk < 0) { if (selfR.atk === 0) msgs.push(`${self.name}의 공격은 더 이상 내려가지 않는다!`); else { const p = selfR.atk; selfR.atk = Math.max(0, selfR.atk + r.atk); selfR.atkTurns = r.turns ?? 2; msgs.push(`${self.name}의 공격이 내려갔다! (${selfR.atk - p})`) } }
+    const base = getStat(self, "atk")
+    if (r.atk > 0) { const p = selfR.atk; selfR.atk = Math.min(base * MAX_MULT, selfR.atk + r.atk); selfR.atkTurns = r.turns ?? 2; msgs.push(`${self.name}의 공격이 올라갔다! (${p}→${selfR.atk})`) }
+    else if (r.atk < 0) { if (selfR.atk <= MIN_ATK) msgs.push(`${self.name}의 공격은 더 이상 내려가지 않는다!`); else { const p = selfR.atk; selfR.atk = Math.max(MIN_ATK, selfR.atk + r.atk); selfR.atkTurns = r.turns ?? 2; msgs.push(`${self.name}의 공격이 내려갔다! (${p}→${selfR.atk})`) } }
   }
   if (r.def !== undefined) {
-    if (r.def > 0) { const p = selfR.def; selfR.def = Math.min(3, selfR.def + r.def); selfR.defTurns = r.turns ?? 2; msgs.push(`${self.name}의 방어가 올라갔다! (+${selfR.def - p})`) }
-    else if (r.def < 0) { if (selfR.def === 0) msgs.push(`${self.name}의 방어는 더 이상 내려가지 않는다!`); else { const p = selfR.def; selfR.def = Math.max(0, selfR.def + r.def); selfR.defTurns = r.turns ?? 2; msgs.push(`${self.name}의 방어가 내려갔다! (${selfR.def - p})`) } }
+    const base = getStat(self, "def")
+    if (r.def > 0) { const p = selfR.def; selfR.def = Math.min(base * MAX_MULT, selfR.def + r.def); selfR.defTurns = r.turns ?? 2; msgs.push(`${self.name}의 방어가 올라갔다! (${p}→${selfR.def})`) }
+    else if (r.def < 0) { if (selfR.def <= MIN_DEF) msgs.push(`${self.name}의 방어는 더 이상 내려가지 않는다!`); else { const p = selfR.def; selfR.def = Math.max(MIN_DEF, selfR.def + r.def); selfR.defTurns = r.turns ?? 2; msgs.push(`${self.name}의 방어가 내려갔다! (${p}→${selfR.def})`) } }
   }
   if (r.spd !== undefined) {
-    if (r.spd > 0) { const p = selfR.spd; selfR.spd = Math.min(5, selfR.spd + r.spd); selfR.spdTurns = r.turns ?? 2; msgs.push(`${self.name}의 스피드가 올라갔다! (+${selfR.spd - p}%p)`) }
-    else if (r.spd < 0) { if (selfR.spd === 0) msgs.push(`${self.name}의 스피드는 더 이상 내려가지 않는다!`); else { const p = selfR.spd; selfR.spd = Math.max(0, selfR.spd + r.spd); selfR.spdTurns = r.turns ?? 2; msgs.push(`${self.name}의 스피드가 내려갔다! (${selfR.spd - p}%p)`) } }
+    const base = getStat(self, "spd")
+    if (r.spd > 0) { const p = selfR.spd; selfR.spd = Math.min(base * MAX_MULT, selfR.spd + r.spd); selfR.spdTurns = r.turns ?? 2; msgs.push(`${self.name}의 스피드가 올라갔다! (${p}→${selfR.spd})`) }
+    else if (r.spd < 0) { if (selfR.spd <= MIN_SPD) msgs.push(`${self.name}의 스피드는 더 이상 내려가지 않는다!`); else { const p = selfR.spd; selfR.spd = Math.max(MIN_SPD, selfR.spd + r.spd); selfR.spdTurns = r.turns ?? 2; msgs.push(`${self.name}의 스피드가 내려갔다! (${p}→${selfR.spd})`) } }
   }
   if (r.targetAtk !== undefined) {
-    if (r.targetAtk < 0) { if (targetR.atk === 0) msgs.push(`${target.name}의 공격은 더 이상 내려가지 않는다!`); else { const p = targetR.atk; targetR.atk = Math.max(0, targetR.atk + r.targetAtk); targetR.atkTurns = r.turns ?? 2; msgs.push(`${target.name}의 공격이 내려갔다! (${targetR.atk - p})`) } }
-    else if (r.targetAtk > 0) { const p = targetR.atk; targetR.atk = Math.min(4, targetR.atk + r.targetAtk); targetR.atkTurns = r.turns ?? 2; msgs.push(`${target.name}의 공격이 올라갔다! (+${targetR.atk - p})`) }
+    const base = getStat(target, "atk")
+    if (r.targetAtk < 0) { if (targetR.atk <= MIN_ATK) msgs.push(`${target.name}의 공격은 더 이상 내려가지 않는다!`); else { const p = targetR.atk; targetR.atk = Math.max(MIN_ATK, targetR.atk + r.targetAtk); targetR.atkTurns = r.turns ?? 2; msgs.push(`${target.name}의 공격이 내려갔다! (${p}→${targetR.atk})`) } }
+    else if (r.targetAtk > 0) { const p = targetR.atk; targetR.atk = Math.min(base * MAX_MULT, targetR.atk + r.targetAtk); targetR.atkTurns = r.turns ?? 2; msgs.push(`${target.name}의 공격이 올라갔다! (${p}→${targetR.atk})`) }
   }
   if (r.targetDef !== undefined) {
-    if (r.targetDef < 0) { if (targetR.def === 0) msgs.push(`${target.name}의 방어는 더 이상 내려가지 않는다!`); else { const p = targetR.def; targetR.def = Math.max(0, targetR.def + r.targetDef); targetR.defTurns = r.turns ?? 2; msgs.push(`${target.name}의 방어가 내려갔다! (${targetR.def - p})`) } }
-    else if (r.targetDef > 0) { const p = targetR.def; targetR.def = Math.min(3, targetR.def + r.targetDef); targetR.defTurns = r.turns ?? 2; msgs.push(`${target.name}의 방어가 올라갔다! (+${targetR.def - p})`) }
+    const base = getStat(target, "def")
+    if (r.targetDef < 0) { if (targetR.def <= MIN_DEF) msgs.push(`${target.name}의 방어는 더 이상 내려가지 않는다!`); else { const p = targetR.def; targetR.def = Math.max(MIN_DEF, targetR.def + r.targetDef); targetR.defTurns = r.turns ?? 2; msgs.push(`${target.name}의 방어가 내려갔다! (${p}→${targetR.def})`) } }
+    else if (r.targetDef > 0) { const p = targetR.def; targetR.def = Math.min(base * MAX_MULT, targetR.def + r.targetDef); targetR.defTurns = r.turns ?? 2; msgs.push(`${target.name}의 방어가 올라갔다! (${p}→${targetR.def})`) }
   }
   if (r.targetSpd !== undefined) {
-    if (r.targetSpd < 0) { if (targetR.spd === 0) msgs.push(`${target.name}의 스피드는 더 이상 내려가지 않는다!`); else { const p = targetR.spd; targetR.spd = Math.max(0, targetR.spd + r.targetSpd); targetR.spdTurns = r.turns ?? 2; msgs.push(`${target.name}의 스피드가 내려갔다! (${targetR.spd - p}%p)`) } }
-    else if (r.targetSpd > 0) { const p = targetR.spd; targetR.spd = Math.min(5, targetR.spd + r.targetSpd); targetR.spdTurns = r.turns ?? 2; msgs.push(`${target.name}의 스피드가 올라갔다! (+${targetR.spd - p}%p)`) }
+    const base = getStat(target, "spd")
+    if (r.targetSpd < 0) { if (targetR.spd <= MIN_SPD) msgs.push(`${target.name}의 스피드는 더 이상 내려가지 않는다!`); else { const p = targetR.spd; targetR.spd = Math.max(MIN_SPD, targetR.spd + r.targetSpd); targetR.spdTurns = r.turns ?? 2; msgs.push(`${target.name}의 스피드가 내려갔다! (${p}→${targetR.spd})`) } }
+    else if (r.targetSpd > 0) { const p = targetR.spd; targetR.spd = Math.min(base * MAX_MULT, targetR.spd + r.targetSpd); targetR.spdTurns = r.turns ?? 2; msgs.push(`${target.name}의 스피드가 올라갔다! (${p}→${targetR.spd})`) }
   }
   self.ranks = selfR; target.ranks = targetR
   return msgs
@@ -103,12 +141,12 @@ function calcDamage(attacker, moveName, defender, atkRank = 0, defRank = 0, powe
   const stab = atkTypes.includes(move.type)
   const power = powerOverride ?? (move.power ?? 40)
   // 속임수: atkStatOverride로 상대 공격 스탯 사용
-  const atkStat = atkStatOverride ?? (attacker.attack ?? 3)
+  // atkRank/defRank는 이제 실제 스탯값 (getActiveRank가 반환)
+  const atkStat = atkStatOverride ?? atkRank  // atkRank = 유효 공격 스탯
   const base = power + atkStat * 4 + dice
   const raw = Math.floor(base * multiplier * (stab ? 1.3 : 1))
-  const afterAtk = Math.max(0, raw + Math.max(-raw, atkRank))
-  const afterDef = Math.max(0, afterAtk - (defender.defense ?? 3) * 5)
-  const baseDmg = Math.max(0, afterDef - Math.min(3, Math.max(0, defRank)) * 3)
+  const afterDef = Math.max(0, raw - defRank * 5)  // defRank = 유효 방어 스탯
+  const baseDmg = Math.max(0, afterDef)
   const critical = Math.random() * 100 < Math.min(100, atkStat * 2)
   return { damage: critical ? Math.floor(baseDmg * 1.5) : baseDmg, multiplier, stab, dice, critical }
 }
@@ -172,8 +210,24 @@ export default async function handler(req, res) {
     const myActiveIdx = freshData[`${mySlot}_active_idx`]
     const eneActiveIdx = freshData[`${enemySlot}_active_idx`]
 
-    const myEntry = freshData[`${mySlot}_entry`].map(p => ({ ...p, moves: (p.moves ?? []).map(m => ({ ...m })), ranks: { ...defaultRanks(), ...(p.ranks ?? {}) } }))
-    const enemyEntry = freshData[`${enemySlot}_entry`].map(p => ({ ...p, ranks: { ...defaultRanks(), ...(p.ranks ?? {}) } }))
+    const myEntry = freshData[`${mySlot}_entry`].map(p => {
+      const base = defaultRanks(p)
+      const r = p.ranks ?? {}
+      return { ...p, moves: (p.moves ?? []).map(m => ({ ...m })), ranks: {
+        atk: r.atkTurns > 0 ? r.atk : base.atk, atkTurns: r.atkTurns ?? 0,
+        def: r.defTurns > 0 ? r.def : base.def, defTurns: r.defTurns ?? 0,
+        spd: r.spdTurns > 0 ? r.spd : base.spd, spdTurns: r.spdTurns ?? 0,
+      }}
+    })
+    const enemyEntry = freshData[`${enemySlot}_entry`].map(p => {
+      const base = defaultRanks(p)
+      const r = p.ranks ?? {}
+      return { ...p, ranks: {
+        atk: r.atkTurns > 0 ? r.atk : base.atk, atkTurns: r.atkTurns ?? 0,
+        def: r.defTurns > 0 ? r.def : base.def, defTurns: r.defTurns ?? 0,
+        spd: r.spdTurns > 0 ? r.spd : base.spd, spdTurns: r.spdTurns ?? 0,
+      }}
+    })
     const myPokemon = myEntry[myActiveIdx]
     const enePokemon = enemyEntry[eneActiveIdx]
 
