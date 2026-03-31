@@ -224,7 +224,7 @@ export const moves = {
   "마구찌르기": { power: 1, type: "노말", accuracy: 100, alwaysHit: false, effect: null, multiHit: { min: 2, max: 5, fixedDamage: 10 } },
   "사슬묶기":     { power: 0, type: "노말", accuracy: 90, alwaysHit: false, effect: null, chainBind: true, targetSelf: false },
   "드래곤테일":   { power: 40, type: "드래곤", accuracy: 90, alwaysHit: false, effect: null, dragonTail: true },
-  "병상첨병": { power: 40, type: "노말", accuracy: 100, alwaysHit: false, effect: null, sickPower: true },
+  "병상첨병": { power: 40, type: "고스트", accuracy: 100, alwaysHit: false, effect: null, sickPower: true },
 
   "기사회생": { power: 40, type: "격투", accuracy: 100, alwaysHit: false, effect: null, reversal: true },
   "바둥바둥": { power: 40, type: "노말", accuracy: 100, alwaysHit: false, effect: null, reversal: true },
