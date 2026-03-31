@@ -430,6 +430,44 @@ export default async function handler(req, res) {
       return res.status(200).json({ ok: true })
     }
 
+    // ── 씨뿌리기
+    if (moveInfo?.leechSeed) {
+      const eneTypes = Array.isArray(enePokemon.type) ? enePokemon.type : [enePokemon.type]
+      if (eneTypes.includes("풀")) {
+        await log(logsRef, `${enePokemon.name}${josa(enePokemon.name, "은는")} 씨뿌리기에 걸리지 않는다!`)
+      } else if (enePokemon.seeded) {
+        await log(logsRef, `${enePokemon.name}${josa(enePokemon.name, "은는")} 이미 씨뿌리기 상태다!`)
+      } else {
+        const { hit, hitType } = calcHit(myPokemon, moveInfo, enePokemon)
+        if (!hit) {
+          await log(logsRef, hitType === "evaded" ? `${enePokemon.name}에게는 맞지 않았다!` : `그러나 ${myPokemon.name}의 공격은 빗나갔다!`, hitType === "evaded" ? "evade" : "normal")
+        } else {
+          enePokemon.seeded = true
+          await log(logsRef, `${enePokemon.name}${josa(enePokemon.name, "의")} 몸에 씨를 뿌렸다!`)
+        }
+      }
+      await roomRef.update({ [`${mySlot}_entry`]: myEntry, [`${enemySlot}_entry`]: enemyEntry, current_turn: enemySlot, turn_count: nextTurnCount })
+      return res.status(200).json({ ok: true })
+    }
+
+    // ── 치유파동 (상대 회복)
+    if (moveInfo?.healPulse) {
+      const heal = Math.max(1, Math.floor((enePokemon.maxHp ?? enePokemon.hp) * 0.12))
+      enePokemon.hp = Math.min(enePokemon.maxHp ?? enePokemon.hp, enePokemon.hp + heal)
+      await log(logsRef, "", "hit", { defender: enemySlot, hp: enePokemon.hp, maxHp: enePokemon.maxHp ?? enePokemon.hp })
+      await log(logsRef, `${enePokemon.name}${josa(enePokemon.name, "은는")} HP를 회복했다! (+${heal})`)
+      await roomRef.update({ [`${mySlot}_entry`]: myEntry, [`${enemySlot}_entry`]: enemyEntry, current_turn: enemySlot, turn_count: nextTurnCount })
+      return res.status(200).json({ ok: true })
+    }
+
+    // ── 참기 시작
+    if (moveInfo?.bide) {
+      myPokemon.bideState = { turnsLeft: 2, damage: 0 }
+      await log(logsRef, `${myPokemon.name}${josa(myPokemon.name, "은는")} 참기 시작했다!`)
+      await roomRef.update({ [`${mySlot}_entry`]: myEntry, [`${enemySlot}_entry`]: enemyEntry, current_turn: enemySlot, turn_count: nextTurnCount })
+      return res.status(200).json({ ok: true })
+    }
+
     // ── power: 0 랭크/효과 기술
     if (!moveInfo?.power) {
       const r = moveInfo?.rank
@@ -511,44 +549,6 @@ export default async function handler(req, res) {
 
     const revengeUpdate = {}
     if (moveInfo?.revenge) revengeUpdate[`revenge_ready_${mySlot}`] = false
-
-    // ── 씨뿌리기
-    if (moveInfo?.leechSeed) {
-      const eneTypes = Array.isArray(enePokemon.type) ? enePokemon.type : [enePokemon.type]
-      if (eneTypes.includes("풀")) {
-        await log(logsRef, `${enePokemon.name}${josa(enePokemon.name, "은는")} 씨뿌리기에 걸리지 않는다!`)
-      } else if (enePokemon.seeded) {
-        await log(logsRef, `${enePokemon.name}${josa(enePokemon.name, "은는")} 이미 씨뿌리기 상태다!`)
-      } else {
-        const { hit, hitType } = calcHit(myPokemon, moveInfo, enePokemon)
-        if (!hit) {
-          await log(logsRef, hitType === "evaded" ? `${enePokemon.name}에게는 맞지 않았다!` : `그러나 ${myPokemon.name}의 공격은 빗나갔다!`, hitType === "evaded" ? "evade" : "normal")
-        } else {
-          enePokemon.seeded = true
-          await log(logsRef, `${enePokemon.name}${josa(enePokemon.name, "은는")} 씨뿌리기 상태가 됐다!`)
-        }
-      }
-      await roomRef.update({ [`${mySlot}_entry`]: myEntry, [`${enemySlot}_entry`]: enemyEntry, current_turn: enemySlot, turn_count: nextTurnCount })
-      return res.status(200).json({ ok: true })
-    }
-
-    // ── 치유파동 (상대 회복)
-    if (moveInfo?.healPulse) {
-      const heal = Math.max(1, Math.floor((enePokemon.maxHp ?? enePokemon.hp) * 0.12))
-      enePokemon.hp = Math.min(enePokemon.maxHp ?? enePokemon.hp, enePokemon.hp + heal)
-      await log(logsRef, "", "hit", { defender: enemySlot, hp: enePokemon.hp, maxHp: enePokemon.maxHp ?? enePokemon.hp })
-      await log(logsRef, `${enePokemon.name}${josa(enePokemon.name, "은는")} HP를 회복했다! (+${heal})`)
-      await roomRef.update({ [`${mySlot}_entry`]: myEntry, [`${enemySlot}_entry`]: enemyEntry, current_turn: enemySlot, turn_count: nextTurnCount })
-      return res.status(200).json({ ok: true })
-    }
-
-    // ── 참기 시작
-    if (moveInfo?.bide) {
-      myPokemon.bideState = { turnsLeft: 2, damage: 0 }
-      await log(logsRef, `${myPokemon.name}${josa(myPokemon.name, "은는")} 참기 시작했다!`)
-      await roomRef.update({ [`${mySlot}_entry`]: myEntry, [`${enemySlot}_entry`]: enemyEntry, current_turn: enemySlot, turn_count: nextTurnCount })
-      return res.status(200).json({ ok: true })
-    }
 
     // ── 버티기
     if (moveInfo?.endure) {
