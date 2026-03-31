@@ -1,8 +1,7 @@
 // effecthandler.js
 
 export function statusName(status) {
-  const map = { poison: "독", burn: "화상", paralysis: "마비", frozen: "얼음" }
-  return map[status] ?? status
+  return status  // 이미 한글로 저장됨
 }
 
 export function josa(word, type) {
@@ -27,11 +26,11 @@ export function applyStatus(pokemon, status) {
   if ((pokemon.amuletTurns ?? 0) > 0) return [`${pokemon.name}${josa(pokemon.name, "은는")} 신비의 부적으로 상태이상을 막았다!`]
   // 타입 면역
   const types = Array.isArray(pokemon.type) ? pokemon.type : [pokemon.type]
-  if (status === "poison" && (types.includes("독") || types.includes("강철")))
+  if (status === "독" && (types.includes("독") || types.includes("강철")))
     return [`${pokemon.name}${josa(pokemon.name, "은는")} 독에 걸리지 않는다!`]
-  if (status === "burn" && types.includes("불"))
+  if (status === "화상" && types.includes("불"))
     return [`${pokemon.name}${josa(pokemon.name, "은는")} 화상에 걸리지 않는다!`]
-  if (status === "frozen" && types.includes("얼음"))
+  if (status === "얼음" && types.includes("얼음"))
     return [`${pokemon.name}${josa(pokemon.name, "은는")} 얼음에 걸리지 않는다!`]
   pokemon.status = status
   return [`${pokemon.name}${josa(pokemon.name, "은는")} ${statusName(status)} 상태가 됐다!`]
@@ -77,7 +76,7 @@ export function applyMoveEffect(moveEffect, attacker, defender, damage = 0) {
   if (defender.hp <= 0) return []
 
   // 불꽃세례: 얼음 해제
-  if (moveEffect.thawEnemy && defender.status === "frozen") {
+  if (moveEffect.thawEnemy && defender.status === "얼음") {
     defender.status = null
     msgs.push(`${defender.name}${josa(defender.name, "은는")} 얼음 상태에서 회복됐다!`)
   }
@@ -102,13 +101,13 @@ export function checkPreActionStatus(pokemon) {
     msgs.push(`${pokemon.name}${josa(pokemon.name, "은는")} 풀이 죽어서 움직일 수 없다!`)
     return { blocked: true, msgs, statusCleared: false }
   }
-  if (pokemon.status === "paralysis") {
+  if (pokemon.status === "마비") {
     if (Math.random() < 0.25) {
       msgs.push(`${pokemon.name}${josa(pokemon.name, "은는")} 몸이 저려서 움직일 수 없다!`)
       return { blocked: true, msgs, statusCleared: false }
     }
   }
-  if (pokemon.status === "frozen") {
+  if (pokemon.status === "얼음") {
     if (Math.random() < 0.20) {
       pokemon.status = null
       msgs.push(`${pokemon.name}${josa(pokemon.name, "은는")} 얼음 상태에서 회복됐다!`)
@@ -198,7 +197,7 @@ export function applyEndOfTurnDamage(entries) {
   for (const entry of entries) {
     for (const pkmn of entry) {
       if (pkmn.hp <= 0) continue
-      if (pkmn.status !== "poison" && pkmn.status !== "burn") continue
+      if (pkmn.status !== "독" && pkmn.status !== "화상") continue
       const dmg = Math.max(1, Math.floor((pkmn.maxHp ?? pkmn.hp) / 16))
       pkmn.hp = Math.max(0, pkmn.hp - dmg)
       msgs.push(`${pkmn.name}${josa(pkmn.name, "은는")} ${statusName(pkmn.status)} 때문에 ${dmg} 데미지를 입었다!`)
@@ -214,7 +213,7 @@ export function applyWeatherEffect(moveEffect) {
 }
 
 export function getStatusSpdPenalty(pokemon) {
-  if (pokemon.status === "paralysis") return 1
-  if (pokemon.status === "frozen") return 3
+  if (pokemon.status === "마비") return 1
+  if (pokemon.status === "얼음") return 3
   return 0
 }
