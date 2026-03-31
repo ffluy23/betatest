@@ -274,7 +274,7 @@ export default async function handler(req, res) {
         return res.status(200).json({ ok: true })
       }
       const bideDmg = bide.damage * 2
-      await log(logsRef, `${myPokemon.name}${josa(myPokemon.name, "은는")} 참았던 에너지를 방출했다!`)
+      await log(logsRef, `${myPokemon.name}${josa(myPokemon.name, "은는")} 참기가 풀렸다!`)
       await log(logsRef, "", "attack", { attacker: mySlot })
       enePokemon.hp = Math.max(0, enePokemon.hp - bideDmg)
       if (enePokemon.hp <= 0 && enePokemon.enduring) { enePokemon.hp = 1; enePokemon.enduring = false }
