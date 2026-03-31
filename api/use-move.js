@@ -281,7 +281,7 @@ export default async function handler(req, res) {
       const isEndOfRound = mySlot !== firstSlot
       if (isEndOfRound) {
         // 씨뿌리기 처리 (내가 심은 쪽 → 상대가 당한 쪽)
-        if (enePokemon.seeded) {
+        if (enePokemon.seeded && (enePokemon.seededSince ?? 0) < nextTurn) {
           const seedMsgs = applyLeechSeed(myEntry, myActiveIdx, enemyEntry, eneActiveIdx)
           for (const msg of seedMsgs) await log(logsRef, msg)
           // 상대 HP 감소
@@ -290,7 +290,7 @@ export default async function handler(req, res) {
           if (myPokemon.hp > 0) await log(logsRef, "", "heal", { slot: mySlot, hp: myPokemon.hp, maxHp: myPokemon.maxHp ?? myPokemon.hp })
         }
         // 상대가 심은 씨뿌리기 (내가 당한 쪽)
-        if (myPokemon.seeded) {
+        if (myPokemon.seeded && (myPokemon.seededSince ?? 0) < nextTurn) {
           const seedMsgs2 = applyLeechSeed(enemyEntry, eneActiveIdx, myEntry, myActiveIdx)
           for (const msg of seedMsgs2) await log(logsRef, msg)
           // 내 HP 감소 — slot 명시
@@ -438,7 +438,12 @@ export default async function handler(req, res) {
     // ── 씨뿌리기
     if (moveInfo?.leechSeed) {
       const eneTypes = Array.isArray(enePokemon.type) ? enePokemon.type : [enePokemon.type]
-      if (eneTypes.includes("풀")) {
+      // 방어 체크
+      const wasDefendingForSeed = enePokemon.defending ?? false
+      enePokemon.defending = false; enePokemon.defendTurns = 0
+      if (wasDefendingForSeed) {
+        await log(logsRef, `${enePokemon.name}${josa(enePokemon.name, "은는")} 방어했다!`)
+      } else if (eneTypes.includes("풀")) {
         await log(logsRef, `${enePokemon.name}${josa(enePokemon.name, "은는")} 씨뿌리기에 걸리지 않는다!`)
       } else if (enePokemon.seeded) {
         await log(logsRef, `${enePokemon.name}${josa(enePokemon.name, "은는")} 이미 씨뿌리기 상태다!`)
@@ -448,6 +453,7 @@ export default async function handler(req, res) {
           await log(logsRef, hitType === "evaded" ? `${enePokemon.name}에게는 맞지 않았다!` : `그러나 ${myPokemon.name}의 공격은 빗나갔다!`, hitType === "evaded" ? "evade" : "normal")
         } else {
           enePokemon.seeded = true
+          enePokemon.seededSince = nextTurnCount
           await log(logsRef, `${enePokemon.name}${josa(enePokemon.name, "의")} 몸에 씨를 뿌렸다!`)
         }
       }
