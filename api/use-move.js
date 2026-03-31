@@ -224,9 +224,7 @@ export default async function handler(req, res) {
     const myPokemon = myEntry[myActiveIdx]
     const enePokemon = enemyEntry[eneActiveIdx]
 
-    if (myPokemon.hp <= 0) return res.status(400).json({ error: "포켓몬 기절" })
-
-    // ── 공통으로 필요한 값들 먼저 선언 (bideSkip/bideRelease에서도 사용)
+    // ── 공통으로 필요한 값들 먼저 선언
     const myName = mySlot === "p1" ? freshData.player1_name : freshData.player2_name
     const enemyName = enemySlot === "p1" ? freshData.player1_name : freshData.player2_name
     const nextTurnCount = (freshData.turn_count ?? 1) + 1
@@ -280,6 +278,12 @@ export default async function handler(req, res) {
 
     const moveData = moveIdx === -1 || moveIdx === "-1" ? null : myPokemon.moves[moveIdx]
     const moveInfo = moveData ? moves[moveData.name] : null
+
+    // ── 포켓몬 기절 체크 (참기/구르기 자동처리 이후에 위치해야 함)
+    // moveIdx === -1(참기 자동)은 bideState 블록에서 처리하므로 일반 기술일 때만 막음
+    if (myPokemon.hp <= 0 && moveIdx !== -1 && moveIdx !== "-1") {
+      return res.status(400).json({ error: "포켓몬 기절" })
+    }
 
     // ── 참기 중이면 자동으로 턴 스킵 (moveIdx -1로 오거나 bideState 있을 때)
     if (myPokemon.bideState && (!moveInfo || !moveInfo?.bide)) {
