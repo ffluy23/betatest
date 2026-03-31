@@ -276,7 +276,10 @@ export default async function handler(req, res) {
       const expiredMsgs = tickMyRanks(myPokemon)
       clearRankStack(myPokemon)
       const nextTurn = nextTurnCount
-      if (nextTurn % 2 === 0) {
+      // EOT: 선공자가 아닌 쪽(후공자)이 행동 완료했을 때 발동
+      const firstSlot = freshData.first_slot ?? "p1"
+      const isEndOfRound = mySlot !== firstSlot
+      if (isEndOfRound) {
         // 씨뿌리기 처리 (내가 심은 쪽 → 상대가 당한 쪽)
         if (enePokemon.seeded) {
           const seedMsgs = applyLeechSeed(myEntry, myActiveIdx, enemyEntry, eneActiveIdx)
