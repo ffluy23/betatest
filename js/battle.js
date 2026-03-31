@@ -197,9 +197,15 @@ function triggerAttackEffect(atkPfx, defPfx) {
     const wrapper = document.getElementById("battle-wrapper")
     if (atkArea) { atkArea.classList.add("attacker-flash"); atkArea.addEventListener("animationend", () => atkArea.classList.remove("attacker-flash"), { once: true }) }
     if (wrapper) { wrapper.classList.add("screen-shake"); wrapper.addEventListener("animationend", () => wrapper.classList.remove("screen-shake"), { once: true }) }
+    // 안전 타임아웃: animationend가 안 fire되면 800ms 후 강제 resolve
+    const timeout = setTimeout(() => { if (defArea) defArea.classList.remove("defender-hit"); resolve() }, 800)
     setTimeout(() => {
-      if (defArea) { defArea.classList.add("defender-hit"); defArea.addEventListener("animationend", () => { defArea.classList.remove("defender-hit"); resolve() }, { once: true }) }
-      else resolve()
+      if (defArea) {
+        defArea.classList.add("defender-hit")
+        defArea.addEventListener("animationend", () => { clearTimeout(timeout); defArea.classList.remove("defender-hit"); resolve() }, { once: true })
+      } else {
+        clearTimeout(timeout); resolve()
+      }
     }, 120)
   })
 }
@@ -208,8 +214,10 @@ function triggerBlink(prefix) {
   return new Promise(resolve => {
     const area = document.getElementById(`${prefix}-pokemon-area`)
     if (!area) { resolve(); return }
+    // 안전 타임아웃: animationend가 안 fire되면 600ms 후 강제 resolve
+    const timeout = setTimeout(() => { area.classList.remove("blink-damage"); resolve() }, 600)
     area.classList.add("blink-damage")
-    area.addEventListener("animationend", () => { area.classList.remove("blink-damage"); resolve() }, { once: true })
+    area.addEventListener("animationend", () => { clearTimeout(timeout); area.classList.remove("blink-damage"); resolve() }, { once: true })
   })
 }
 
