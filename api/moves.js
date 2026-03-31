@@ -31,6 +31,8 @@ export const moves = {
 
   // ───── 노말 ─────
   "전광석화":   { power: 30, type: "노말", accuracy: 100, alwaysHit: true,  effect: null },
+  "돌림노래":   { power: 40, type: "노말", accuracy: 100, alwaysHit: false,  effect: null },
+  "탐내기":   { power: 40, type: "노말", accuracy: 100, alwaysHit: false,  effect: null },
   "스피드스타":   { power: 35, type: "노말", accuracy: 100, alwaysHit: true,  effect: null },
   "할퀴기":   { power: 30, type: "노말", accuracy: 100, alwaysHit: false,  effect: null },
   "몸통박치기": { power: 30, type: "노말", accuracy: 100, alwaysHit: false, effect: null },
@@ -43,6 +45,8 @@ export const moves = {
                   effect: { chance: 0.3, volatile: "풀죽음" } },
   "울음소리":   { power: 0, type: "노말", accuracy: 100, alwaysHit: false, effect: null,
                   rank: { targetAtk: -1, turns: 1 } },
+  "꼬리흔들기":   { power: 0, type: "노말", accuracy: 100, alwaysHit: false, effect: null,
+                  rank: { targetDef: -1, turns: 1 } },
   "웅크리기":   { power: 0, type: "노말", accuracy: 100, alwaysHit: true, effect: null,
                   rank: { Def: 1, turns: 1 } },
   "단단해지기":   { power: 0, type: "노말", accuracy: 100, alwaysHit: true, effect: null,
@@ -54,6 +58,8 @@ export const moves = {
   "뽐내기":     { power: 0, type: "노말", accuracy: 85, alwaysHit: false,
                   rank: { targetAtk: 2, turns: 2 }, effect: { chance: 1, volatile: "혼란" } },
   "뱀눈초리": { power: 0, type: "노말", accuracy: 90, alwaysHit: false, targetSelf: false, effect: { chance: 1, status: "마비" } },
+  
+  "누르기": { power: 50, type: "노말", accuracy: 90, alwaysHit: false, targetSelf: false, effect: { chance: 0.3, status: "마비" } },
 
   // ───── 불 ─────
   "화염바퀴":     { power: 40, type: "불", accuracy: 100, alwaysHit: false, effect: { chance: 0.1, status: "화상" } },
@@ -89,6 +95,7 @@ export const moves = {
   "나뭇잎": { power: 30, type: "풀", accuracy: 100, alwaysHit: false, effect: null },
   "씨폭탄":     { power: 40, type: "풀", accuracy: 100, alwaysHit: false, effect: null },
   "성장":           { power: 0, type: "풀", accuracy: 100, alwaysHit: true, targetSelf: true, effect: null, rank: { atk: 1, turns: 1 }  },
+  "흡수": { power: 40, type: "풀", accuracy: 100, alwaysHit: false, effect: { drain: 0.12 } },
 
   // ───── 얼음 ─────
   "눈보라":     { power: 40, type: "얼음", accuracy: 70,  alwaysHit: false, effect: { chance: 0.1, status: "얼음" } },
@@ -106,7 +113,7 @@ export const moves = {
   "발뒤꿈치떨어뜨리기": { power: 40, type: "격투", accuracy: 100, alwaysHit: false, effect: null },
 
   // ───── 독 ─────
-  "독침붕": { power: 40, type: "독", accuracy: 100, alwaysHit: false, effect: { chance: 0.3, status: "독" } },
+  "용해액": { power: 30, type: "독", accuracy: 100, alwaysHit: false, effect: null, rank: { chance: 0.1, def: -1, turns: 1 } },
   "헤이즈": { power: 40, type: "독", accuracy: 100, alwaysHit: false, effect: { chance: 0.2, status: "독" } },
 
   // ───── 땅 ─────
@@ -175,10 +182,11 @@ export const moves = {
 
   // ───── 페어리 ─────
   "문포스":     { power: 40, type: "페어리", accuracy: 100, alwaysHit: false, effect: null },
+  "요정의바람":     { power: 30, type: "페어리", accuracy: 100, alwaysHit: false, effect: null },
   "치근거리기":     { power: 50, type: "페어리", accuracy: 90, alwaysHit: false, effect: null, rank: { chance: 0.1, targetAtk: -1, turns: 1 } },
   "차밍보이스": { power: 35, type: "페어리", accuracy: 100, alwaysHit: true, effect: null },
-  "매지컬샤인": { power: 40, type: "페어리", accuracy: 100, alwaysHit: true,  effect: null },
-  "드레인키스": { power: 40, type: "페어리", accuracy: 100, alwaysHit: false, effect: { drain: 0.18 } },
+  "매지컬샤인": { power: 50, type: "페어리", accuracy: 100, alwaysHit: false,  effect: null },
+  "드레인키스": { power: 40, type: "페어리", accuracy: 100, alwaysHit: false, effect: { drain: 0.2 } },
   "애교부리기": { power: 0, type: "페어리", accuracy: 100, alwaysHit: false, targetSelf: false, effect: null, rank: { targetAtk: -1, turns: 1 } },
 
   // ───── 날씨 ─────
@@ -214,6 +222,7 @@ export const moves = {
   "병상첨병": { power: 40, type: "노말", accuracy: 100, alwaysHit: false, effect: null, sickPower: true },
 
   "기사회생": { power: 40, type: "격투", accuracy: 100, alwaysHit: false, effect: null, reversal: true },
+  "바둥바둥": { power: 40, type: "노말", accuracy: 100, alwaysHit: false, effect: null, reversal: true },
 "카운터":   { power: 1,  type: "격투", accuracy: 100, alwaysHit: false, effect: null, counter: true },
 "버티기":   { power: 0,  type: "노말", accuracy: 100, alwaysHit: true,  effect: null, endure: true, targetSelf: true },
 
