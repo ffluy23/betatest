@@ -274,13 +274,13 @@ async function handleLogEntry({ text, type, meta }) {
       await wait(200); break
     }
     case "heal_self": {
-      const { hp, maxHp } = meta ?? {}
+      const { slot, hp, maxHp } = meta ?? {}
+      const prefix = slot === mySlot ? "my" : "enemy"
       if (hp !== undefined && maxHp !== undefined)
-        updateHpBar("my-hp-bar", "my-active-hp", hp, maxHp, true)
+        updateHpBar(`${prefix}-hp-bar`, `${prefix}-active-hp`, hp, maxHp, prefix === "my")
       await wait(150)
       break
     }
-    // slot 명시 회복 (씨뿌리기 등)
     case "heal": {
       const { slot, hp, maxHp } = meta ?? {}
       const prefix = slot === mySlot ? "my" : "enemy"
@@ -465,6 +465,17 @@ function listenRoom() {
       if (!wasMine && myTurn) {
         actionDone = false
         const myPokemon = data[`${mySlot}_entry`]?.[data[`${mySlot}_active_idx`]]
+
+        // ── 내 포켓몬이 쓰러진 상태면 자동 발동 스킵, 교체 UI만 표시
+        if (!myPokemon || myPokemon.hp <= 0) {
+          if (logQueue.length === 0 && !isProcessing) {
+            updateTurnUI(data); updateMoveButtons(data); updateBenchButtons(data)
+          } else {
+            pendingTurnUpdate = data
+          }
+          return
+        }
+
         // ── 구르기 자동 발동
         if (myPokemon?.rollState?.active) {
           const rollMoveIdx = (myPokemon.moves ?? []).findIndex(m => m.name === "구르기")
@@ -477,24 +488,17 @@ function listenRoom() {
             return
           }
         }
-        // ── 참기 자동 발사 (turnsLeft가 0 이하면)
-        if (myPokemon?.bideState && myPokemon.bideState.turnsLeft <= 0) {
+
+        // ── 참기 자동 처리 (turnsLeft 상관없이 서버에서 알아서 처리)
+        if (myPokemon?.bideState) {
           actionDone = true
+          const bideIdx = (myPokemon.moves ?? []).findIndex(m => m.name === "참기")
+          const fallbackIdx = bideIdx !== -1 ? bideIdx : 0
           fetch(`${API}/api/use-move`, {
             method: "POST", headers: { "Content-Type": "application/json" },
-            body: JSON.stringify({ roomId: ROOM_ID, mySlot, moveIdx: -1, bideRelease: true })
+            body: JSON.stringify({ roomId: ROOM_ID, mySlot, moveIdx: fallbackIdx })
           })
           return
-        }
-        // ── 참기 중 턴 스킵 (turnsLeft > 0)
-        if (myPokemon?.bideState && myPokemon.bideState.turnsLeft > 0) {
-          if (!actionDone) {
-            actionDone = true
-            fetch(`${API}/api/use-move`, {
-              method: "POST", headers: { "Content-Type": "application/json" },
-              body: JSON.stringify({ roomId: ROOM_ID, mySlot, moveIdx: -1, bideSkip: true })
-            }).then(() => { actionDone = false })
-          }
         }
       }
       if (logQueue.length === 0 && !isProcessing) {
@@ -516,7 +520,6 @@ function updateActiveUINoHp(slot, data, prefix) {
   const nameEl = document.getElementById(`${prefix}-active-name`)
   if (nameEl) nameEl.innerText = data.intro_done ? (pokemon.name + st + cf) : "???"
   if (data.intro_done) updatePortrait(prefix, pokemon)
-  // 혼란 애니메이션
   updateConfusionEffect(prefix, (pokemon.confusion ?? 0) > 0)
 }
 
@@ -606,10 +609,8 @@ function updateMoveButtons(data) {
     const rollActive = (myPokemon?.rollState?.active ?? false)
     const isRollout = moveInfo?.rollout
     const lockedByRoll = rollActive && !isRollout
-    // 사슬묶기: 묶인 기술이면 비활성
     const chainBound = myPokemon?.chainBound
     const lockedByChain = !!(chainBound && chainBound.turnsLeft > 0 && chainBound.moveName === move.name)
-    // 참기 중: 모든 기술 비활성
     const lockedByBide = !!(myPokemon?.bideState && myPokemon.bideState.turnsLeft > 0)
     btn.innerHTML = `<span style="display:block;font-size:13px;font-weight:bold;">${move.name}</span><span style="display:block;font-size:10px;opacity:0.85;">PP: ${move.pp} | ${accText}</span>`
     const color = typeColors[moveInfo?.type] ?? "#a0a0a0"
