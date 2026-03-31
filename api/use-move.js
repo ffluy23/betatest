@@ -269,13 +269,20 @@ export default async function handler(req, res) {
       return res.status(200).json({ ok: true })
     }
 
-    const moveData = myPokemon.moves[moveIdx]
-    if (!moveData || moveData.pp <= 0) return res.status(400).json({ error: "PP 없음" })
+    // ── 참기 중 자동 처리 (클라이언트가 moveIdx: -1로 보냄)
+    if (moveIdx === -1 || moveIdx === "-1") {
+      if (!myPokemon.bideState) return res.status(400).json({ error: "참기 상태 아님" })
+      // bideState 처리로 바로 이동 (아래 bideState 블록과 동일 로직)
+    } else {
+      const moveData = myPokemon.moves[moveIdx]
+      if (!moveData || moveData.pp <= 0) return res.status(400).json({ error: "PP 없음" })
+    }
 
-    const moveInfo = moves[moveData.name]
+    const moveData = moveIdx === -1 || moveIdx === "-1" ? null : myPokemon.moves[moveIdx]
+    const moveInfo = moveData ? moves[moveData.name] : null
 
-    // ── 참기 중이면 자동으로 턴 스킵
-    if (myPokemon.bideState && !moveInfo?.bide) {
+    // ── 참기 중이면 자동으로 턴 스킵 (moveIdx -1로 오거나 bideState 있을 때)
+    if (myPokemon.bideState && (!moveInfo || !moveInfo?.bide)) {
       myPokemon.bideState.turnsLeft--
 
       if (myPokemon.bideState.turnsLeft > 0) {
@@ -388,7 +395,7 @@ export default async function handler(req, res) {
       if (enePokemon.hp !== eotHpBefore.ene)
         await log(logsRef, "", "hit", { defender: enemySlot, hp: enePokemon.hp, maxHp: enePokemon.maxHp ?? enePokemon.hp })
       if (anyFainted) {
-        if (!isAllFainted(enemyEntry) && anyFainted) revengeUpdate[`revenge_ready_${enemySlot}`] = true
+        if (!isAllFainted(enemyEntry)) revengeUpdate[`revenge_ready_${enemySlot}`] = true
         if (isAllFainted(enemyEntry)) {
           await roomRef.update({ [`${mySlot}_entry`]: myEntry, [`${enemySlot}_entry`]: enemyEntry, turn_count: nextTurn, game_over: true, winner: myName, current_turn: null, ...revengeUpdate, ...(weatherResult.weather ? { weather: weatherResult.weather } : {}) })
           await log(logsRef, `${myName}의 승리!`, "win"); return
@@ -399,14 +406,27 @@ export default async function handler(req, res) {
       }
 
       for (const msg of expiredMsgs) await log(logsRef, msg)
-      if (enePokemon.hp <= 0) revengeUpdate[`revenge_ready_${enemySlot}`] = false
-      if (myPokemon.hp <= 0) revengeUpdate[`revenge_ready_${enemySlot}`] = true
+
+      // 내 포켓몬이 쓰러졌으면 force_switch 플래그 세팅 (턴은 상대에게 넘어가지만 교체는 허용)
+      const myFainted = myPokemon.hp <= 0
+      const eneFainted = enePokemon.hp <= 0
+      if (eneFainted) revengeUpdate[`revenge_ready_${enemySlot}`] = false
+      if (myFainted) {
+        revengeUpdate[`revenge_ready_${enemySlot}`] = true
+        revengeUpdate[`force_switch_${mySlot}`] = true
+      } else {
+        revengeUpdate[`force_switch_${mySlot}`] = false
+      }
+
       if (isAllFainted(enemyEntry)) {
         await roomRef.update({ [`${mySlot}_entry`]: myEntry, [`${enemySlot}_entry`]: enemyEntry, turn_count: nextTurn, game_over: true, winner: myName, current_turn: null, ...revengeUpdate, ...(weatherResult.weather ? { weather: weatherResult.weather } : {}) })
         await log(logsRef, `${myName}의 승리!`, "win")
       } else if (isAllFainted(myEntry)) {
         await roomRef.update({ [`${mySlot}_entry`]: myEntry, [`${enemySlot}_entry`]: enemyEntry, turn_count: nextTurn, game_over: true, winner: enemyName, current_turn: null, ...revengeUpdate, ...(weatherResult.weather ? { weather: weatherResult.weather } : {}) })
         await log(logsRef, `${enemyName}의 승리!`, "win")
+      } else if (myFainted) {
+        // 내가 쓰러졌지만 전멸은 아님 → 턴은 상대에게 넘기되 force_switch 플래그 유지
+        await roomRef.update({ [`${mySlot}_entry`]: myEntry, [`${enemySlot}_entry`]: enemyEntry, current_turn: enemySlot, turn_count: nextTurn, ...revengeUpdate, ...(weatherResult.weather ? { weather: weatherResult.weather } : {}) })
       } else {
         await roomRef.update({ [`${mySlot}_entry`]: myEntry, [`${enemySlot}_entry`]: enemyEntry, current_turn: enemySlot, turn_count: nextTurn, ...revengeUpdate, ...(weatherResult.weather ? { weather: weatherResult.weather } : {}) })
       }
@@ -512,9 +532,22 @@ export default async function handler(req, res) {
       }
       const expMsgs = tickMyRanks(myPokemon); clearRankStack(myPokemon)
       for (const msg of expMsgs) await log(logsRef, msg)
+
+      // EOT (독/화상) 처리
+      const rollEotHpBefore = { my: myPokemon.hp, ene: enePokemon.hp }
+      const { msgs: rollEotMsgs, anyFainted: rollEotFainted } = applyEndOfTurnDamage([myEntry, enemyEntry])
+      for (const msg of rollEotMsgs) await log(logsRef, msg)
+      if (myPokemon.hp !== rollEotHpBefore.my)
+        await log(logsRef, "", "hit_self", { slot: mySlot, hp: myPokemon.hp, maxHp: myPokemon.maxHp ?? myPokemon.hp })
+      if (enePokemon.hp !== rollEotHpBefore.ene)
+        await log(logsRef, "", "hit", { defender: enemySlot, hp: enePokemon.hp, maxHp: enePokemon.maxHp ?? enePokemon.hp })
+
       if (isAllFainted(enemyEntry)) {
         await roomRef.update({ [`${mySlot}_entry`]: myEntry, [`${enemySlot}_entry`]: enemyEntry, turn_count: nextTurnCount, game_over: true, winner: myName, current_turn: null })
         await log(logsRef, `${myName}의 승리!`, "win")
+      } else if (isAllFainted(myEntry)) {
+        await roomRef.update({ [`${mySlot}_entry`]: myEntry, [`${enemySlot}_entry`]: enemyEntry, turn_count: nextTurnCount, game_over: true, winner: enemyName, current_turn: null })
+        await log(logsRef, `${enemyName}의 승리!`, "win")
       } else {
         await roomRef.update({ [`${mySlot}_entry`]: myEntry, [`${enemySlot}_entry`]: enemyEntry, current_turn: enemySlot, turn_count: nextTurnCount })
       }

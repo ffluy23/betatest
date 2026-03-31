@@ -489,14 +489,12 @@ function listenRoom() {
           }
         }
 
-        // ── 참기 자동 처리 (turnsLeft 상관없이 서버에서 알아서 처리)
+        // ── 참기 자동 처리 (moveIdx -1로 보내서 서버가 bideState 분기로만 처리하게)
         if (myPokemon?.bideState) {
           actionDone = true
-          const bideIdx = (myPokemon.moves ?? []).findIndex(m => m.name === "참기")
-          const fallbackIdx = bideIdx !== -1 ? bideIdx : 0
           fetch(`${API}/api/use-move`, {
             method: "POST", headers: { "Content-Type": "application/json" },
-            body: JSON.stringify({ roomId: ROOM_ID, mySlot, moveIdx: fallbackIdx })
+            body: JSON.stringify({ roomId: ROOM_ID, mySlot, moveIdx: -1 })
           })
           return
         }
