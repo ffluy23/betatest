@@ -221,9 +221,12 @@ export default async function handler(req, res) {
     const recordDmg = (slot, dmg) => { revengeUpdate[`last_damage_taken_${slot}`] = dmg }
 
     // 희망사항 회복
-    // 참기 턴 차감
+    // 참기 턴 차감 + 스킵
     if (myPokemon.bideState && myPokemon.bideState.turnsLeft > 0) {
       myPokemon.bideState.turnsLeft--
+      await log(logsRef, `${myPokemon.name}${josa(myPokemon.name, "은는")} 참고있다!`)
+      await roomRef.update({ [`${mySlot}_entry`]: myEntry, current_turn: enemySlot, turn_count: nextTurnCount })
+      return res.status(200).json({ ok: true })
     }
 
     const hpBefore = myPokemon.hp
