@@ -599,12 +599,14 @@ function updateMoveButtons(data) {
     // 사슬묶기: 묶인 기술이면 비활성
     const chainBound = myPokemon?.chainBound
     const lockedByChain = !!(chainBound && chainBound.turnsLeft > 0 && chainBound.moveName === move.name)
+    // 참기 중: 모든 기술 비활성
+    const lockedByBide = !!(myPokemon?.bideState && myPokemon.bideState.turnsLeft > 0)
     btn.innerHTML = `<span style="display:block;font-size:13px;font-weight:bold;">${move.name}</span><span style="display:block;font-size:10px;opacity:0.85;">PP: ${move.pp} | ${accText}</span>`
     const color = typeColors[moveInfo?.type] ?? "#a0a0a0"
     btn.style.setProperty("--btn-color", color); btn.style.background = color
     btn.style.boxShadow = `inset 0 0 0 2px white, 0 0 0 2px ${color}`
     const queueBusy = logQueue.length > 0 || isProcessing
-    const disabled = isSpectator || fainted || move.pp <= 0 || !myTurn || actionDone || !lrUnlocked || lockedByRoll || lockedByChain || queueBusy
+    const disabled = isSpectator || fainted || move.pp <= 0 || !myTurn || actionDone || !lrUnlocked || lockedByRoll || lockedByChain || lockedByBide || queueBusy
     if (disabled) { btn.disabled = true; btn.onclick = null }
     else { btn.disabled = false; btn.onclick = () => { playSound(SFX_BTN); useMove(i, data) } }
   }
@@ -629,7 +631,7 @@ function updateBenchButtons(data) {
     else {
       btn.innerHTML = `<span class="bench-name">${pkmn.name}</span><span class="bench-hp">HP: ${pkmn.hp}/${pkmn.maxHp}</span>`
       const queueBusy = logQueue.length > 0 || isProcessing
-      btn.disabled = isSpectator || !myTurn || actionDone || queueBusy
+      btn.disabled = isSpectator || !myTurn || actionDone || queueBusy || !!(myEntry[activeIdx]?.bideState?.turnsLeft > 0)
       if (!isSpectator) btn.onclick = () => { playSound(SFX_BTN); switchPokemon(idx) }
     }
     bench.appendChild(btn)
