@@ -276,10 +276,10 @@ export default async function handler(req, res) {
       const expiredMsgs = tickMyRanks(myPokemon)
       clearRankStack(myPokemon)
       const nextTurn = nextTurnCount
-      // EOT: 선공자가 아닌 쪽(후공자)이 행동 완료했을 때 발동
       const firstSlot = freshData.first_slot ?? "p1"
       const isEndOfRound = mySlot !== firstSlot
-      // 씨뿌리기: 매 행동마다 발동 (심은 직후 첫 턴만 스킵)
+
+      // 씨뿌리기: 내 행동 후마다 발동, 심은 직후 턴만 스킵
       if (enePokemon.seeded && (enePokemon.seededSince ?? 0) < nextTurn) {
         const seedMsgs = applyLeechSeed(myEntry, myActiveIdx, enemyEntry, eneActiveIdx)
         for (const msg of seedMsgs) await log(logsRef, msg)
@@ -294,18 +294,22 @@ export default async function handler(req, res) {
         if (eneAfter && eneAfter.hp > 0) await log(logsRef, "", "heal", { slot: enemySlot, hp: eneAfter.hp, maxHp: eneAfter.maxHp ?? eneAfter.hp })
       }
 
-      const { msgs: eotMsgs, anyFainted } = applyEndOfTurnDamage([myEntry, enemyEntry])
-      for (const msg of eotMsgs) await log(logsRef, msg)
-      if (anyFainted) {
-        if (!isAllFainted(enemyEntry) && anyFainted) revengeUpdate[`revenge_ready_${enemySlot}`] = true
-        if (isAllFainted(enemyEntry)) {
-          await roomRef.update({ [`${mySlot}_entry`]: myEntry, [`${enemySlot}_entry`]: enemyEntry, turn_count: nextTurn, game_over: true, winner: myName, current_turn: null, ...revengeUpdate, ...(weatherResult.weather ? { weather: weatherResult.weather } : {}) })
-          await log(logsRef, `${myName}의 승리!`, "win"); return
-        } else if (isAllFainted(myEntry)) {
-          await roomRef.update({ [`${mySlot}_entry`]: myEntry, [`${enemySlot}_entry`]: enemyEntry, turn_count: nextTurn, game_over: true, winner: enemyName, current_turn: null, ...revengeUpdate, ...(weatherResult.weather ? { weather: weatherResult.weather } : {}) })
-          await log(logsRef, `${enemyName}의 승리!`, "win"); return
+      // 독/화상: 라운드 끝(후공자 행동 후)에만 발동
+      if (isEndOfRound) {
+        const { msgs: eotMsgs, anyFainted } = applyEndOfTurnDamage([myEntry, enemyEntry])
+        for (const msg of eotMsgs) await log(logsRef, msg)
+        if (anyFainted) {
+          if (!isAllFainted(enemyEntry) && anyFainted) revengeUpdate[`revenge_ready_${enemySlot}`] = true
+          if (isAllFainted(enemyEntry)) {
+            await roomRef.update({ [`${mySlot}_entry`]: myEntry, [`${enemySlot}_entry`]: enemyEntry, turn_count: nextTurn, game_over: true, winner: myName, current_turn: null, ...revengeUpdate, ...(weatherResult.weather ? { weather: weatherResult.weather } : {}) })
+            await log(logsRef, `${myName}의 승리!`, "win"); return
+          } else if (isAllFainted(myEntry)) {
+            await roomRef.update({ [`${mySlot}_entry`]: myEntry, [`${enemySlot}_entry`]: enemyEntry, turn_count: nextTurn, game_over: true, winner: enemyName, current_turn: null, ...revengeUpdate, ...(weatherResult.weather ? { weather: weatherResult.weather } : {}) })
+            await log(logsRef, `${enemyName}의 승리!`, "win"); return
+          }
         }
       }
+
       for (const msg of expiredMsgs) await log(logsRef, msg)
       if (enePokemon.hp <= 0) revengeUpdate[`revenge_ready_${enemySlot}`] = false
       if (myPokemon.hp <= 0) revengeUpdate[`revenge_ready_${enemySlot}`] = true
