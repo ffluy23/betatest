@@ -274,6 +274,42 @@ export default async function handler(req, res) {
 
     const moveInfo = moves[moveData.name]
 
+    // ── 참기 중이면 자동으로 턴 스킵
+    if (myPokemon.bideState && !moveInfo?.bide) {
+      myPokemon.bideState.turnsLeft--
+
+      if (myPokemon.bideState.turnsLeft > 0) {
+        // 아직 참는 중
+        await log(logsRef, `${myPokemon.name}${josa(myPokemon.name, "은는")} 참고있다...`)
+        await roomRef.update({ [`${mySlot}_entry`]: myEntry, current_turn: enemySlot, turn_count: nextTurnCount })
+      } else {
+        // 발사 타이밍
+        const bide = myPokemon.bideState
+        myPokemon.bideState = null
+        await log(logsRef, `${myPokemon.name}${josa(myPokemon.name, "은는")} 참고있다...`)
+        if (!bide || bide.damage <= 0) {
+          await log(logsRef, `${myPokemon.name}${josa(myPokemon.name, "은는")} 참기 발사에 실패했다!`)
+          await roomRef.update({ [`${mySlot}_entry`]: myEntry, [`${enemySlot}_entry`]: enemyEntry, current_turn: enemySlot, turn_count: nextTurnCount })
+        } else {
+          const bideDmg = bide.damage * 2
+          await log(logsRef, `${myPokemon.name}${josa(myPokemon.name, "은는")} 참았던 에너지를 방출했다!`)
+          await log(logsRef, "", "attack")
+          enePokemon.hp = Math.max(0, enePokemon.hp - bideDmg)
+          if (enePokemon.hp <= 0 && enePokemon.enduring) { enePokemon.hp = 1; enePokemon.enduring = false }
+          await log(logsRef, "", "hit", { defender: enemySlot, hp: enePokemon.hp, maxHp: enePokemon.maxHp ?? enePokemon.hp })
+          await log(logsRef, `${bideDmg} 데미지!`)
+          if (enePokemon.hp <= 0) await log(logsRef, `${enePokemon.name}${josa(enePokemon.name, "은는")} 쓰러졌다!`, "faint")
+          if (isAllFainted(enemyEntry)) {
+            await roomRef.update({ [`${mySlot}_entry`]: myEntry, [`${enemySlot}_entry`]: enemyEntry, turn_count: nextTurnCount, game_over: true, winner: myName, current_turn: null })
+            await log(logsRef, `${myName}의 승리!`, "win")
+          } else {
+            await roomRef.update({ [`${mySlot}_entry`]: myEntry, [`${enemySlot}_entry`]: enemyEntry, current_turn: enemySlot, turn_count: nextTurnCount })
+          }
+        }
+      }
+      return res.status(200).json({ ok: true })
+    }
+
     const hitLog = (defender, pokemon) => log(logsRef, "", "hit", { defender, hp: pokemon.hp, maxHp: pokemon.maxHp ?? pokemon.hp })
     const hitSelfLog = () => log(logsRef, "", "hit_self", { slot: mySlot, hp: myPokemon.hp, maxHp: myPokemon.maxHp ?? myPokemon.hp })
     const recordDmg = (slot, dmg) => { revengeUpdate[`last_damage_taken_${slot}`] = dmg }
@@ -283,7 +319,7 @@ export default async function handler(req, res) {
     const wishMsgs = tickVolatiles(myPokemon)
     for (const msg of wishMsgs) await log(logsRef, msg)
     if (myPokemon.hp > hpBefore) {
-      await log(logsRef, "", "heal_self", { hp: myPokemon.hp, maxHp: myPokemon.maxHp ?? myPokemon.hp })
+      await log(logsRef, "", "heal_self", { slot: mySlot, hp: myPokemon.hp, maxHp: myPokemon.maxHp ?? myPokemon.hp })
     }
 
     // 행동 불능 체크
@@ -778,10 +814,11 @@ export default async function handler(req, res) {
             enePokemon.ranks = defaultRanks()
             await log(logsRef, `${enePokemon.name}${josa(enePokemon.name, "의")} 능력 변화가 원래대로 돌아왔다!`)
           }
-          const effectMsgs = applyMoveEffect(moveInfo?.effect, myPokemon, enePokemon, damage)
+          const effectMsgs = applyMoveEffect(moveInfo?.effect ?? null, myPokemon, enePokemon, damage)
           for (const msg of effectMsgs) await log(logsRef, msg)
-          if (moveInfo?.effect?.drain && damage > 0) {
-            await log(logsRef, "", "heal_self", { hp: myPokemon.hp, maxHp: myPokemon.maxHp ?? myPokemon.hp })
+          // drain 회복은 applyMoveEffect 안에서 이미 hp가 올랐을 때만 heal_self 이벤트
+          if (moveInfo?.effect?.drain && damage > 0 && myPokemon.hp > (freshData[`${mySlot}_entry`][myActiveIdx].hp)) {
+            await log(logsRef, "", "heal_self", { slot: mySlot, hp: myPokemon.hp, maxHp: myPokemon.maxHp ?? myPokemon.hp })
           }
           if (moveInfo?.rank) {
             const rankMsgs = applyRankChanges(moveInfo.rank, myPokemon, enePokemon, null)
