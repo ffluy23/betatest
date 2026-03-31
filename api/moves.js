@@ -226,6 +226,7 @@ export const moves = {
 "카운터":   { power: 1,  type: "격투", accuracy: 100, alwaysHit: false, effect: null, counter: true },
 "버티기":   { power: 0,  type: "노말", accuracy: 100, alwaysHit: true,  effect: null, endure: true, targetSelf: true },
 
+"객기": { power: 40, type: "노말", accuracy: 100, alwaysHit: false, effect: null, guts: true },
 "씨뿌리기": { power: 0, type: "풀", accuracy: 90, alwaysHit: false, effect: null, leechSeed: true, targetSelf: false },
 "치유파동": { power: 0, type: "에스퍼", accuracy: 100, alwaysHit: true, effect: null, healPulse: true, targetSelf: false },
 "참기":     { power: 0, type: "노말", accuracy: 100, alwaysHit: true, effect: null, bide: true, targetSelf: true },
