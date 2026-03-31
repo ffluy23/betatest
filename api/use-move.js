@@ -42,9 +42,9 @@ function clearRankStack(pokemon) {
 function tickMyRanks(pokemon) {
   if (!pokemon.ranks) return []
   const r = pokemon.ranks, msgs = []
-  if (r.atkTurns > 0) { r.atkTurns--; if (!r.atkTurns) { r.atk = pokemon.attack ?? 3; msgs.push(`${pokemon.name}의 공격 랭크가 원래대로 돌아왔다!`) } }
-  if (r.defTurns > 0) { r.defTurns--; if (!r.defTurns) { r.def = pokemon.defense ?? 3; msgs.push(`${pokemon.name}의 방어 랭크가 원래대로 돌아왔다!`) } }
-  if (r.spdTurns > 0) { r.spdTurns--; if (!r.spdTurns) { r.spd = pokemon.speed ?? 3;   msgs.push(`${pokemon.name}의 스피드 랭크가 원래대로 돌아왔다!`) } }
+  if (r.atkTurns > 0) { r.atkTurns--; if (!r.atkTurns) { r.atk = pokemon.attack ?? 3; msgs.push(`${pokemon.name}의 공격이 원래대로 돌아왔다!`) } }
+  if (r.defTurns > 0) { r.defTurns--; if (!r.defTurns) { r.def = pokemon.defense ?? 3; msgs.push(`${pokemon.name}의 방어가 원래대로 돌아왔다!`) } }
+  if (r.spdTurns > 0) { r.spdTurns--; if (!r.spdTurns) { r.spd = pokemon.speed ?? 3;   msgs.push(`${pokemon.name}의 스피드가 원래대로 돌아왔다!`) } }
   return msgs
 }
 
@@ -87,33 +87,33 @@ function applyRankChanges(r, self, target, moveName) {
 
   if (r.atk !== undefined) {
     const base = getStat(self, "atk")
-    if (r.atk > 0) { const p = selfR.atk; selfR.atk = Math.min(base * MAX_MULT, selfR.atk + r.atk); selfR.atkTurns = r.turns ?? 2; msgs.push(`${self.name}의 공격이 올라갔다! (${p}→${selfR.atk})`) }
-    else if (r.atk < 0) { if (selfR.atk <= MIN_ATK) msgs.push(`${self.name}의 공격은 더 이상 내려가지 않는다!`); else { const p = selfR.atk; selfR.atk = Math.max(MIN_ATK, selfR.atk + r.atk); selfR.atkTurns = r.turns ?? 2; msgs.push(`${self.name}의 공격이 내려갔다! (${p}→${selfR.atk})`) } }
+    if (r.atk > 0) { const p = selfR.atk; selfR.atk = Math.min(base * MAX_MULT, selfR.atk + r.atk); selfR.atkTurns = r.turns ?? 2; msgs.push(`${self.name}의 공격이 ${selfR.atk - p} 상승했다!`) }
+    else if (r.atk < 0) { if (selfR.atk <= MIN_ATK) msgs.push(`${self.name}의 공격은 더 이상 내려가지 않는다!`); else { const p = selfR.atk; selfR.atk = Math.max(MIN_ATK, selfR.atk + r.atk); selfR.atkTurns = r.turns ?? 2; msgs.push(`${self.name}의 공격이 ${p - selfR.atk} 하락했다!`) } }
   }
   if (r.def !== undefined) {
     const base = getStat(self, "def")
-    if (r.def > 0) { const p = selfR.def; selfR.def = Math.min(base * MAX_MULT, selfR.def + r.def); selfR.defTurns = r.turns ?? 2; msgs.push(`${self.name}의 방어가 올라갔다! (${p}→${selfR.def})`) }
-    else if (r.def < 0) { if (selfR.def <= MIN_DEF) msgs.push(`${self.name}의 방어는 더 이상 내려가지 않는다!`); else { const p = selfR.def; selfR.def = Math.max(MIN_DEF, selfR.def + r.def); selfR.defTurns = r.turns ?? 2; msgs.push(`${self.name}의 방어가 내려갔다! (${p}→${selfR.def})`) } }
+    if (r.def > 0) { const p = selfR.def; selfR.def = Math.min(base * MAX_MULT, selfR.def + r.def); selfR.defTurns = r.turns ?? 2; msgs.push(`${self.name}의 방어가 ${selfR.def - p} 상승했다!`) }
+    else if (r.def < 0) { if (selfR.def <= MIN_DEF) msgs.push(`${self.name}의 방어는 더 이상 내려가지 않는다!`); else { const p = selfR.def; selfR.def = Math.max(MIN_DEF, selfR.def + r.def); selfR.defTurns = r.turns ?? 2; msgs.push(`${self.name}의 방어가 ${p - selfR.def} 하락했다!`) } }
   }
   if (r.spd !== undefined) {
     const base = getStat(self, "spd")
-    if (r.spd > 0) { const p = selfR.spd; selfR.spd = Math.min(base * MAX_MULT, selfR.spd + r.spd); selfR.spdTurns = r.turns ?? 2; msgs.push(`${self.name}의 스피드가 올라갔다! (${p}→${selfR.spd})`) }
-    else if (r.spd < 0) { if (selfR.spd <= MIN_SPD) msgs.push(`${self.name}의 스피드는 더 이상 내려가지 않는다!`); else { const p = selfR.spd; selfR.spd = Math.max(MIN_SPD, selfR.spd + r.spd); selfR.spdTurns = r.turns ?? 2; msgs.push(`${self.name}의 스피드가 내려갔다! (${p}→${selfR.spd})`) } }
+    if (r.spd > 0) { const p = selfR.spd; selfR.spd = Math.min(base * MAX_MULT, selfR.spd + r.spd); selfR.spdTurns = r.turns ?? 2; msgs.push(`${self.name}의 스피드가 ${selfR.spd - p} 상승했다!`) }
+    else if (r.spd < 0) { if (selfR.spd <= MIN_SPD) msgs.push(`${self.name}의 스피드는 더 이상 내려가지 않는다!`); else { const p = selfR.spd; selfR.spd = Math.max(MIN_SPD, selfR.spd + r.spd); selfR.spdTurns = r.turns ?? 2; msgs.push(`${self.name}의 스피드가 ${p - selfR.spd} 하락했다!`) } }
   }
   if (r.targetAtk !== undefined) {
     const base = getStat(target, "atk")
-    if (r.targetAtk < 0) { if (targetR.atk <= MIN_ATK) msgs.push(`${target.name}의 공격은 더 이상 내려가지 않는다!`); else { const p = targetR.atk; targetR.atk = Math.max(MIN_ATK, targetR.atk + r.targetAtk); targetR.atkTurns = r.turns ?? 2; msgs.push(`${target.name}의 공격이 내려갔다! (${p}→${targetR.atk})`) } }
-    else if (r.targetAtk > 0) { const p = targetR.atk; targetR.atk = Math.min(base * MAX_MULT, targetR.atk + r.targetAtk); targetR.atkTurns = r.turns ?? 2; msgs.push(`${target.name}의 공격이 올라갔다! (${p}→${targetR.atk})`) }
+    if (r.targetAtk < 0) { if (targetR.atk <= MIN_ATK) msgs.push(`${target.name}의 공격은 더 이상 내려가지 않는다!`); else { const p = targetR.atk; targetR.atk = Math.max(MIN_ATK, targetR.atk + r.targetAtk); targetR.atkTurns = r.turns ?? 2; msgs.push(`${target.name}의 공격이 ${p - targetR.atk} 하락했다!`) } }
+    else if (r.targetAtk > 0) { const p = targetR.atk; targetR.atk = Math.min(base * MAX_MULT, targetR.atk + r.targetAtk); targetR.atkTurns = r.turns ?? 2; msgs.push(`${target.name}의 공격이 ${targetR.atk - p} 상승했다!`) }
   }
   if (r.targetDef !== undefined) {
     const base = getStat(target, "def")
-    if (r.targetDef < 0) { if (targetR.def <= MIN_DEF) msgs.push(`${target.name}의 방어는 더 이상 내려가지 않는다!`); else { const p = targetR.def; targetR.def = Math.max(MIN_DEF, targetR.def + r.targetDef); targetR.defTurns = r.turns ?? 2; msgs.push(`${target.name}의 방어가 내려갔다! (${p}→${targetR.def})`) } }
-    else if (r.targetDef > 0) { const p = targetR.def; targetR.def = Math.min(base * MAX_MULT, targetR.def + r.targetDef); targetR.defTurns = r.turns ?? 2; msgs.push(`${target.name}의 방어가 올라갔다! (${p}→${targetR.def})`) }
+    if (r.targetDef < 0) { if (targetR.def <= MIN_DEF) msgs.push(`${target.name}의 방어는 더 이상 내려가지 않는다!`); else { const p = targetR.def; targetR.def = Math.max(MIN_DEF, targetR.def + r.targetDef); targetR.defTurns = r.turns ?? 2; msgs.push(`${target.name}의 방어가 ${p - targetR.def} 하락했다!`) } }
+    else if (r.targetDef > 0) { const p = targetR.def; targetR.def = Math.min(base * MAX_MULT, targetR.def + r.targetDef); targetR.defTurns = r.turns ?? 2; msgs.push(`${target.name}의 방어가 ${targetR.def - p} 상승했다!`) }
   }
   if (r.targetSpd !== undefined) {
     const base = getStat(target, "spd")
-    if (r.targetSpd < 0) { if (targetR.spd <= MIN_SPD) msgs.push(`${target.name}의 스피드는 더 이상 내려가지 않는다!`); else { const p = targetR.spd; targetR.spd = Math.max(MIN_SPD, targetR.spd + r.targetSpd); targetR.spdTurns = r.turns ?? 2; msgs.push(`${target.name}의 스피드가 내려갔다! (${p}→${targetR.spd})`) } }
-    else if (r.targetSpd > 0) { const p = targetR.spd; targetR.spd = Math.min(base * MAX_MULT, targetR.spd + r.targetSpd); targetR.spdTurns = r.turns ?? 2; msgs.push(`${target.name}의 스피드가 올라갔다! (${p}→${targetR.spd})`) }
+    if (r.targetSpd < 0) { if (targetR.spd <= MIN_SPD) msgs.push(`${target.name}의 스피드는 더 이상 내려가지 않는다!`); else { const p = targetR.spd; targetR.spd = Math.max(MIN_SPD, targetR.spd + r.targetSpd); targetR.spdTurns = r.turns ?? 2; msgs.push(`${target.name}의 스피드가 ${p - targetR.spd} 하락했다!`) } }
+    else if (r.targetSpd > 0) { const p = targetR.spd; targetR.spd = Math.min(base * MAX_MULT, targetR.spd + r.targetSpd); targetR.spdTurns = r.turns ?? 2; msgs.push(`${target.name}의 스피드가 ${targetR.spd - p} 상승했다!`) }
   }
   self.ranks = selfR; target.ranks = targetR
   return msgs
@@ -351,19 +351,17 @@ export default async function handler(req, res) {
         if (eneAfter && eneAfter.hp > 0) await log(logsRef, "", "heal", { slot: enemySlot, hp: eneAfter.hp, maxHp: eneAfter.maxHp ?? eneAfter.hp })
       }
 
-      // 독/화상: 라운드 끝(후공자 행동 후)에만 발동
-      if (isEndOfRound) {
-        const { msgs: eotMsgs, anyFainted } = applyEndOfTurnDamage([myEntry, enemyEntry])
-        for (const msg of eotMsgs) await log(logsRef, msg)
-        if (anyFainted) {
-          if (!isAllFainted(enemyEntry) && anyFainted) revengeUpdate[`revenge_ready_${enemySlot}`] = true
-          if (isAllFainted(enemyEntry)) {
-            await roomRef.update({ [`${mySlot}_entry`]: myEntry, [`${enemySlot}_entry`]: enemyEntry, turn_count: nextTurn, game_over: true, winner: myName, current_turn: null, ...revengeUpdate, ...(weatherResult.weather ? { weather: weatherResult.weather } : {}) })
-            await log(logsRef, `${myName}의 승리!`, "win"); return
-          } else if (isAllFainted(myEntry)) {
-            await roomRef.update({ [`${mySlot}_entry`]: myEntry, [`${enemySlot}_entry`]: enemyEntry, turn_count: nextTurn, game_over: true, winner: enemyName, current_turn: null, ...revengeUpdate, ...(weatherResult.weather ? { weather: weatherResult.weather } : {}) })
-            await log(logsRef, `${enemyName}의 승리!`, "win"); return
-          }
+      // 독/화상: 씨뿌리기와 동일하게 내 행동 후마다 발동
+      const { msgs: eotMsgs, anyFainted } = applyEndOfTurnDamage([myEntry, enemyEntry])
+      for (const msg of eotMsgs) await log(logsRef, msg)
+      if (anyFainted) {
+        if (!isAllFainted(enemyEntry) && anyFainted) revengeUpdate[`revenge_ready_${enemySlot}`] = true
+        if (isAllFainted(enemyEntry)) {
+          await roomRef.update({ [`${mySlot}_entry`]: myEntry, [`${enemySlot}_entry`]: enemyEntry, turn_count: nextTurn, game_over: true, winner: myName, current_turn: null, ...revengeUpdate, ...(weatherResult.weather ? { weather: weatherResult.weather } : {}) })
+          await log(logsRef, `${myName}의 승리!`, "win"); return
+        } else if (isAllFainted(myEntry)) {
+          await roomRef.update({ [`${mySlot}_entry`]: myEntry, [`${enemySlot}_entry`]: enemyEntry, turn_count: nextTurn, game_over: true, winner: enemyName, current_turn: null, ...revengeUpdate, ...(weatherResult.weather ? { weather: weatherResult.weather } : {}) })
+          await log(logsRef, `${enemyName}의 승리!`, "win"); return
         }
       }
 
