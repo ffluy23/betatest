@@ -217,10 +217,11 @@ export const moves = {
 
   // ───── 특수 기술 추가분 ─────
   "속임수":       { power: 50, type: "악", accuracy: 100, alwaysHit: false, effect: null, trickster: true },
-  "날개쉬기":     { power: 0, type: "비행", accuracy: 100, alwaysHit: true, effect: { heal: 0.12, removeFlying: true }, targetSelf: true },
+  "날개쉬기": { power: 0, type: "비행", accuracy: 100, alwaysHit: true, 
+              effect: { removeFlying: true }, targetSelf: true },
   "이판사판태클": { power: 70, type: "노말", accuracy: 100, alwaysHit: false, effect: { recoil: 0.33 } },
   "보복":         { power: 50, type: "악", accuracy: 100, alwaysHit: false, effect: null, comeback: true },
-  "마구찌르기": { power: 1, type: "노말", accuracy: 100, alwaysHit: false, effect: null, multiHit: { min: 1, max: 5, fixedDamage: 10 } },
+  "마구찌르기": { power: 1, type: "노말", accuracy: 100, alwaysHit: false, effect: null, multiHit: { min: 2, max: 5, fixedDamage: 10 } },
   "사슬묶기":     { power: 0, type: "노말", accuracy: 90, alwaysHit: false, effect: null, chainBind: true, targetSelf: false },
   "드래곤테일":   { power: 40, type: "드래곤", accuracy: 90, alwaysHit: false, effect: null, dragonTail: true },
   "병상첨병": { power: 40, type: "노말", accuracy: 100, alwaysHit: false, effect: null, sickPower: true },
