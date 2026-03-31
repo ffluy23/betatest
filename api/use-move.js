@@ -233,6 +233,16 @@ export default async function handler(req, res) {
 
     if (myPokemon.hp <= 0) return res.status(400).json({ error: "포켓몬 기절" })
 
+    // ── 참기 중 턴 스킵 (bideSkip: true)
+    if (req.body.bideSkip) {
+      if (myPokemon.bideState && myPokemon.bideState.turnsLeft > 0) {
+        myPokemon.bideState.turnsLeft--
+        await log(logsRef, `${myPokemon.name}${josa(myPokemon.name, "은는")} 참고있다...`)
+      }
+      await roomRef.update({ [`${mySlot}_entry`]: myEntry, current_turn: enemySlot, turn_count: nextTurnCount })
+      return res.status(200).json({ ok: true })
+    }
+
     // ── 참기 발사 (moveIdx: -1, bideRelease: true)
     if (req.body.bideRelease) {
       const bide = myPokemon.bideState
@@ -275,14 +285,6 @@ export default async function handler(req, res) {
     const recordDmg = (slot, dmg) => { revengeUpdate[`last_damage_taken_${slot}`] = dmg }
 
     // 희망사항 회복
-    // 참기 턴 차감 + 스킵
-    if (myPokemon.bideState && myPokemon.bideState.turnsLeft > 0) {
-      myPokemon.bideState.turnsLeft--
-      await log(logsRef, `${myPokemon.name}${josa(myPokemon.name, "은는")} 참고있다!`)
-      await roomRef.update({ [`${mySlot}_entry`]: myEntry, current_turn: enemySlot, turn_count: nextTurnCount })
-      return res.status(200).json({ ok: true })
-    }
-
     const hpBefore = myPokemon.hp
     const wishMsgs = tickVolatiles(myPokemon)
     for (const msg of wishMsgs) await log(logsRef, msg)
@@ -352,8 +354,14 @@ export default async function handler(req, res) {
       }
 
       // 독/화상: 씨뿌리기와 동일하게 내 행동 후마다 발동
+      const eotHpBefore = { my: myPokemon.hp, ene: enePokemon.hp }
       const { msgs: eotMsgs, anyFainted } = applyEndOfTurnDamage([myEntry, enemyEntry])
       for (const msg of eotMsgs) await log(logsRef, msg)
+      // HP바 업데이트 이벤트
+      if (myPokemon.hp !== eotHpBefore.my)
+        await log(logsRef, "", "hit_self", { slot: mySlot, hp: myPokemon.hp, maxHp: myPokemon.maxHp ?? myPokemon.hp })
+      if (enePokemon.hp !== eotHpBefore.ene)
+        await log(logsRef, "", "hit", { defender: enemySlot, hp: enePokemon.hp, maxHp: enePokemon.maxHp ?? enePokemon.hp })
       if (anyFainted) {
         if (!isAllFainted(enemyEntry) && anyFainted) revengeUpdate[`revenge_ready_${enemySlot}`] = true
         if (isAllFainted(enemyEntry)) {

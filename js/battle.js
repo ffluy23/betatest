@@ -486,6 +486,15 @@ function listenRoom() {
           })
           return
         }
+        // ── 참기 중 턴 스킵 (turnsLeft > 0)
+        if (myPokemon?.bideState && myPokemon.bideState.turnsLeft > 0) {
+          actionDone = true
+          fetch(`${API}/api/use-move`, {
+            method: "POST", headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ roomId: ROOM_ID, mySlot, moveIdx: -1, bideSkip: true })
+          })
+          return
+        }
       }
       if (logQueue.length === 0 && !isProcessing) {
         updateTurnUI(data); updateMoveButtons(data); updateBenchButtons(data)
