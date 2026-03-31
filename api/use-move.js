@@ -250,7 +250,7 @@ export default async function handler(req, res) {
       }
       const bideDmg = bide.damage * 2
       await log(logsRef, `${myPokemon.name}${josa(myPokemon.name, "은는")} 참았던 에너지를 방출했다!`)
-      await log(logsRef, "", "attack")
+      await log(logsRef, "", "attack", { attacker: mySlot })
       enePokemon.hp = Math.max(0, enePokemon.hp - bideDmg)
       if (enePokemon.hp <= 0 && enePokemon.enduring) { enePokemon.hp = 1; enePokemon.enduring = false }
       await hitLog(enemySlot, enePokemon)
@@ -304,7 +304,7 @@ export default async function handler(req, res) {
         } else {
           const bideDmg = bide.damage * 2
           await log(logsRef, `${myPokemon.name}${josa(myPokemon.name, "은는")} 참았던 에너지를 방출했다!`)
-          await log(logsRef, "", "attack")
+          await log(logsRef, "", "attack", { attacker: mySlot })
           enePokemon.hp = Math.max(0, enePokemon.hp - bideDmg)
           if (enePokemon.hp <= 0 && enePokemon.enduring) { enePokemon.hp = 1; enePokemon.enduring = false }
           await log(logsRef, "", "hit", { defender: enemySlot, hp: enePokemon.hp, maxHp: enePokemon.maxHp ?? enePokemon.hp })
@@ -414,6 +414,9 @@ export default async function handler(req, res) {
       // 내 포켓몬이 쓰러졌으면 force_switch 플래그 세팅 (턴은 상대에게 넘어가지만 교체는 허용)
       const myFainted = myPokemon.hp <= 0
       const eneFainted = enePokemon.hp <= 0
+      // 쓰러진 포켓몬의 bideState/rollState 초기화 (교체 버튼 막히는 버그 방지)
+      if (myFainted) { myPokemon.bideState = null; myPokemon.rollState = { active: false, turn: 0 } }
+      if (eneFainted) { enePokemon.bideState = null; enePokemon.rollState = { active: false, turn: 0 } }
       if (eneFainted) revengeUpdate[`revenge_ready_${enemySlot}`] = false
       if (myFainted) {
         revengeUpdate[`revenge_ready_${enemySlot}`] = true
@@ -525,7 +528,7 @@ export default async function handler(req, res) {
           await log(logsRef, `${enePokemon.name}${josa(enePokemon.name, "은는")} 방어했다!`)
           myPokemon.rollState = { active: false, turn: 0 }
         } else {
-          await log(logsRef, "", "attack")
+          await log(logsRef, "", "attack", { attacker: mySlot })
           const dmg = calcRolloutDamage(moveData.name, enePokemon, rollPower)
           enePokemon.hp = Math.max(0, enePokemon.hp - dmg)
           await hitLog(enemySlot, enePokemon)
@@ -678,7 +681,7 @@ export default async function handler(req, res) {
     const wasDefending = enePokemon.defending ?? false
     enePokemon.defending = false; enePokemon.defendTurns = 0
 
-    await log(logsRef, "", "attack")
+    await log(logsRef, "", "attack", { attacker: mySlot })
 
     const revengeUpdate = {}
     if (moveInfo?.revenge) revengeUpdate[`revenge_ready_${mySlot}`] = false

@@ -265,7 +265,12 @@ async function handleLogEntry({ text, type, meta }) {
       await animateDiceSingle(slot, roll, d?.player1_name, d?.player2_name)
       break
     }
-    case "attack": { await triggerAttackEffect("my", "enemy"); break }
+    case "attack": {
+      const { attacker } = meta ?? {}
+      const atkPfx = attacker === mySlot ? "my" : "enemy"
+      const defPfx = attacker === mySlot ? "enemy" : "my"
+      await triggerAttackEffect(atkPfx, defPfx); break
+    }
     case "hit": {
       const { defender, hp, maxHp } = meta ?? {}
       const prefix = defender === mySlot ? "my" : "enemy"
@@ -640,7 +645,9 @@ function updateBenchButtons(data) {
     else {
       btn.innerHTML = `<span class="bench-name">${pkmn.name}</span><span class="bench-hp">HP: ${pkmn.hp}/${pkmn.maxHp}</span>`
       const queueBusy = logQueue.length > 0 || isProcessing
-      btn.disabled = isSpectator || !myTurn || actionDone || queueBusy || !!(myEntry[activeIdx]?.bideState?.turnsLeft > 0)
+      // 현재 출전 포켓몬이 쓰러진 상태면 bideState 조건 무시 (교체 허용)
+      const activeFainted = (myEntry[activeIdx]?.hp ?? 0) <= 0
+      btn.disabled = isSpectator || !myTurn || actionDone || queueBusy || (!activeFainted && !!(myEntry[activeIdx]?.bideState?.turnsLeft > 0))
       if (!isSpectator) btn.onclick = () => { playSound(SFX_BTN); switchPokemon(idx) }
     }
     bench.appendChild(btn)
