@@ -187,7 +187,7 @@ export function applyLeechSeed(seederEntry, seederActiveIdx, seededEntry, seeded
   if (seeder && seeder.hp > 0) {
     seeder.hp = Math.min(seeder.maxHp ?? seeder.hp, seeder.hp + dmg)
   }
-  const msgs = [`${seeded.name}${josa(seeded.name, "은는")} 씨뿌리기로 체력을 빼앗겼다! (-${dmg})`]
+  const msgs = [`씨뿌리기가 ${seeded.name}${josa(seeded.name, "의")} 체력을 빼앗는다!`]
   if (seeded.hp <= 0) msgs.push(`${seeded.name}${josa(seeded.name, "은는")} 쓰러졌다!`)
   return msgs
 }

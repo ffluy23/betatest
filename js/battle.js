@@ -497,6 +497,25 @@ function updateActiveUINoHp(slot, data, prefix) {
   const nameEl = document.getElementById(`${prefix}-active-name`)
   if (nameEl) nameEl.innerText = data.intro_done ? (pokemon.name + st + cf) : "???"
   if (data.intro_done) updatePortrait(prefix, pokemon)
+  // 혼란 애니메이션
+  updateConfusionEffect(prefix, (pokemon.confusion ?? 0) > 0)
+}
+
+function updateConfusionEffect(prefix, isConfused) {
+  const area = document.getElementById(`${prefix}-pokemon-area`)
+  if (!area) return
+  let el = area.querySelector(".confusion-effect")
+  if (isConfused) {
+    if (!el) {
+      el = document.createElement("div")
+      el.className = "confusion-effect"
+      el.innerHTML = `<div class="confusion-orbit"><div class="confusion-chick">🐤</div></div>`
+      area.style.position = "relative"
+      area.appendChild(el)
+    }
+  } else {
+    if (el) el.remove()
+  }
 }
 
 function showGameOver(data) {

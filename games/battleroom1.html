@@ -6,6 +6,35 @@
   <title>배틀룸 1</title>
   <link rel="stylesheet" href="../css/style.css">
   <style>
+
+    /* 혼란 애니메이션 */
+.confusion-effect {
+  position: absolute;
+  top: -14px; left: 50%;
+  transform: translateX(-50%);
+  pointer-events: none; z-index: 10;
+}
+.confusion-orbit {
+  animation: confOrbit 1.8s linear infinite;
+  position: relative; width: 0; height: 0;
+}
+.confusion-chick {
+  position: absolute; font-size: 20px;
+  animation: confCounter 1.8s linear infinite;
+}
+.confusion-orbit::after {
+  content: "💫";
+  position: absolute; top: -44px; left: 50%;
+  transform: translateX(-50%); font-size: 15px;
+  animation: confBlink 0.5s infinite alternate;
+}
+@keyframes confOrbit { from{transform:rotate(0deg)} to{transform:rotate(360deg)} }
+@keyframes confCounter {
+  from { transform: translate(10px, 2px) rotate(0deg); }
+  to   { transform: translate(10px, 2px) rotate(-360deg); }
+}
+@keyframes confBlink { from{opacity:0.3} to{opacity:1} }
+
     /* ══ 인트로 오버레이 ══ */
     #intro-overlay {
       position: fixed; inset: 0; z-index: 1000;

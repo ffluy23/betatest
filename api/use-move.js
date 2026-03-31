@@ -288,7 +288,11 @@ export default async function handler(req, res) {
         if (myPokemon.seeded) {
           const seedMsgs2 = applyLeechSeed(enemyEntry, eneActiveIdx, myEntry, myActiveIdx)
           for (const msg of seedMsgs2) await log(logsRef, msg)
-          if (myPokemon.hp <= 0) await log(logsRef, "", "hit_self", { slot: mySlot, hp: 0, maxHp: myPokemon.maxHp ?? myPokemon.hp })
+          // 내 HP 감소 반영
+          await log(logsRef, "", "hit_self", { slot: mySlot, hp: myPokemon.hp, maxHp: myPokemon.maxHp ?? myPokemon.hp })
+          // 상대 HP 회복 반영
+          const eneAfter = enemyEntry[eneActiveIdx]
+          if (eneAfter && eneAfter.hp > 0) await log(logsRef, "", "hit", { defender: enemySlot, hp: eneAfter.hp, maxHp: eneAfter.maxHp ?? eneAfter.hp })
         }
         const { msgs: eotMsgs, anyFainted } = applyEndOfTurnDamage([myEntry, enemyEntry])
         for (const msg of eotMsgs) await log(logsRef, msg)
@@ -677,8 +681,10 @@ export default async function handler(req, res) {
         const powerOverride = (moveInfo?.revenge && revengeReady) ? 70 : null
         // 보복: 직전 피해 있으면 1.5배
         const comebackReady = freshData[`comeback_ready_${mySlot}`] ?? false
-        const comebackMult = (moveInfo?.comeback && comebackReady) ? 1.5 : 1.0
+        const comebackMult = (moveInfo?.comeback && comebackReady) ? 1.2 : 1.0
         const sickMult = (moveInfo?.sickPower && enePokemon.status) ? 1.2 : 1.0
+        // 객기: 자신이 상태이상일 때 1.2배
+        const gutsMult = (moveInfo?.guts && myPokemon.status) ? 1.2 : 1.0
 
         // 기사회생: HP 낮을수록 위력 증가 (HP 1/4 이하 → 2배, 1/2 이하 → 1.5배, 그 이상 → 1배)
         let revivedMult = 1.0
@@ -696,7 +702,9 @@ export default async function handler(req, res) {
         }
 
         const { damage: rawDmg, multiplier, critical } = calcDamage(myPokemon, moveData.name, enePokemon, atkRank, defRankEne, powerOverride, atkStatOverride)
-        const damage = counterDamage ?? Math.floor(rawDmg * comebackMult * sickMult * revivedMult)
+        // 속임수 너프: 최종 데미지 0.7배
+        const tricksterMult = moveInfo?.trickster ? 0.7 : 1.0
+        const damage = counterDamage ?? Math.floor(rawDmg * comebackMult * sickMult * gutsMult * revivedMult * tricksterMult)
 
         if (multiplier === 0) {
           await log(logsRef, `${enePokemon.name}에게는 효과가 없다…`)
