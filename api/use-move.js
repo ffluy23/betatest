@@ -740,7 +740,7 @@ export default async function handler(req, res) {
     if (moveInfo?.poisonPowder) {
       const eneTypes = Array.isArray(enePokemon.type) ? enePokemon.type : [enePokemon.type]
       if (eneTypes.includes("풀")) {
-        await log(logsRef, `${enePokemon.name}${josa(enePokemon.name, "은는")} 독가루에 걸리지 않는다!`)
+        await log(logsRef, `${enePokemon.name}${josa(enePokemon.name, "은는")} 독에 걸리지 않는다!`)
       } else if (enePokemon.status) {
         await log(logsRef, `그러나 ${enePokemon.name}${josa(enePokemon.name, "은는")} 이미 상태이상이다!`)
       } else {
