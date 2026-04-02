@@ -197,7 +197,6 @@ function triggerAttackEffect(atkPfx, defPfx) {
     const wrapper = document.getElementById("battle-wrapper")
     if (atkArea) { atkArea.classList.add("attacker-flash"); atkArea.addEventListener("animationend", () => atkArea.classList.remove("attacker-flash"), { once: true }) }
     if (wrapper) { wrapper.classList.add("screen-shake"); wrapper.addEventListener("animationend", () => wrapper.classList.remove("screen-shake"), { once: true }) }
-    // 안전 타임아웃: animationend가 안 fire되면 800ms 후 강제 resolve
     const timeout = setTimeout(() => { if (defArea) defArea.classList.remove("defender-hit"); resolve() }, 800)
     setTimeout(() => {
       if (defArea) {
@@ -214,7 +213,6 @@ function triggerBlink(prefix) {
   return new Promise(resolve => {
     const area = document.getElementById(`${prefix}-pokemon-area`)
     if (!area) { resolve(); return }
-    // 안전 타임아웃: animationend가 안 fire되면 600ms 후 강제 resolve
     const timeout = setTimeout(() => { area.classList.remove("blink-damage"); resolve() }, 600)
     area.classList.add("blink-damage")
     area.addEventListener("animationend", () => { clearTimeout(timeout); area.classList.remove("blink-damage"); resolve() }, { once: true })
@@ -479,7 +477,6 @@ function listenRoom() {
         actionDone = false
         const myPokemon = data[`${mySlot}_entry`]?.[data[`${mySlot}_active_idx`]]
 
-        // ── 내 포켓몬이 쓰러진 상태면 자동 발동 스킵, 교체 UI만 표시
         if (!myPokemon || myPokemon.hp <= 0) {
           if (logQueue.length === 0 && !isProcessing) {
             updateTurnUI(data); updateMoveButtons(data); updateBenchButtons(data)
@@ -489,7 +486,17 @@ function listenRoom() {
           return
         }
 
-        // ── 구르기 자동 발동
+        // ★ 공중날기 2턴째 자동 발동
+        if (myPokemon?.flyState?.flying) {
+          actionDone = true
+          fetch(`${API}/api/use-move`, {
+            method: "POST", headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ roomId: ROOM_ID, mySlot, moveIdx: 0 })
+          })
+          return
+        }
+
+        // 구르기 자동 발동
         if (myPokemon?.rollState?.active) {
           const rollMoveIdx = (myPokemon.moves ?? []).findIndex(m => m.name === "구르기")
           if (rollMoveIdx !== -1) {
@@ -502,7 +509,7 @@ function listenRoom() {
           }
         }
 
-        // ── 참기 자동 처리 (moveIdx -1로 보내서 서버가 bideState 분기로만 처리하게)
+        // 참기 자동 처리
         if (myPokemon?.bideState) {
           actionDone = true
           fetch(`${API}/api/use-move`, {
@@ -528,10 +535,16 @@ function updateActiveUINoHp(slot, data, prefix) {
   if (!pokemon) return
   const st = pokemon.status ? ` [${statusName(pokemon.status)}]` : ""
   const cf = (pokemon.confusion ?? 0) > 0 ? " [혼란]" : ""
+  // ★ 빛의 장막 표시
+  const ls = (pokemon.lightScreenTurns ?? 0) > 0 ? ` [장막${pokemon.lightScreenTurns}]` : ""
+  // ★ 공중날기 표시
+  const fly = pokemon.flyState?.flying ? " [비행중]" : ""
   const nameEl = document.getElementById(`${prefix}-active-name`)
-  if (nameEl) nameEl.innerText = data.intro_done ? (pokemon.name + st + cf) : "???"
+  if (nameEl) nameEl.innerText = data.intro_done ? (pokemon.name + st + cf + ls + fly) : "???"
   if (data.intro_done) updatePortrait(prefix, pokemon)
   updateConfusionEffect(prefix, (pokemon.confusion ?? 0) > 0)
+  // ★ 빛의 장막 시각 효과
+  updateLightScreenEffect(prefix, (pokemon.lightScreenTurns ?? 0) > 0)
 }
 
 function updateConfusionEffect(prefix, isConfused) {
@@ -543,6 +556,32 @@ function updateConfusionEffect(prefix, isConfused) {
       el = document.createElement("div")
       el.className = "confusion-effect"
       el.innerHTML = `<div class="confusion-orbit"><div class="confusion-chick">🐤</div></div>`
+      area.style.position = "relative"
+      area.appendChild(el)
+    }
+  } else {
+    if (el) el.remove()
+  }
+}
+
+// ★ 빛의 장막 시각 효과
+function updateLightScreenEffect(prefix, isActive) {
+  const area = document.getElementById(`${prefix}-pokemon-area`)
+  if (!area) return
+  let el = area.querySelector(".light-screen-effect")
+  if (isActive) {
+    if (!el) {
+      el = document.createElement("div")
+      el.className = "light-screen-effect"
+      el.style.cssText = `
+        position:absolute; inset:0; pointer-events:none;
+        border: 3px solid rgba(200,180,255,0.7);
+        border-radius: 8px;
+        background: rgba(180,150,255,0.08);
+        box-shadow: inset 0 0 18px rgba(200,160,255,0.25);
+        animation: lightScreenPulse 2s ease-in-out infinite;
+        z-index: 5;
+      `
       area.style.position = "relative"
       area.appendChild(el)
     }
@@ -610,6 +649,10 @@ function updateMoveButtons(data) {
   }
   const myPokemon = data[`${mySlot}_entry`]?.[data[`${mySlot}_active_idx`]]
   const fainted = !myPokemon || myPokemon.hp <= 0, movesArr = myPokemon?.moves ?? []
+
+  // ★ 공중날기 중이면 모든 버튼 비활성 (자동 처리됨)
+  const isFlying = myPokemon?.flyState?.flying ?? false
+
   for (let i = 0; i < 4; i++) {
     const btn = document.getElementById(`move-btn-${i}`); if (!btn) continue
     if (i >= movesArr.length) { btn.innerHTML = '<span style="font-size:13px;">-</span>'; btn.disabled = true; btn.onclick = null; continue }
@@ -628,7 +671,9 @@ function updateMoveButtons(data) {
     btn.style.setProperty("--btn-color", color); btn.style.background = color
     btn.style.boxShadow = `inset 0 0 0 2px white, 0 0 0 2px ${color}`
     const queueBusy = logQueue.length > 0 || isProcessing
-    const disabled = isSpectator || fainted || move.pp <= 0 || !myTurn || actionDone || !lrUnlocked || lockedByRoll || lockedByChain || lockedByBide || queueBusy
+    const disabled = isSpectator || fainted || move.pp <= 0 || !myTurn || actionDone
+      || !lrUnlocked || lockedByRoll || lockedByChain || lockedByBide || queueBusy
+      || isFlying  // ★ 비행 중 비활성
     if (disabled) { btn.disabled = true; btn.onclick = null }
     else { btn.disabled = false; btn.onclick = () => { playSound(SFX_BTN); useMove(i, data) } }
   }
@@ -653,9 +698,12 @@ function updateBenchButtons(data) {
     else {
       btn.innerHTML = `<span class="bench-name">${pkmn.name}</span><span class="bench-hp">HP: ${pkmn.hp}/${pkmn.maxHp}</span>`
       const queueBusy = logQueue.length > 0 || isProcessing
-      // 현재 출전 포켓몬이 쓰러진 상태면 bideState 조건 무시 (교체 허용)
       const activeFainted = (myEntry[activeIdx]?.hp ?? 0) <= 0
-      btn.disabled = isSpectator || !myTurn || actionDone || queueBusy || (!activeFainted && !!(myEntry[activeIdx]?.bideState?.turnsLeft > 0))
+      // ★ 비행 중에는 교체 불가
+      const isFlying = myEntry[activeIdx]?.flyState?.flying ?? false
+      btn.disabled = isSpectator || !myTurn || actionDone || queueBusy
+        || (!activeFainted && !!(myEntry[activeIdx]?.bideState?.turnsLeft > 0))
+        || isFlying
       if (!isSpectator) btn.onclick = () => { playSound(SFX_BTN); switchPokemon(idx) }
     }
     bench.appendChild(btn)

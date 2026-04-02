@@ -10,7 +10,6 @@ import {
 
 function rollD10() { return Math.floor(Math.random() * 10) + 1 }
 
-// Firestore에 undefined 저장 불가 → null로 치환
 function sanitizeForFirestore(obj) {
   if (Array.isArray(obj)) return obj.map(sanitizeForFirestore)
   if (obj !== null && typeof obj === "object") {
@@ -132,10 +131,37 @@ function applyRankChanges(r, self, target, moveName) {
 function calcHit(attacker, moveInfo, defender) {
   if (Math.random() * 100 >= (moveInfo.accuracy ?? 100)) return { hit: false, hitType: "missed" }
   if (moveInfo.alwaysHit || moveInfo.skipEvasion) return { hit: true, hitType: "hit" }
+  // 공중날기 중인 수비 포켓몬 → 자동 회피 (번개 제외)
+  if (defender.flyState?.flying && moveInfo.type !== "전기") return { hit: false, hitType: "evaded" }
   const as = Math.max(1, (attacker.speed ?? 3) - getStatusSpdPenalty(attacker))
   const ds = Math.max(1, (defender.speed ?? 3) - getStatusSpdPenalty(defender))
   const ev = Math.min(99, Math.max(0, 5 * (ds - as)) + Math.max(0, getActiveRank(defender, "spd")))
   return Math.random() * 100 < ev ? { hit: false, hitType: "evaded" } : { hit: true, hitType: "hit" }
+}
+
+// ★ 자이로볼 위력 계산
+function calcGyroBallPower(attacker, defender) {
+  const atkSpd = Math.max(1, getActiveRank(attacker, "spd"))
+  const defSpd = Math.max(1, getActiveRank(defender, "spd"))
+  const ratio = defSpd / atkSpd
+  if (ratio <= 1) return 30
+  if (ratio <= 2) return 40
+  if (ratio <= 3) return 50
+  return 60
+}
+
+// ★ 어시스트파워 위력 계산
+function calcAssistPower(pokemon) {
+  const r = pokemon.ranks ?? {}
+  const getStat = (key) => pokemon[key === "atk" ? "attack" : key === "def" ? "defense" : "speed"] ?? 3
+  const base = { atk: getStat("atk"), def: getStat("def"), spd: getStat("spd") }
+  const atkBonus = (r.atkTurns ?? 0) > 0 ? Math.max(0, (r.atk ?? base.atk) - base.atk) : 0
+  const defBonus = (r.defTurns ?? 0) > 0 ? Math.max(0, (r.def ?? base.def) - base.def) : 0
+  const spdBonus = (r.spdTurns ?? 0) > 0 ? Math.max(0, (r.spd ?? base.spd) - base.spd) : 0
+  const total = atkBonus + defBonus + spdBonus
+  if (total <= 1) return 30
+  if (total <= 3) return 40
+  return 50
 }
 
 function calcDamage(attacker, moveName, defender, atkRank = 0, defRank = 0, powerOverride = null, atkStatOverride = null) {
@@ -154,26 +180,18 @@ function calcDamage(attacker, moveName, defender, atkRank = 0, defRank = 0, powe
   const raw = Math.floor(base * multiplier * (stab ? 1.3 : 1))
   const afterDef = Math.max(0, raw - defRank * 5)
   const baseDmg = Math.max(0, afterDef)
-  const critical = Math.random() * 100 < Math.min(100, atkStat * 2)
-  return { damage: critical ? Math.floor(baseDmg * 1.5) : baseDmg, multiplier, stab, dice, critical }
-}
 
-function calcPinMissileHit(moveName, attacker, defender) {
-  const move = moves[moveName]
-  if (!move) return { damage: 0, critical: false }
-  const dice = rollD10()
-  const defTypes = Array.isArray(defender.type) ? defender.type : [defender.type]
-  let multiplier = 1
-  for (const dt of defTypes) multiplier *= getTypeMultiplier(move.type, dt)
-  if (multiplier === 0) return { damage: 0, critical: false, multiplier: 0 }
-  const atkTypes = Array.isArray(attacker.type) ? attacker.type : [attacker.type]
-  const stab = atkTypes.includes(move.type)
-  const base = 9 + (attacker.attack ?? 3) * 4 + dice
-  const raw = Math.floor(base * multiplier * (stab ? 1.3 : 1))
-  const afterDef = Math.max(0, raw - (defender.defense ?? 3) * 5)
-  const baseDmg = Math.max(1, afterDef)
-  const critical = Math.random() * 100 < Math.min(100, (attacker.attack ?? 3) * 2)
-  return { damage: critical ? Math.floor(baseDmg * 1.5) : baseDmg, multiplier, critical }
+  // ★ 빛의 장막 데미지 감소 (25% 감소 = 75%만 받음) — breakBarrier 기술은 무시
+  const lightScreenActive = (defender.lightScreenTurns ?? 0) > 0
+  const breakBarrier = move.breakBarrier ?? false
+  const screenMult = (lightScreenActive && !breakBarrier) ? 0.75 : 1.0
+
+  // ★ 공중날기 중 번개 데미지 1.2배
+  const flyLightningMult = (defender.flyState?.flying && move.type === "전기") ? 1.2 : 1.0
+
+  const critical = Math.random() * 100 < Math.min(100, atkStat * 2)
+  const finalDmg = Math.floor(baseDmg * screenMult * flyLightningMult)
+  return { damage: critical ? Math.floor(finalDmg * 1.5) : finalDmg, multiplier, stab, dice, critical }
 }
 
 function calcRolloutDamage(moveName, defender, power) {
@@ -192,7 +210,6 @@ async function log(logsRef, text, type = "normal", meta = {}) {
   await logsRef.add({ text, type, ts: nextTs(), ...meta })
 }
 
-// roomRef.update 래퍼: 저장 전 undefined → null 치환
 async function safeUpdate(ref, data) {
   return ref.update(sanitizeForFirestore(data))
 }
@@ -242,19 +259,16 @@ export default async function handler(req, res) {
     const myPokemon = myEntry[myActiveIdx]
     const enePokemon = enemyEntry[eneActiveIdx]
 
-    // Firestore 저장 전 undefined → null 치환을 위해 entry를 proxy로 감쌈
-    // (tickVolatiles 등에서 _origType = undefined 같은 케이스 방지)
     const sanitizeEntries = () => {
       myEntry.forEach((p, i) => { myEntry[i] = sanitizeForFirestore(p) })
       enemyEntry.forEach((p, i) => { enemyEntry[i] = sanitizeForFirestore(p) })
     }
 
-    // ── 공통으로 필요한 값들 먼저 선언
     const myName = mySlot === "p1" ? freshData.player1_name : freshData.player2_name
     const enemyName = enemySlot === "p1" ? freshData.player1_name : freshData.player2_name
     const nextTurnCount = (freshData.turn_count ?? 1) + 1
 
-    // ── 참기 중 턴 스킵 (bideSkip: true)
+    // ── 참기 중 턴 스킵
     if (req.body.bideSkip) {
       if (myPokemon.bideState && myPokemon.bideState.turnsLeft > 0) {
         myPokemon.bideState.turnsLeft--
@@ -264,7 +278,7 @@ export default async function handler(req, res) {
       return res.status(200).json({ ok: true })
     }
 
-    // ── 참기 발사 (moveIdx: -1, bideRelease: true)
+    // ── 참기 발사
     if (req.body.bideRelease) {
       const bide = myPokemon.bideState
       myPokemon.bideState = null
@@ -292,10 +306,9 @@ export default async function handler(req, res) {
       return res.status(200).json({ ok: true })
     }
 
-    // ── 참기 중 자동 처리 (클라이언트가 moveIdx: -1로 보냄)
+    // ── 참기 중 자동 처리
     if (moveIdx === -1 || moveIdx === "-1") {
       if (!myPokemon.bideState) return res.status(400).json({ error: "참기 상태 아님" })
-      // bideState 처리로 바로 이동 (아래 bideState 블록과 동일 로직)
     } else {
       const moveData = myPokemon.moves[moveIdx]
       if (!moveData || moveData.pp <= 0) return res.status(400).json({ error: "PP 없음" })
@@ -304,22 +317,60 @@ export default async function handler(req, res) {
     const moveData = moveIdx === -1 || moveIdx === "-1" ? null : myPokemon.moves[moveIdx]
     const moveInfo = moveData ? moves[moveData.name] : null
 
-    // ── 포켓몬 기절 체크 (참기/구르기 자동처리 이후에 위치해야 함)
-    // moveIdx === -1(참기 자동)은 bideState 블록에서 처리하므로 일반 기술일 때만 막음
     if (myPokemon.hp <= 0 && moveIdx !== -1 && moveIdx !== "-1") {
       return res.status(400).json({ error: "포켓몬 기절" })
     }
 
-    // ── 참기 중이면 자동으로 턴 스킵 (moveIdx -1로 오거나 bideState 있을 때)
+    // ── 공중날기 2턴째 자동 처리 (flyState.flying = true 상태면 턴 자동 진행)
+    if (myPokemon.flyState?.flying) {
+      myPokemon.flyState = null
+      await log(logsRef, `${myPokemon.name}${josa(myPokemon.name, "은는")} 내려꽂는다!`)
+      await log(logsRef, "", "attack", { attacker: mySlot })
+      const atkRankFly = getActiveRank(myPokemon, "atk")
+      const defRankEneFly = getActiveRank(enePokemon, "def")
+      const wasDefendingFly = enePokemon.defending ?? false
+      enePokemon.defending = false; enePokemon.defendTurns = 0
+      if (wasDefendingFly) {
+        await log(logsRef, `${enePokemon.name}${josa(enePokemon.name, "은는")} 방어했다!`)
+      } else {
+        const { hit, hitType } = calcHit(myPokemon, { accuracy: 95, type: "비행" }, enePokemon)
+        if (!hit) {
+          await log(logsRef, hitType === "evaded" ? `${enePokemon.name}에게는 맞지 않았다!` : `그러나 ${myPokemon.name}의 공격은 빗나갔다!`, hitType === "evaded" ? "evade" : "normal")
+        } else {
+          const flyMoveName = myPokemon.flyMoveName ?? "공중날기"
+          const { damage, multiplier, critical } = calcDamage(myPokemon, flyMoveName, enePokemon, atkRankFly, defRankEneFly)
+          if (multiplier === 0) {
+            await log(logsRef, `${enePokemon.name}에게는 효과가 없다…`)
+          } else {
+            enePokemon.hp = Math.max(0, enePokemon.hp - damage)
+            if (enePokemon.hp <= 0 && enePokemon.enduring) { enePokemon.hp = 1; enePokemon.enduring = false }
+            await log(logsRef, "", "hit", { defender: enemySlot, hp: enePokemon.hp, maxHp: enePokemon.maxHp ?? enePokemon.hp })
+            if (multiplier > 1) await log(logsRef, "효과가 굉장했다!")
+            if (multiplier < 1) await log(logsRef, "효과가 별로인 듯하다…")
+            if (critical) await log(logsRef, "급소에 맞았다!", "critical")
+            if (enePokemon.hp <= 0) await log(logsRef, `${enePokemon.name}${josa(enePokemon.name, "은는")} 쓰러졌다!`, "faint")
+          }
+        }
+      }
+      myPokemon.flyMoveName = null
+      const expMsgs = tickMyRanks(myPokemon); clearRankStack(myPokemon)
+      for (const msg of expMsgs) await log(logsRef, msg)
+      if (isAllFainted(enemyEntry)) {
+        await safeUpdate(roomRef, { [`${mySlot}_entry`]: myEntry, [`${enemySlot}_entry`]: enemyEntry, turn_count: nextTurnCount, game_over: true, winner: myName, current_turn: null })
+        await log(logsRef, `${myName}의 승리!`, "win")
+      } else {
+        await safeUpdate(roomRef, { [`${mySlot}_entry`]: myEntry, [`${enemySlot}_entry`]: enemyEntry, current_turn: enemySlot, turn_count: nextTurnCount })
+      }
+      return res.status(200).json({ ok: true })
+    }
+
+    // ── 참기 중이면 자동으로 턴 스킵
     if (myPokemon.bideState && (!moveInfo || !moveInfo?.bide)) {
       myPokemon.bideState.turnsLeft--
-
       if (myPokemon.bideState.turnsLeft > 0) {
-        // 아직 참는 중
         await log(logsRef, `${myPokemon.name}${josa(myPokemon.name, "은는")} 참고있다...`)
         await safeUpdate(roomRef, { [`${mySlot}_entry`]: myEntry, current_turn: enemySlot, turn_count: nextTurnCount })
       } else {
-        // 발사 타이밍
         const bide = myPokemon.bideState
         myPokemon.bideState = null
         await log(logsRef, `${myPokemon.name}${josa(myPokemon.name, "은는")} 참고있다...`)
@@ -358,12 +409,28 @@ export default async function handler(req, res) {
       await log(logsRef, "", "heal_self", { slot: mySlot, hp: myPokemon.hp, maxHp: myPokemon.maxHp ?? myPokemon.hp })
     }
 
+    // ★ 빛의 장막 턴 감소
+    if ((myPokemon.lightScreenTurns ?? 0) > 0) {
+      myPokemon.lightScreenTurns--
+      if (!myPokemon.lightScreenTurns) {
+        await log(logsRef, `${myPokemon.name}${josa(myPokemon.name, "의")} 빛의 장막이 사라졌다!`)
+      }
+    }
+    if ((enePokemon.lightScreenTurns ?? 0) > 0) {
+      enePokemon.lightScreenTurns--
+      if (!enePokemon.lightScreenTurns) {
+        await log(logsRef, `${enePokemon.name}${josa(enePokemon.name, "의")} 빛의 장막이 사라졌다!`)
+      }
+    }
+
     // 행동 불능 체크
     const preAction = checkPreActionStatus(myPokemon)
     for (const msg of preAction.msgs) await log(logsRef, msg)
     if (preAction.blocked) {
       resetRankStack(myPokemon)
       myPokemon.rollState = { active: false, turn: 0 }
+      // 공중날기 중 행동 불능이면 flyState 해제
+      myPokemon.flyState = null
       if ((myPokemon.defendTurns ?? 0) > 0) { myPokemon.defendTurns--; if (!myPokemon.defendTurns) myPokemon.defending = false }
       await safeUpdate(roomRef, { [`${mySlot}_entry`]: myEntry, current_turn: enemySlot, turn_count: nextTurnCount })
       return res.status(200).json({ ok: true })
@@ -375,6 +442,7 @@ export default async function handler(req, res) {
     if (confResult.selfHit) {
       resetRankStack(myPokemon)
       myPokemon.rollState = { active: false, turn: 0 }
+      myPokemon.flyState = null
       await hitSelfLog()
       if (isAllFainted(myEntry)) {
         await safeUpdate(roomRef, { [`${mySlot}_entry`]: myEntry, turn_count: nextTurnCount, game_over: true, winner: enemyName, current_turn: null })
@@ -392,7 +460,6 @@ export default async function handler(req, res) {
     const diceRoll = rollD10()
     await log(logsRef, "", "dice", { slot: mySlot, roll: diceRoll })
 
-    // ── 공통 결과 처리 헬퍼
     async function finishTurn(revengeUpdate = {}) {
       sanitizeEntries()
       const weatherResult = applyWeatherEffect(moveInfo?.effect)
@@ -400,8 +467,6 @@ export default async function handler(req, res) {
       const expiredMsgs = tickMyRanks(myPokemon)
       clearRankStack(myPokemon)
       const nextTurn = nextTurnCount
-      const firstSlot = freshData.first_slot ?? "p1"
-      const isEndOfRound = mySlot !== firstSlot
 
       if (enePokemon.seeded && (enePokemon.seededSince ?? 0) < nextTurn) {
         const seedMsgs = applyLeechSeed(myEntry, myActiveIdx, enemyEntry, eneActiveIdx)
@@ -437,12 +502,10 @@ export default async function handler(req, res) {
 
       for (const msg of expiredMsgs) await log(logsRef, msg)
 
-      // 내 포켓몬이 쓰러졌으면 force_switch 플래그 세팅 (턴은 상대에게 넘어가지만 교체는 허용)
       const myFainted = myPokemon.hp <= 0
       const eneFainted = enePokemon.hp <= 0
-      // 쓰러진 포켓몬의 bideState/rollState 초기화 (교체 버튼 막히는 버그 방지)
-      if (myFainted) { myPokemon.bideState = null; myPokemon.rollState = { active: false, turn: 0 } }
-      if (eneFainted) { enePokemon.bideState = null; enePokemon.rollState = { active: false, turn: 0 } }
+      if (myFainted) { myPokemon.bideState = null; myPokemon.rollState = { active: false, turn: 0 }; myPokemon.flyState = null }
+      if (eneFainted) { enePokemon.bideState = null; enePokemon.rollState = { active: false, turn: 0 }; enePokemon.flyState = null }
       if (eneFainted) revengeUpdate[`revenge_ready_${enemySlot}`] = false
       if (myFainted) {
         revengeUpdate[`revenge_ready_${enemySlot}`] = true
@@ -458,7 +521,6 @@ export default async function handler(req, res) {
         await safeUpdate(roomRef, { [`${mySlot}_entry`]: myEntry, [`${enemySlot}_entry`]: enemyEntry, turn_count: nextTurn, game_over: true, winner: enemyName, current_turn: null, ...revengeUpdate, ...(weatherResult.weather ? { weather: weatherResult.weather } : {}) })
         await log(logsRef, `${enemyName}의 승리!`, "win")
       } else if (myFainted) {
-        // 내가 쓰러졌지만 전멸은 아님 → 턴은 상대에게 넘기되 force_switch 플래그 유지
         await safeUpdate(roomRef, { [`${mySlot}_entry`]: myEntry, [`${enemySlot}_entry`]: enemyEntry, current_turn: enemySlot, turn_count: nextTurn, ...revengeUpdate, ...(weatherResult.weather ? { weather: weatherResult.weather } : {}) })
       } else {
         await safeUpdate(roomRef, { [`${mySlot}_entry`]: myEntry, [`${enemySlot}_entry`]: enemyEntry, current_turn: enemySlot, turn_count: nextTurn, ...revengeUpdate, ...(weatherResult.weather ? { weather: weatherResult.weather } : {}) })
@@ -519,6 +581,14 @@ export default async function handler(req, res) {
       return res.status(200).json({ ok: true })
     }
 
+    // ★ ── 빛의 장막
+    if (moveInfo?.lightScreen) {
+      myPokemon.lightScreenTurns = 5
+      await log(logsRef, `${myPokemon.name}${josa(myPokemon.name, "은는")} 빛의 장막을 쳤다! (5턴간 받는 데미지 25% 감소)`)
+      await safeUpdate(roomRef, { [`${mySlot}_entry`]: myEntry, [`${enemySlot}_entry`]: enemyEntry, current_turn: enemySlot, turn_count: nextTurnCount })
+      return res.status(200).json({ ok: true })
+    }
+
     // ── 사슬묶기
     if (moveInfo?.chainBind) {
       const { hit, hitType } = calcHit(myPokemon, moveInfo, enePokemon)
@@ -565,8 +635,6 @@ export default async function handler(req, res) {
       }
       const expMsgs = tickMyRanks(myPokemon); clearRankStack(myPokemon)
       for (const msg of expMsgs) await log(logsRef, msg)
-
-      // EOT (독/화상) 처리
       const rollEotHpBefore = { my: myPokemon.hp, ene: enePokemon.hp }
       const { msgs: rollEotMsgs, anyFainted: rollEotFainted } = applyEndOfTurnDamage([myEntry, enemyEntry])
       for (const msg of rollEotMsgs) await log(logsRef, msg)
@@ -574,7 +642,6 @@ export default async function handler(req, res) {
         await log(logsRef, "", "hit_self", { slot: mySlot, hp: myPokemon.hp, maxHp: myPokemon.maxHp ?? myPokemon.hp })
       if (enePokemon.hp !== rollEotHpBefore.ene)
         await log(logsRef, "", "hit", { defender: enemySlot, hp: enePokemon.hp, maxHp: enePokemon.maxHp ?? enePokemon.hp })
-
       if (isAllFainted(enemyEntry)) {
         await safeUpdate(roomRef, { [`${mySlot}_entry`]: myEntry, [`${enemySlot}_entry`]: enemyEntry, turn_count: nextTurnCount, game_over: true, winner: myName, current_turn: null })
         await log(logsRef, `${myName}의 승리!`, "win")
@@ -612,7 +679,7 @@ export default async function handler(req, res) {
       return res.status(200).json({ ok: true })
     }
 
-    // ── 치유파동 (상대 회복)
+    // ── 치유파동
     if (moveInfo?.healPulse) {
       const heal = Math.max(1, Math.floor((enePokemon.maxHp ?? enePokemon.hp) * 0.12))
       enePokemon.hp = Math.min(enePokemon.maxHp ?? enePokemon.hp, enePokemon.hp + heal)
@@ -626,6 +693,35 @@ export default async function handler(req, res) {
     if (moveInfo?.bide) {
       myPokemon.bideState = { turnsLeft: 2, damage: 0 }
       await log(logsRef, `${myPokemon.name}${josa(myPokemon.name, "은는")} 참기 시작했다!`)
+      await safeUpdate(roomRef, { [`${mySlot}_entry`]: myEntry, [`${enemySlot}_entry`]: enemyEntry, current_turn: enemySlot, turn_count: nextTurnCount })
+      return res.status(200).json({ ok: true })
+    }
+
+    // ★ ── 공중날기 1턴째 (차징)
+    if (moveInfo?.fly && !myPokemon.flyState?.flying) {
+      myPokemon.flyState = { flying: true }
+      myPokemon.flyMoveName = moveData.name
+      await log(logsRef, `${myPokemon.name}${josa(myPokemon.name, "은는")} 하늘 높이 날아올랐다!`)
+      await safeUpdate(roomRef, { [`${mySlot}_entry`]: myEntry, [`${enemySlot}_entry`]: enemyEntry, current_turn: enemySlot, turn_count: nextTurnCount })
+      return res.status(200).json({ ok: true })
+    }
+
+    // ★ ── 독가루 (풀타입 면역)
+    if (moveInfo?.poisonPowder) {
+      const eneTypes = Array.isArray(enePokemon.type) ? enePokemon.type : [enePokemon.type]
+      if (eneTypes.includes("풀")) {
+        await log(logsRef, `${enePokemon.name}${josa(enePokemon.name, "은는")} 독가루에 걸리지 않는다!`)
+      } else if (enePokemon.status) {
+        await log(logsRef, `그러나 ${enePokemon.name}${josa(enePokemon.name, "은는")} 이미 상태이상이다!`)
+      } else {
+        const { hit, hitType } = calcHit(myPokemon, moveInfo, enePokemon)
+        if (!hit) {
+          await log(logsRef, hitType === "evaded" ? `${enePokemon.name}에게는 맞지 않았다!` : `그러나 ${myPokemon.name}의 공격은 빗나갔다!`, hitType === "evaded" ? "evade" : "normal")
+        } else {
+          enePokemon.status = "독"
+          await log(logsRef, `${enePokemon.name}${josa(enePokemon.name, "은는")} 독 상태가 됐다!`)
+        }
+      }
       await safeUpdate(roomRef, { [`${mySlot}_entry`]: myEntry, [`${enemySlot}_entry`]: enemyEntry, current_turn: enemySlot, turn_count: nextTurnCount })
       return res.status(200).json({ ok: true })
     }
@@ -652,7 +748,6 @@ export default async function handler(req, res) {
         enePokemon.ranks = defaultRanks()
         await log(logsRef, `${enePokemon.name}${josa(enePokemon.name, "의")} 능력 변화가 원래대로 돌아왔다!`)
       }
-      // 날개쉬기: HP 회복 + 비행 타입 임시 제거
       if (moveInfo?.effect?.removeFlying) {
         const healRate = moveInfo.effect.heal ?? 0.5
         const heal = Math.max(1, Math.floor((myPokemon.maxHp ?? myPokemon.hp) * healRate))
@@ -674,14 +769,12 @@ export default async function handler(req, res) {
       }
       const rankMsgs = applyRankChanges(r, myPokemon, enePokemon, moveData.name)
       for (const msg of rankMsgs) await log(logsRef, msg)
-      // heal 효과 (태만함/HP회복 등) — heal_self 이벤트로 HP바 업데이트
       if (moveInfo?.effect?.heal) {
         const healRate = moveInfo.effect.heal
         const heal = Math.max(1, Math.floor((myPokemon.maxHp ?? myPokemon.hp) * healRate))
         myPokemon.hp = Math.min(myPokemon.maxHp ?? myPokemon.hp, myPokemon.hp + heal)
         await log(logsRef, "", "heal_self", { slot: mySlot, hp: myPokemon.hp, maxHp: myPokemon.maxHp ?? myPokemon.hp })
         await log(logsRef, `${myPokemon.name}${josa(myPokemon.name, "은는")} HP를 회복했다! (+${heal})`)
-        // ✅ heal 후 바로 return — applyMoveEffect로 흘러내려가지 않도록
         await safeUpdate(roomRef, { [`${mySlot}_entry`]: myEntry, [`${enemySlot}_entry`]: enemyEntry, current_turn: enemySlot, turn_count: nextTurnCount })
         return res.status(200).json({ ok: true })
       } else {
@@ -773,7 +866,7 @@ export default async function handler(req, res) {
       return res.status(200).json({ ok: true })
     }
 
-    // ── 드래곤테일 (데미지 + 교체 강제)
+    // ── 드래곤테일
     if (moveInfo?.dragonTail) {
       if (wasDefending) {
         await log(logsRef, `${enePokemon.name}${josa(enePokemon.name, "은는")} 방어했다!`)
@@ -837,7 +930,7 @@ export default async function handler(req, res) {
       } else {
         const atkStatOverride = moveInfo?.trickster ? (enePokemon.attack ?? 3) : null
         const revengeReady = freshData[`revenge_ready_${mySlot}`] ?? false
-        const powerOverride = (moveInfo?.revenge && revengeReady) ? 70 : null
+        const powerOverride_revenge = (moveInfo?.revenge && revengeReady) ? 70 : null
         const comebackReady = freshData[`comeback_ready_${mySlot}`] ?? false
         const comebackMult = (moveInfo?.comeback && comebackReady) ? 1.2 : 1.0
         const sickMult = (moveInfo?.sickPower && enePokemon.status) ? 1.2 : 1.0
@@ -854,6 +947,37 @@ export default async function handler(req, res) {
         if (moveInfo?.counter) {
           const lastDmg = freshData[`last_damage_taken_${mySlot}`] ?? 0
           counterDamage = Math.max(1, Math.floor(lastDmg * 1.2))
+        }
+
+        // ★ 자이로볼 위력 동적 계산
+        let powerOverride = powerOverride_revenge
+        if (moveInfo?.gyroBall) {
+          powerOverride = calcGyroBallPower(myPokemon, enePokemon)
+        }
+
+        // ★ 어시스트파워 위력 동적 계산
+        if (moveInfo?.assistPower) {
+          powerOverride = calcAssistPower(myPokemon)
+        }
+
+        // ★ 용의분노 고정 데미지
+        if (moveInfo?.fixedDamage) {
+          const defTypes = Array.isArray(enePokemon.type) ? enePokemon.type : [enePokemon.type]
+          let mult = 1
+          for (const dt of defTypes) mult *= getTypeMultiplier(moves[moveData.name]?.type, dt)
+          if (mult === 0) {
+            await log(logsRef, `${enePokemon.name}에게는 효과가 없다…`)
+          } else {
+            const dmg = moveInfo.fixedDamage
+            enePokemon.hp = Math.max(0, enePokemon.hp - dmg)
+            if (enePokemon.hp <= 0 && enePokemon.enduring) { enePokemon.hp = 1; enePokemon.enduring = false }
+            await hitLog(enemySlot, enePokemon)
+            await log(logsRef, `${dmg} 데미지!`)
+            if (enePokemon.hp <= 0) await log(logsRef, `${enePokemon.name}${josa(enePokemon.name, "은는")} 쓰러졌다!`, "faint")
+            if (!moveInfo?.lastResort) myPokemon.usedMoves = [...new Set([...(myPokemon.usedMoves ?? []), moveData.name])]
+          }
+          await finishTurn(revengeUpdate)
+          return res.status(200).json({ ok: true })
         }
 
         const { damage: rawDmg, multiplier, critical } = calcDamage(myPokemon, moveData.name, enePokemon, atkRank, defRankEne, powerOverride, atkStatOverride)
@@ -876,13 +1000,25 @@ export default async function handler(req, res) {
           if (multiplier > 1) await log(logsRef, "효과가 굉장했다!")
           if (multiplier < 1) await log(logsRef, "효과가 별로인 듯하다…")
           if (critical) await log(logsRef, "급소에 맞았다!", "critical")
+
+          // ★ 깨트리기 → 빛의 장막 해제
+          if (moveInfo?.breakBarrier && (enePokemon.lightScreenTurns ?? 0) > 0) {
+            enePokemon.lightScreenTurns = 0
+            await log(logsRef, `${enePokemon.name}${josa(enePokemon.name, "의")} 빛의 장막이 깨졌다!`)
+          }
+
+          // ★ 고속스핀 → 씨뿌리기 해제
+          if (moveInfo?.rapidSpin && myPokemon.seeded) {
+            myPokemon.seeded = false
+            await log(logsRef, `${myPokemon.name}${josa(myPokemon.name, "은는")} 씨뿌리기가 풀렸다!`)
+          }
+
           if (moveInfo?.clearSmog) {
             enePokemon.ranks = defaultRanks()
             await log(logsRef, `${enePokemon.name}${josa(enePokemon.name, "의")} 능력 변화가 원래대로 돌아왔다!`)
           }
           const effectMsgs = applyMoveEffect(moveInfo?.effect ?? null, myPokemon, enePokemon, damage)
           for (const msg of effectMsgs) await log(logsRef, msg)
-          // drain 회복은 applyMoveEffect 안에서 이미 hp가 올랐을 때만 heal_self 이벤트
           if (moveInfo?.effect?.drain && damage > 0 && myPokemon.hp > (freshData[`${mySlot}_entry`][myActiveIdx].hp)) {
             await log(logsRef, "", "heal_self", { slot: mySlot, hp: myPokemon.hp, maxHp: myPokemon.maxHp ?? myPokemon.hp })
           }
@@ -890,6 +1026,12 @@ export default async function handler(req, res) {
             const rankMsgs = applyRankChanges(moveInfo.rank, myPokemon, enePokemon, null)
             for (const msg of rankMsgs) await log(logsRef, msg)
           }
+
+          // ★ 고속스핀 랭크업 (공격 성공 후)
+          if (moveInfo?.rapidSpin && moveInfo?.rank) {
+            // rank는 이미 위에서 applyRankChanges로 처리됨
+          }
+
           if (moveInfo?.effect?.recoil && damage > 0) {
             const recoilDmg = Math.max(1, Math.floor(damage * moveInfo.effect.recoil))
             myPokemon.hp = Math.max(0, myPokemon.hp - recoilDmg)
