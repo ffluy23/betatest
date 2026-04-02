@@ -350,7 +350,7 @@ async function grantWinCoins(winnerName, data) {
   try {
     await updateDoc(doc(db, "users", myUid), { coins: increment(300) })
     await addLog("🏆 승리 보상으로 300ZP를 받았다!")
-  } catch(e) { console.warn("코인 지급 실패", e) }
+  } catch(e) { console.warn("ZP 지급 실패", e) }
 }
 
 async function saveGameLog() {
