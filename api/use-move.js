@@ -33,8 +33,13 @@ function defaultRanks(pokemon) {
 
 function getActiveRank(pokemon, key) {
   const r = pokemon.ranks ?? {}
-  if ((r[`${key}Turns`] ?? 0) > 0) return r[key] ?? (pokemon[key === "atk" ? "attack" : key === "def" ? "defense" : "speed"] ?? 3)
-  return pokemon[key === "atk" ? "attack" : key === "def" ? "defense" : "speed"] ?? 3
+  const statKey = key === "atk" ? "attack" : key === "def" ? "defense" : "speed"
+  const base = pokemon[statKey] ?? 3
+  if ((r[`${key}Turns`] ?? 0) > 0) {
+    // 보너스분만 반환 (랭크 실수치 - 기본 실수치)
+    return (r[key] ?? base) - base
+  }
+  return 0
 }
 
 function resetRankStack(pokemon) {
@@ -92,37 +97,40 @@ function applyRankChanges(r, self, target, moveName) {
   }
 
   const MIN_ATK = 1, MIN_DEF = 1, MIN_SPD = 1
-  const MAX_MULT = 3
+  // 공격: 보너스 최대 +4 → 실수치 상한 = base + 4
+  // 방어: 보너스 최대 +3 → 실수치 상한 = base + 3
+  // 스피드: 보너스 최대 ±5%p
+  const MAX_ATK_BONUS = 4, MAX_DEF_BONUS = 3, MAX_SPD_BONUS = 5
 
   if (r.atk !== undefined) {
     const base = getStat(self, "atk")
-    if (r.atk > 0) { const p = selfR.atk; selfR.atk = Math.min(base * MAX_MULT, selfR.atk + r.atk); selfR.atkTurns = r.turns ?? 2; msgs.push(`${self.name}의 공격이 ${selfR.atk - p} 상승했다!`) }
+    if (r.atk > 0) { const p = selfR.atk; selfR.atk = Math.min(base + MAX_ATK_BONUS, selfR.atk + r.atk); selfR.atkTurns = r.turns ?? 2; msgs.push(`${self.name}의 공격이 ${selfR.atk - p} 상승했다!`) }
     else if (r.atk < 0) { if (selfR.atk <= MIN_ATK) msgs.push(`${self.name}의 공격은 더 이상 내려가지 않는다!`); else { const p = selfR.atk; selfR.atk = Math.max(MIN_ATK, selfR.atk + r.atk); selfR.atkTurns = r.turns ?? 2; msgs.push(`${self.name}의 공격이 ${p - selfR.atk} 하락했다!`) } }
   }
   if (r.def !== undefined) {
     const base = getStat(self, "def")
-    if (r.def > 0) { const p = selfR.def; selfR.def = Math.min(base * MAX_MULT, selfR.def + r.def); selfR.defTurns = r.turns ?? 2; msgs.push(`${self.name}의 방어가 ${selfR.def - p} 상승했다!`) }
+    if (r.def > 0) { const p = selfR.def; selfR.def = Math.min(base + MAX_DEF_BONUS, selfR.def + r.def); selfR.defTurns = r.turns ?? 2; msgs.push(`${self.name}의 방어가 ${selfR.def - p} 상승했다!`) }
     else if (r.def < 0) { if (selfR.def <= MIN_DEF) msgs.push(`${self.name}의 방어는 더 이상 내려가지 않는다!`); else { const p = selfR.def; selfR.def = Math.max(MIN_DEF, selfR.def + r.def); selfR.defTurns = r.turns ?? 2; msgs.push(`${self.name}의 방어가 ${p - selfR.def} 하락했다!`) } }
   }
   if (r.spd !== undefined) {
     const base = getStat(self, "spd")
-    if (r.spd > 0) { const p = selfR.spd; selfR.spd = Math.min(base * MAX_MULT, selfR.spd + r.spd); selfR.spdTurns = r.turns ?? 2; msgs.push(`${self.name}의 스피드가 ${selfR.spd - p} 상승했다!`) }
+    if (r.spd > 0) { const p = selfR.spd; selfR.spd = Math.min(base + MAX_SPD_BONUS, selfR.spd + r.spd); selfR.spdTurns = r.turns ?? 2; msgs.push(`${self.name}의 스피드가 ${selfR.spd - p} 상승했다!`) }
     else if (r.spd < 0) { if (selfR.spd <= MIN_SPD) msgs.push(`${self.name}의 스피드는 더 이상 내려가지 않는다!`); else { const p = selfR.spd; selfR.spd = Math.max(MIN_SPD, selfR.spd + r.spd); selfR.spdTurns = r.turns ?? 2; msgs.push(`${self.name}의 스피드가 ${p - selfR.spd} 하락했다!`) } }
   }
   if (r.targetAtk !== undefined) {
     const base = getStat(target, "atk")
     if (r.targetAtk < 0) { if (targetR.atk <= MIN_ATK) msgs.push(`${target.name}의 공격은 더 이상 내려가지 않는다!`); else { const p = targetR.atk; targetR.atk = Math.max(MIN_ATK, targetR.atk + r.targetAtk); targetR.atkTurns = r.turns ?? 2; msgs.push(`${target.name}의 공격이 ${p - targetR.atk} 하락했다!`) } }
-    else if (r.targetAtk > 0) { const p = targetR.atk; targetR.atk = Math.min(base * MAX_MULT, targetR.atk + r.targetAtk); targetR.atkTurns = r.turns ?? 2; msgs.push(`${target.name}의 공격이 ${targetR.atk - p} 상승했다!`) }
+    else if (r.targetAtk > 0) { const p = targetR.atk; targetR.atk = Math.min(base + MAX_ATK_BONUS, targetR.atk + r.targetAtk); targetR.atkTurns = r.turns ?? 2; msgs.push(`${target.name}의 공격이 ${targetR.atk - p} 상승했다!`) }
   }
   if (r.targetDef !== undefined) {
     const base = getStat(target, "def")
     if (r.targetDef < 0) { if (targetR.def <= MIN_DEF) msgs.push(`${target.name}의 방어는 더 이상 내려가지 않는다!`); else { const p = targetR.def; targetR.def = Math.max(MIN_DEF, targetR.def + r.targetDef); targetR.defTurns = r.turns ?? 2; msgs.push(`${target.name}의 방어가 ${p - targetR.def} 하락했다!`) } }
-    else if (r.targetDef > 0) { const p = targetR.def; targetR.def = Math.min(base * MAX_MULT, targetR.def + r.targetDef); targetR.defTurns = r.turns ?? 2; msgs.push(`${target.name}의 방어가 ${targetR.def - p} 상승했다!`) }
+    else if (r.targetDef > 0) { const p = targetR.def; targetR.def = Math.min(base + MAX_DEF_BONUS, targetR.def + r.targetDef); targetR.defTurns = r.turns ?? 2; msgs.push(`${target.name}의 방어가 ${targetR.def - p} 상승했다!`) }
   }
   if (r.targetSpd !== undefined) {
     const base = getStat(target, "spd")
     if (r.targetSpd < 0) { if (targetR.spd <= MIN_SPD) msgs.push(`${target.name}의 스피드는 더 이상 내려가지 않는다!`); else { const p = targetR.spd; targetR.spd = Math.max(MIN_SPD, targetR.spd + r.targetSpd); targetR.spdTurns = r.turns ?? 2; msgs.push(`${target.name}의 스피드가 ${p - targetR.spd} 하락했다!`) } }
-    else if (r.targetSpd > 0) { const p = targetR.spd; targetR.spd = Math.min(base * MAX_MULT, targetR.spd + r.targetSpd); targetR.spdTurns = r.turns ?? 2; msgs.push(`${target.name}의 스피드가 ${targetR.spd - p} 상승했다!`) }
+    else if (r.targetSpd > 0) { const p = targetR.spd; targetR.spd = Math.min(base + MAX_SPD_BONUS, targetR.spd + r.targetSpd); targetR.spdTurns = r.turns ?? 2; msgs.push(`${target.name}의 스피드가 ${targetR.spd - p} 상승했다!`) }
   }
   self.ranks = selfR; target.ranks = targetR
   return msgs
@@ -135,7 +143,13 @@ function calcHit(attacker, moveInfo, defender) {
   if (defender.flyState?.flying && moveInfo.type !== "전기") return { hit: false, hitType: "evaded" }
   const as = Math.max(1, (attacker.speed ?? 3) - getStatusSpdPenalty(attacker))
   const ds = Math.max(1, (defender.speed ?? 3) - getStatusSpdPenalty(defender))
-  const ev = Math.min(99, Math.max(0, 5 * (ds - as)) + Math.max(0, getActiveRank(defender, "spd")))
+  // 스피드 랭크: 실수치 - 기본 스피드 = 보너스분만 %p로 적용 (최대 ±5%p)
+  const defSpdBase = defender.speed ?? 3
+  const defSpdRank = (defender.ranks ?? {})
+  const defSpdBonus = (defSpdRank.spdTurns ?? 0) > 0
+    ? Math.min(5, Math.max(-5, (defSpdRank.spd ?? defSpdBase) - defSpdBase))
+    : 0
+  const ev = Math.min(99, Math.max(0, 5 * (ds - as) + defSpdBonus))
   return Math.random() * 100 < ev ? { hit: false, hitType: "evaded" } : { hit: true, hitType: "hit" }
 }
 
@@ -164,7 +178,7 @@ function calcAssistPower(pokemon) {
   return 50
 }
 
-function calcDamage(attacker, moveName, defender, atkRank = 0, defRank = 0, powerOverride = null, atkStatOverride = null) {
+function calcDamage(attacker, moveName, defender, atkRankBonus = 0, defRankBonus = 0, powerOverride = null, atkStatOverride = null) {
   const move = moves[moveName]
   if (!move) return { damage: 0, multiplier: 1, stab: false, dice: 0, critical: false }
   const dice = rollD10()
@@ -175,11 +189,21 @@ function calcDamage(attacker, moveName, defender, atkRank = 0, defRank = 0, powe
   const atkTypes = Array.isArray(attacker.type) ? attacker.type : [attacker.type]
   const stab = atkTypes.includes(move.type)
   const power = powerOverride ?? (move.power ?? 40)
-  const atkStat = atkStatOverride ?? atkRank
+  // atkStatOverride는 속임수 등 특수 케이스용 (공격 실수치 자체를 바꿀 때)
+  const atkStat = atkStatOverride ?? (attacker.attack ?? 3)
+
+  // 공식: (위력 + 공격력×4 + 주사위) × 타입상성 × 자속보정
   const base = power + atkStat * 4 + dice
   const raw = Math.floor(base * multiplier * (stab ? 1.3 : 1))
-  const afterDef = Math.max(0, raw - defRank * 5)
-  const baseDmg = Math.max(0, afterDef)
+
+  // 공격 랭크: 자속보정 이후 정수로 ± (최대 ±4, 최솟값 0)
+  const afterAtk = Math.max(0, raw + atkRankBonus)
+
+  // 방어력 × 5 차감
+  const afterDef = Math.max(0, afterAtk - (defender.defense ?? 3) * 5)
+
+  // 방어 랭크: 최종 피해량 이후 랭크 × 3으로 차감 (최솟값 0)
+  const baseDmg = Math.max(0, afterDef - defRankBonus * 3)
 
   // ★ 빛의 장막 데미지 감소 (25% 감소 = 75%만 받음) — breakBarrier 기술은 무시
   const lightScreenActive = (defender.lightScreenTurns ?? 0) > 0

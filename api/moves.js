@@ -143,7 +143,7 @@ export const moves = {
                   rank: { targetSpd: -1, turns: 2 } },
   "모래뿌리기": { power: 0,  type: "땅", accuracy: 100, alwaysHit: false, targetSelf: false, effect: null,
                   rank: { targetSpd: -1, turns: 2 } },
-  "진흙뿌리기": { power: 20, type: "땅", accuracy: 100, alwaysHit: false, targetSelf: false, effect: null,
+  "진흙뿌리기": { power: 30, type: "땅", accuracy: 100, alwaysHit: false, targetSelf: false, effect: null,
                   rank: { targetSpd: -1, turns: 2 } },
 
   // ───── 바위 ─────
@@ -163,8 +163,8 @@ export const moves = {
   "쪼기":       { power: 40, type: "비행", accuracy: 100, alwaysHit: false, effect: null },
   "날개치기":   { power: 40, type: "비행", accuracy: 100, alwaysHit: false, effect: null },
   "제비반환":   { power: 35, type: "비행", accuracy: 100, alwaysHit: false, effect: null },
-  // ★ 공중날기: flyState로 2턴 처리
-  "공중날기":   { power: 55, type: "비행", accuracy: 95, alwaysHit: false, effect: null, fly: true },
+  // 공중날기: flyState로 2턴 처리
+  "공중날기":   { power: 50, type: "비행", accuracy: 95, alwaysHit: false, effect: null, fly: true },
 
   // ───── 에스퍼 ─────
   "사이코키네시스": { power: 50, type: "에스퍼", accuracy: 100, alwaysHit: false, effect: null,
@@ -175,10 +175,10 @@ export const moves = {
   "미래예지":       { power: 40, type: "에스퍼", accuracy: 100, alwaysHit: false, effect: null },
   "사념의박치기":   { power: 50, type: "에스퍼", accuracy: 100, alwaysHit: false,
                       effect: { chance: 0.2, volatile: "풀죽음" } },
-  // ★ 빛의 장막: lightScreen 플래그
+  // 빛의 장막: lightScreen 플래그
   "빛의장막":       { power: 0, type: "에스퍼", accuracy: 100, alwaysHit: true, effect: null,
                       lightScreen: true, targetSelf: true },
-  // ★ 어시스트파워: assistPower 플래그
+  // 어시스트파워: assistPower 플래그
   "어시스트파워":   { power: 30, type: "에스퍼", accuracy: 100, alwaysHit: false, effect: null, assistPower: true },
 
   // ───── 벌레 ─────
@@ -188,8 +188,8 @@ export const moves = {
                   rank: { targetSpd: -2, turns: 2 } },
   "벌레먹음":   { power: 40, type: "벌레", accuracy: 100, alwaysHit: false, effect: null },
   "흡혈":       { power: 50, type: "벌레", accuracy: 100, alwaysHit: false, effect: { drain: 0.12 } },
-  // ★ 고속스핀: rapidSpin 플래그
-  "고속스핀":   { power: 20, type: "노말", accuracy: 100, alwaysHit: false, effect: null,
+  // 고속스핀: rapidSpin 플래그
+  "고속스핀":   { power: 40, type: "노말", accuracy: 100, alwaysHit: false, effect: null,
                   rapidSpin: true, rank: { spd: 1, turns: 2 } },
 
   // ───── 고스트 ─────
@@ -210,10 +210,10 @@ export const moves = {
   "드래곤크루":   { power: 50, type: "드래곤", accuracy: 100, alwaysHit: false, effect: null },
   "드래곤다이브": { power: 50, type: "드래곤", accuracy: 75,  alwaysHit: false,
                     effect: { chance: 0.2, volatile: "풀죽음" } },
-  // ★ 용의분노: fixedDamage 40
+  // 용의분노: fixedDamage 40
   "용의분노":     { power: 1, type: "드래곤", accuracy: 100, alwaysHit: false,
                     effect: null, fixedDamage: 40 },
-  // ★ 자이로볼: gyroBall 플래그
+  // 자이로볼: gyroBall 플래그
   "자이로볼":     { power: 30, type: "강철", accuracy: 100, alwaysHit: false, effect: null, gyroBall: true },
 
   // ───── 악 ─────
