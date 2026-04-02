@@ -536,7 +536,7 @@ function updateActiveUINoHp(slot, data, prefix) {
   const st = pokemon.status ? ` [${statusName(pokemon.status)}]` : ""
   const cf = (pokemon.confusion ?? 0) > 0 ? " [혼란]" : ""
   // ★ 빛의 장막 표시
-  const ls = (pokemon.lightScreenTurns ?? 0) > 0 ? ` [장막${pokemon.lightScreenTurns}]` : ""
+  const ls = (pokemon.lightScreenTurns ?? 0) > 0 ? ` [장막]` : ""
   // ★ 공중날기 표시
   const fly = pokemon.flyState?.flying ? " [비행중]" : ""
   const nameEl = document.getElementById(`${prefix}-active-name`)
@@ -564,31 +564,8 @@ function updateConfusionEffect(prefix, isConfused) {
   }
 }
 
-// ★ 빛의 장막 시각 효과
-function updateLightScreenEffect(prefix, isActive) {
-  const area = document.getElementById(`${prefix}-pokemon-area`)
-  if (!area) return
-  let el = area.querySelector(".light-screen-effect")
-  if (isActive) {
-    if (!el) {
-      el = document.createElement("div")
-      el.className = "light-screen-effect"
-      el.style.cssText = `
-        position:absolute; inset:0; pointer-events:none;
-        border: 3px solid rgba(200,180,255,0.7);
-        border-radius: 8px;
-        background: rgba(180,150,255,0.08);
-        box-shadow: inset 0 0 18px rgba(200,160,255,0.25);
-        animation: lightScreenPulse 2s ease-in-out infinite;
-        z-index: 5;
-      `
-      area.style.position = "relative"
-      area.appendChild(el)
-    }
-  } else {
-    if (el) el.remove()
-  }
-}
+// 빛의 장막 시각 효과 없음 (로그로만 표시)
+function updateLightScreenEffect(prefix, isActive) {}
 
 function showGameOver(data) {
   if (gameOver) return
