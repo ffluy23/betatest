@@ -482,8 +482,9 @@ export default async function handler(req, res) {
         if (eneAfter && eneAfter.hp > 0) await log(logsRef, "", "heal", { slot: enemySlot, hp: eneAfter.hp, maxHp: eneAfter.maxHp ?? eneAfter.hp })
       }
 
+      // ★ 활성 포켓몬만 EOT 처리 (벤치 포켓몬은 제외)
       const eotHpBefore = { my: myPokemon.hp, ene: enePokemon.hp }
-      const { msgs: eotMsgs, anyFainted } = applyEndOfTurnDamage([myEntry, enemyEntry])
+      const { msgs: eotMsgs, anyFainted } = applyEndOfTurnDamage([[myPokemon], [enePokemon]])
       for (const msg of eotMsgs) await log(logsRef, msg)
       if (myPokemon.hp !== eotHpBefore.my)
         await log(logsRef, "", "hit_self", { slot: mySlot, hp: myPokemon.hp, maxHp: myPokemon.maxHp ?? myPokemon.hp })
@@ -635,8 +636,9 @@ export default async function handler(req, res) {
       }
       const expMsgs = tickMyRanks(myPokemon); clearRankStack(myPokemon)
       for (const msg of expMsgs) await log(logsRef, msg)
+      // ★ 활성 포켓몬만 EOT 처리
       const rollEotHpBefore = { my: myPokemon.hp, ene: enePokemon.hp }
-      const { msgs: rollEotMsgs, anyFainted: rollEotFainted } = applyEndOfTurnDamage([myEntry, enemyEntry])
+      const { msgs: rollEotMsgs, anyFainted: rollEotFainted } = applyEndOfTurnDamage([[myPokemon], [enePokemon]])
       for (const msg of rollEotMsgs) await log(logsRef, msg)
       if (myPokemon.hp !== rollEotHpBefore.my)
         await log(logsRef, "", "hit_self", { slot: mySlot, hp: myPokemon.hp, maxHp: myPokemon.maxHp ?? myPokemon.hp })
