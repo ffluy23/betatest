@@ -589,7 +589,7 @@ export default async function handler(req, res) {
     // ★ ── 빛의 장막
     if (moveInfo?.lightScreen) {
       myPokemon.lightScreenTurns = 5
-      await log(logsRef, `${myPokemon.name}${josa(myPokemon.name, "은는")} 빛의 장막을 쳤다! (5턴간 받는 데미지 25% 감소)`)
+      await log(logsRef, `${myPokemon.name}${josa(myPokemon.name, "은는")} 빛의 장막을 쳤다!`)
       await safeUpdate(roomRef, { [`${mySlot}_entry`]: myEntry, [`${enemySlot}_entry`]: enemyEntry, current_turn: enemySlot, turn_count: nextTurnCount })
       return res.status(200).json({ ok: true })
     }

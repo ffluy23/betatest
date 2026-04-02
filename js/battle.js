@@ -536,7 +536,7 @@ function updateActiveUINoHp(slot, data, prefix) {
   const st = pokemon.status ? ` [${statusName(pokemon.status)}]` : ""
   const cf = (pokemon.confusion ?? 0) > 0 ? " [혼란]" : ""
   // ★ 빛의 장막 표시
-  const ls = (pokemon.lightScreenTurns ?? 0) > 0 ? ` [장막]` : ""
+  const ls = ""
   // ★ 공중날기 표시
   const fly = pokemon.flyState?.flying ? " [비행중]" : ""
   const nameEl = document.getElementById(`${prefix}-active-name`)
