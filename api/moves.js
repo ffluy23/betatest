@@ -87,7 +87,7 @@ export const moves = {
   // ───── 전기 ─────
   "번개펀치":   { power: 40, type: "전기", accuracy: 100, alwaysHit: false, effect: { chance: 0.1, status: "마비" } },
   "10만볼트":   { power: 50, type: "전기", accuracy: 100, alwaysHit: false, effect: { chance: 0.3, status: "마비" } },
-  "방전":       { power: 40, type: "전기", accuracy: 100, alwaysHit: false, effect: { chance: 0.3, volatile: "풀죽음" } },
+  "방전":       { power: 40, type: "전기", accuracy: 100, alwaysHit: false, effect: { chance: 0.3, volatile: "마비" } },
   "번개":       { power: 60, type: "전기", accuracy: 70,  alwaysHit: false, effect: { chance: 0.3, status: "마비" } },
   "전기쇼크":   { power: 40, type: "전기", accuracy: 100, alwaysHit: false, effect: { chance: 0.1, status: "마비" } },
   "전기자석파": { power: 0, type: "전기", accuracy: 90, alwaysHit: false, targetSelf: false, effect: { chance: 1, status: "마비" } },
@@ -138,6 +138,7 @@ export const moves = {
 
   // ───── 비행 ─────
   "에어슬래시": { power: 40, type: "비행", accuracy: 95,  alwaysHit: false, effect: { chance: 0.3, volatile: "풀죽음" } },
+  "애크러뱃": { power: 45, type: "비행", accuracy: 100,  alwaysHit: false, effect: null },
   "열풍비행":   { power: 40, type: "비행", accuracy: 100, alwaysHit: false, effect: { chance: 0.1, status: "화상" } },
   "쪼기":       { power: 40, type: "비행", accuracy: 100, alwaysHit: false, effect: null },
   "날개치기":       { power: 40, type: "비행", accuracy: 100, alwaysHit: false, effect: null },
@@ -183,6 +184,7 @@ export const moves = {
                   rank: { chance: 0.1, atk: 1, turns: 2 } },
   "불릿펀치":   { power: 40, type: "강철", accuracy: 100, alwaysHit: false, effect: null },
   "플래시캐논": { power: 40, type: "강철", accuracy: 100, alwaysHit: true,  effect: null },
+  "강철날개": { power: 50, type: "강철", accuracy: 100, alwaysHit: false,  effect: { chance: 0.1, def: 1, turns: 2 } },
 
   // ───── 페어리 ─────
   "문포스":     { power: 40, type: "페어리", accuracy: 100, alwaysHit: false, effect: null },

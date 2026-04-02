@@ -51,6 +51,40 @@
   line-height: 1.5;
   text-align: left;
 }
+
+/* 어드민 패널 */
+#admin-panel {
+  display: none;
+  margin-top: 20px;
+  border: 1.5px solid #9b59b6;
+  border-radius: 12px;
+  padding: 16px;
+  background: #faf5ff;
+}
+#admin-panel-title {
+  font-size: 12px; font-weight: 700; color: #9b59b6;
+  letter-spacing: 0.08em; margin-bottom: 10px;
+}
+#admin-hint {
+  font-size: 12px; color: #777; margin-bottom: 10px; min-height: 16px;
+}
+#admin-player-grid {
+  display: grid; grid-template-columns: 1fr 1fr; gap: 8px;
+}
+.admin-slot-btn {
+  display: flex; flex-direction: column; align-items: flex-start;
+  padding: 10px 12px; border: 1.5px solid #ddd; border-radius: 8px;
+  background: #fff; cursor: pointer; transition: 0.15s;
+  text-align: left;
+}
+.admin-slot-btn:hover { border-color: #9b59b6; background: #f5eeff; }
+.admin-slot-btn.selected { border-color: #9b59b6; background: #e8d5ff; }
+.admin-slot-btn.empty { opacity: 0.45; cursor: default; }
+.admin-slot-btn.empty:hover { border-color: #ddd; background: #fff; }
+.admin-slot-label { font-size: 10px; color: #999; font-weight: 600; margin-bottom: 2px; }
+.admin-slot-name  { font-size: 13px; color: #111; font-weight: 500;
+                    white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 120px; }
+
 @media (max-width: 480px) { .main-box { flex-direction: column; } .button { flex-direction: row; justify-content: center; } .btn { flex: 1; } }
   </style>
 </head>
@@ -71,10 +105,16 @@
       <h3>관전자</h3>
       <div id="spectator-list">관전자 없음</div>
     </div>
-    <div id="swap-request-display" class="swap-box">
-    <div id="swap-request-display" class="swap-box">
- 
-</div>
+    <div id="swap-request-display" class="swap-box"></div>
+
+    <!-- 어드민 전용 강제 교체 패널 -->
+    <div id="admin-panel">
+      <div id="admin-panel-title">🔧 ADMIN — 강제 자리 교체</div>
+      <div id="admin-hint">교체할 플레이어를 선택하세요</div>
+      <div id="admin-player-grid"></div>
+    </div>
+  </div>
+
   <script>const ROOM_ID = "battleroom1"</script>
   <script type="module" src="../js/firebase.js"></script>
   <script type="module" src="../js/battleroom.js"></script>
