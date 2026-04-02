@@ -490,6 +490,15 @@ export default async function handler(req, res) {
       if (weatherResult.weather) for (const msg of weatherResult.msgs) await log(logsRef, msg)
       const expiredMsgs = tickMyRanks(myPokemon)
       clearRankStack(myPokemon)
+
+      // 사슬묶기 턴 차감 — 매 턴 종료 시 처리
+      if (enePokemon.chainBound) {
+        enePokemon.chainBound.turnsLeft--
+        if (enePokemon.chainBound.turnsLeft <= 0) {
+          await log(logsRef, `${enePokemon.name}${josa(enePokemon.name, "의")} 사슬묶기가 풀렸다!`)
+          enePokemon.chainBound = null
+        }
+      }
       const nextTurn = nextTurnCount
 
       if (enePokemon.seeded && (enePokemon.seededSince ?? 0) < nextTurn) {
@@ -740,7 +749,7 @@ export default async function handler(req, res) {
     if (moveInfo?.poisonPowder) {
       const eneTypes = Array.isArray(enePokemon.type) ? enePokemon.type : [enePokemon.type]
       if (eneTypes.includes("풀")) {
-        await log(logsRef, `${enePokemon.name}${josa(enePokemon.name, "은는")} 독에 걸리지 않는다!`)
+        await log(logsRef, `${enePokemon.name}${josa(enePokemon.name, "은는")} 독가루에 걸리지 않는다!`)
       } else if (enePokemon.status) {
         await log(logsRef, `그러나 ${enePokemon.name}${josa(enePokemon.name, "은는")} 이미 상태이상이다!`)
       } else {
@@ -819,11 +828,6 @@ export default async function handler(req, res) {
     // ── power > 0 공격 기술
     resetRankStack(myPokemon)
     myPokemon.lastDefendMove = null; myPokemon.defendStack = 0
-
-    if (enePokemon.chainBound) {
-      enePokemon.chainBound.turnsLeft--
-      if (enePokemon.chainBound.turnsLeft <= 0) enePokemon.chainBound = null
-    }
 
     const atkRank = getActiveRank(myPokemon, "atk")
     const defRankEne = getActiveRank(enePokemon, "def")
