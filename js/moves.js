@@ -183,9 +183,9 @@ export const moves = {
 
   // ───── 벌레 ─────
   "달려들기":   { power: 40, type: "벌레", accuracy: 100, alwaysHit: false,
-                  effect: { targetSpd: -1, turns: 2 } },
+                  rank: { targetSpd: -1, turns: 2 } },
   "실뿜기":     { power: 0,  type: "벌레", accuracy: 95,  alwaysHit: false,
-                  effect: { targetSpd: -2, turns: 2 } },
+                  rank: { targetSpd: -2, turns: 2 } },
   "벌레먹음":   { power: 40, type: "벌레", accuracy: 100, alwaysHit: false, effect: null },
   "흡혈":       { power: 50, type: "벌레", accuracy: 100, alwaysHit: false, effect: { drain: 0.12 } },
   // ★ 고속스핀: rapidSpin 플래그
