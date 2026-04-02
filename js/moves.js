@@ -49,6 +49,8 @@ export const moves = {
                   rank: { targetAtk: -1, turns: 1 } },
   "째려보기":   { power: 0, type: "노말", accuracy: 100, alwaysHit: false, effect: null,
                   rank: { targetDef: -1, turns: 1 } },
+"싫은소리":   { power: 0, type: "노말", accuracy: 85, alwaysHit: false, effect: null,
+                  rank: { targetDef: -2, turns: 1 } },
   "꼬리흔들기": { power: 0, type: "노말", accuracy: 100, alwaysHit: false, effect: null,
                   rank: { targetDef: -1, turns: 1 } },
   "웅크리기":   { power: 0, type: "노말", accuracy: 100, alwaysHit: true, effect: null,
