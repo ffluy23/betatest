@@ -461,7 +461,7 @@ export default async function handler(req, res) {
     await log(logsRef, "", "dice", { slot: mySlot, roll: diceRoll })
 
     async function finishTurn(revengeUpdate = {}) {
-      sanitizeEntries()
+      // ★ sanitizeEntries는 저장 직전에만 호출 (앞에서 호출 시 myPokemon 참조 끊김 버그)
       const weatherResult = applyWeatherEffect(moveInfo?.effect)
       if (weatherResult.weather) for (const msg of weatherResult.msgs) await log(logsRef, msg)
       const expiredMsgs = tickMyRanks(myPokemon)
@@ -482,7 +482,7 @@ export default async function handler(req, res) {
         if (eneAfter && eneAfter.hp > 0) await log(logsRef, "", "heal", { slot: enemySlot, hp: eneAfter.hp, maxHp: eneAfter.maxHp ?? eneAfter.hp })
       }
 
-      // ★ 활성 포켓몬만 EOT 처리 (벤치 포켓몬은 제외)
+      // 활성 포켓몬만 EOT 처리 (벤치 포켓몬 제외)
       const eotHpBefore = { my: myPokemon.hp, ene: enePokemon.hp }
       const { msgs: eotMsgs, anyFainted } = applyEndOfTurnDamage([[myPokemon], [enePokemon]])
       for (const msg of eotMsgs) await log(logsRef, msg)
@@ -490,6 +490,10 @@ export default async function handler(req, res) {
         await log(logsRef, "", "hit_self", { slot: mySlot, hp: myPokemon.hp, maxHp: myPokemon.maxHp ?? myPokemon.hp })
       if (enePokemon.hp !== eotHpBefore.ene)
         await log(logsRef, "", "hit", { defender: enemySlot, hp: enePokemon.hp, maxHp: enePokemon.maxHp ?? enePokemon.hp })
+
+      // ★ EOT까지 모든 HP 변화 반영 후 sanitize
+      sanitizeEntries()
+
       if (anyFainted) {
         if (!isAllFainted(enemyEntry)) revengeUpdate[`revenge_ready_${enemySlot}`] = true
         if (isAllFainted(enemyEntry)) {
