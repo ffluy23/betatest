@@ -33,6 +33,7 @@ export const moves = {
 
   // ───── 노말 ─────
   "전광석화":   { power: 30, type: "노말", accuracy: 100, alwaysHit: true,  effect: null },
+  "베어가르기":   { power: 45, type: "노말", accuracy: 100, alwaysHit: false,  effect: null },
   "신속":       { power: 50, type: "노말", accuracy: 100, alwaysHit: true,  effect: null },
   "돌림노래":   { power: 40, type: "노말", accuracy: 100, alwaysHit: false, effect: null },
   "탐내기":     { power: 40, type: "노말", accuracy: 100, alwaysHit: false, effect: null },
@@ -212,6 +213,8 @@ export const moves = {
   "드래곤크루":   { power: 50, type: "드래곤", accuracy: 100, alwaysHit: false, effect: null },
   "드래곤다이브": { power: 50, type: "드래곤", accuracy: 75,  alwaysHit: false,
                     effect: { chance: 0.2, volatile: "풀죽음" } },
+  "용의숨결": { power: 40, type: "드래곤", accuracy: 75,  alwaysHit: false,
+                    effect: { chance: 0.3, status: "마비" } },
   // 용의분노: fixedDamage 40
   "용의분노":     { power: 1, type: "드래곤", accuracy: 100, alwaysHit: false,
                     effect: null, fixedDamage: 40 },
