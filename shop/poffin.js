@@ -19,7 +19,7 @@ import {
     { id:'aspear', img: BASE+'aspearberry.png', name:'배리열매', spicy:0, dry:0, sweet:0, bitter:-1,sour:+1 },
     { id:'leppa',  img: BASE+'leppaberry.png',  name:'과사열매', spicy:+1,dry:-1,sweet:0, bitter:0, sour:0  },
     { id:'figy',   img: BASE+'figyberry.png',   name:'무화열매', spicy:+1,dry:0, sweet:0, bitter:0, sour:-1 },
-    { id:'wiki',   img: BASE+'wikiberry.png',   name:'위키열매', spicy:-1,dry:+1,sweet:0, bitter:0, sour:0  },
+    { id:'wiki',   img: '../img/wikiberry.png',   name:'위키열매', spicy:-1,dry:+1,sweet:0, bitter:0, sour:0  },
     { id:'mago',   img: BASE+'magoberry.png',   name:'마고열매', spicy:0, dry:-1,sweet:+1,bitter:0, sour:0  },
     { id:'aguav',  img: BASE+'aguavberry.png',  name:'아바열매', spicy:0, dry:0, sweet:-1,bitter:+1,sour:0  },
     { id:'iapapa', img: BASE+'iapapaberry.png', name:'파야열매', spicy:0, dry:0, sweet:0, bitter:-1,sour:+1 },
