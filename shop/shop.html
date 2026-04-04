@@ -1,0 +1,379 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>매점</title>
+  <link rel="stylesheet" href="../css/style.css" />
+  <style>
+    p{
+      font-size: 13px;
+      color: #555;
+    }
+
+    input{
+      font-family: 'Mona12', sans-serif;
+    }
+
+    #toast {
+      position: fixed; bottom: 20px; left: 50%; transform: translateX(-50%);
+      background: #333; color: #fff; padding: 10px 20px; border-radius: 6px;
+      display: none; z-index: 9999; font-size: 14px;
+    }
+    #toast.show { display: block; }
+
+    .modal-overlay {
+      display: none; position: fixed; inset: 0;
+      background: rgba(0,0,0,0.4); z-index: 100;
+      align-items: center; justify-content: center;
+    }
+    .modal-overlay.open { display: flex; }
+    .modal-box {
+      background: #fff; padding: 24px; border-radius: 8px;
+      min-width: 280px; max-width: 400px; width: 90%;
+    }
+    .modal-box h4 { margin: 0 0 16px; }
+    .modal-box input {
+      width: 100%; box-sizing: border-box;
+      padding: 8px; margin-bottom: 8px;
+    }
+    .modal-box textarea {
+      width: 100%; box-sizing: border-box;
+      padding: 8px; resize: vertical;
+    }
+    .modal-box .btn-row {
+      display: flex; gap: 8px;
+      margin-top: 12px; justify-content: flex-end;
+    }
+    .modal-box button { padding: 8px 16px; cursor: pointer; }
+
+    #gacha-result {
+      display: none; text-align: center; padding: 16px;
+      border: 1px solid #ccc; border-radius: 8px; margin-top: 12px;
+    }
+    #gacha-result.show { display: block; }
+
+    .item-card {
+      border: 1px solid #ddd; border-radius: 8px;
+      padding: 16px; margin-bottom: 12px;
+    }
+    .item-card h4 { margin: 0 0 4px; }
+    .item-card p  { margin: 0 0 10px; font-size: 14px; color: #555; }
+    .item-card .price { font-weight: bold; margin-bottom: 10px; display: block; }
+
+    #user-coins { font-size: 16px; margin-bottom: 20px; }
+
+    /* 가방 아이템 */
+    #inventory-list div {
+      padding: 8px 0; border-bottom: 1px solid #f0f0f0; font-size: 14px;
+    }
+    .inv-item-giftable {
+      cursor: pointer;
+      border-radius: 6px;
+      transition: background 0.15s;
+    }
+    .inv-item-giftable:hover { background: #f5f5f5; padding-left: 4px; }
+
+    .tab-btn {
+      padding: 8px 16px; cursor: pointer;
+      border: 1px solid #ccc; background: #fff;
+      border-radius: 4px; font-family: 'Mona12', sans-serif;
+    }
+    .tab-btn.active { background: #333; color: #fff; border-color: #333; }
+
+    .tab-content { display: none; }
+    .tab-content.active { display: block; }
+
+    #tab-shop.active {
+      display: grid;
+      grid-template-columns: repeat(2, 1fr);
+      gap: 16px;
+      max-height: 400px;
+      overflow-y: auto;
+    }
+    #tab-inventory { max-height: 400px; overflow-y: auto; }
+
+    button { font-family: 'Mona12'; }
+
+    .back-btn {
+      height: auto !important; flex-shrink: 0;
+      width: fit-content; padding: 8px 16px;
+    }
+    .shop-top { display: flex; justify-content: space-between; }
+
+    .buy {
+      padding: 8px 16px; cursor: pointer;
+      border: 1px solid #ccc; background: #fff; border-radius: 4px;
+    }
+    .buy:active { background: #333; color: #fff; border-color: #333; }
+
+    /* 선물 모달 아이템 정보 */
+    #gift-item-info {
+      background: #f9f9f9; border-radius: 6px;
+      padding: 10px 12px; margin-bottom: 12px;
+      font-size: 14px;
+    }
+    #gift-item-info p { margin: 0; }
+
+    /* ── 칭호 탭 ── */
+    #tab-title { max-height: 440px; overflow-y: auto; }
+
+    .title-list {
+      display: flex;
+      flex-direction: column;
+      gap: 6px;
+    }
+
+    .title-item {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 10px 12px;
+      border: 1px solid #eee;
+      border-radius: 8px;
+      font-size: 14px;
+      cursor: pointer;
+      transition: background 0.12s;
+    }
+    .title-item:hover { background: #f7f7f7; }
+    .title-item.title-active {
+      border-color: #bbb;
+      background: #fafafa;
+    }
+
+    .title-equip-btn {
+      font-size: 12px;
+      color: #888;
+      border: 1px solid #ddd;
+      border-radius: 4px;
+      padding: 3px 8px;
+      flex-shrink: 0;
+    }
+    .title-item:hover .title-equip-btn {
+      border-color: #aaa;
+      color: #555;
+    }
+
+    .title-equipped-badge {
+      font-size: 11px;
+      color: #fff;
+      background: #555;
+      border-radius: 4px;
+      padding: 3px 8px;
+      flex-shrink: 0;
+    }
+
+    @media (max-width: 480px) {
+  /* 상단 버튼 + 코인 */
+  .shop-top {
+    flex-wrap: wrap;
+    gap: 6px;
+  }
+  .shop-top .back-btn {
+    font-size: 11px;
+    padding: 6px 10px;
+  }
+  #user-coins {
+    font-size: 13px;
+    width: 100%;
+    margin-bottom: 8px;
+  }
+
+  /* 탭 버튼 */
+  .tab-btn {
+    padding: 6px 10px;
+    font-size: 12px;
+  }
+
+  /* 상점 그리드: 2열 → 1열 */
+  #tab-shop.active {
+    grid-template-columns: 1fr;
+    max-height: none;
+  }
+
+  /* 가방/칭호 탭 높이 제한 해제 */
+  #tab-inventory,
+  #tab-title {
+    max-height: none;
+  }
+
+  /* 아이템 카드 */
+  .item-card {
+    padding: 12px;
+    margin-bottom: 8px;
+  }
+  .item-card h4 {
+    font-size: 13px;
+    margin-bottom: 2px;
+  }
+  .item-card .price {
+    font-size: 13px;
+    margin-bottom: 8px;
+  }
+
+  /* 구매 버튼 */
+  .buy {
+    width: 100%;
+    padding: 8px;
+    font-size: 13px;
+  }
+
+  /* 모달 */
+  .modal-box {
+    padding: 16px;
+  }
+  .modal-box h4 {
+    font-size: 14px;
+  }
+
+  /* 칭호 아이템 */
+  .title-item {
+    font-size: 13px;
+    padding: 9px 10px;
+  }
+}
+  </style>
+</head>
+<body>
+<div class="noise"></div>
+<div class="container">
+  <div class="header">
+    <div class="title">ZENITH RING</div>
+  </div>
+  <div class="screen">
+    <div class="screen-top">
+      <span>v1.0</span>
+      <div class="status">ONLINE</div>
+      <div class="battery"><div class="battery-level"></div></div>
+    </div>
+
+    <div class="shop-top">
+      <button onclick="location.href='../main.html'" class="btn back-btn" style="margin-bottom:16px;">← 돌아가기</button>
+      <button onclick="location.href='./poffin.html'" class="btn back-btn" style="margin-bottom:16px;">포핀 만들기🧁</button>
+      <div id="user-coins">ZP: Loading...</div>
+    </div>
+
+    <div style="display:flex; gap:8px; margin-bottom:20px; flex-wrap:wrap;">
+      <button class="tab-btn active" onclick="switchTab('shop', this)">매점</button>
+      <button class="tab-btn"        onclick="switchTab('inventory', this)">가방</button>
+      <button class="tab-btn"        onclick="switchTab('title', this)">칭호</button>
+    </div>
+
+    <!-- ── 매점 탭 ── -->
+    <div id="tab-shop" class="tab-content active">
+      <div class="item-card">
+        <h4>우정반지</h4>
+        <span class="price">2,500ZP</span>
+        <button class="buy" onclick="openModal('ring')">구매하기</button>
+      </div>
+      <div class="item-card">
+        <h4>칭호 뽑기</h4>
+        <span class="price">500ZP</span>
+        <button class="buy" onclick="openModal('title')">1회 뽑기</button>
+      </div>
+      <div class="item-card">
+        <h4>익명 쪽지</h4>
+        <span class="price">300ZP</span>
+        <button class="buy" onclick="openModal('note')">구매하기</button>
+      </div>
+      <div class="item-card">
+        <h4>랜덤 요리 재료</h4>
+        <span class="price">200ZP</span>
+        <button class="buy" onclick="openModal('ingredient')">구매하기</button>
+      </div>
+    </div>
+
+    <!-- ── 가방 탭 ── -->
+    <div id="tab-inventory" class="tab-content">
+      <div id="inventory-list">Loading...</div>
+    </div>
+
+    <!-- ── 칭호 탭 ── -->
+    <div id="tab-title" class="tab-content">
+      <div id="title-display">Loading...</div>
+    </div>
+  </div>
+  <div class="footer">Made by Sonnet with Ampharos</div>
+</div>
+
+<!-- ── 모달: 우정반지 ── -->
+<div id="modal-ring" class="modal-overlay">
+  <div class="modal-box">
+    <h4>우정반지 보내기</h4>
+    <p>친구와 맞추기에 안성맞춤인 반지 한 쌍이다!<br>
+    어쩐지 마음이 따뜻해지는 기분이다...</p>
+    <input id="ring-search" type="text" placeholder="상대방 이름 입력" />
+    <button onclick="searchUser('ring')">검색</button>
+    <div id="ring-result" style="margin-top:10px;font-size:14px;"></div>
+    <div class="btn-row">
+      <button onclick="closeModal('ring')">취소</button>
+      <button id="ring-confirm-btn" disabled onclick="buyRing()">보내기 (2,500ZP)</button>
+    </div>
+  </div>
+</div>
+
+<!-- ── 모달: 랜덤 칭호 ── -->
+<div id="modal-title" class="modal-overlay">
+  <div class="modal-box">
+    <h4>랜덤 칭호 뽑기</h4>
+    <p>칭호를 무작위로 뽑을 수 있는 뽑기<br>
+    어떤 칭호가 나올지는 알 수 없다<br>
+    <span style="font-size:12px;color:#e07b00;">중복 시 50ZP 반환</span></p>
+    <div id="gacha-result"></div>
+    <div class="btn-row">
+      <button onclick="closeModal('title')">닫기</button>
+      <button id="gacha-btn" onclick="buyTitle()">뽑기 (500ZP)</button>
+    </div>
+  </div>
+</div>
+
+<!-- ── 모달: 익명 쪽지 ── -->
+<div id="modal-note" class="modal-overlay">
+  <div class="modal-box">
+    <h4>📨 익명 쪽지 보내기</h4>
+    <input id="note-search" type="text" placeholder="상대방 이름 입력" />
+    <button onclick="searchUser('note')">검색</button>
+    <div id="note-result" style="margin-top:8px;font-size:14px;"></div>
+    <textarea id="note-text" rows="4" placeholder="쪽지 내용 (최대 100자)" maxlength="100" style="margin-top:10px;"></textarea>
+    <div class="btn-row">
+      <button onclick="closeModal('note')">취소</button>
+      <button id="note-confirm-btn" disabled onclick="buyNote()">보내기 (300ZP)</button>
+    </div>
+  </div>
+</div>
+
+<!-- ── 모달: 랜덤 요리 재료 ── -->
+<div id="modal-ingredient" class="modal-overlay">
+  <div class="modal-box">
+    <h4>🧂 랜덤 요리 재료</h4>
+    <p>랜덤으로 조미료를 얻을 수 있는 뽑기<br>
+    포핀을 만드는 데 사용할 수 있다!</p>
+    <div class="btn-row">
+      <button onclick="closeModal('ingredient')">취소</button>
+      <button onclick="buyIngredient()">구매 (200ZP)</button>
+    </div>
+  </div>
+</div>
+
+<!-- ── 모달: 아이템 선물 ── -->
+<div id="modal-gift" class="modal-overlay">
+  <div class="modal-box">
+    <h4>🎁 아이템 선물하기</h4>
+    <div id="gift-item-info"></div>
+    <input id="gift-search" type="text" placeholder="상대방 이름 입력" />
+    <button onclick="searchGiftUser()">검색</button>
+    <div id="gift-result" style="margin-top:8px;font-size:14px;"></div>
+    <p style="font-size:12px;color:#aaa;margin-top:8px;">
+      선물하면 가방에서 사라진다! 누구한테 주고 싶어?
+    </p>
+    <div class="btn-row">
+      <button onclick="closeGiftModal()">취소</button>
+      <button id="gift-confirm-btn" disabled onclick="sendGift()">선물하기</button>
+    </div>
+  </div>
+</div>
+
+<div id="toast"></div>
+<script type="module" src="../js/shop.js"></script>
+</body>
+</html>

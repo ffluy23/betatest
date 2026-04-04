@@ -1,0 +1,117 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <title>포핀 만들기 🧁</title>
+  <link rel="stylesheet" href="poffin.css">
+</head>
+<body>
+<div id="gameWrapper">
+  <canvas id="gameCanvas"></canvas>
+
+
+  <div id="hud">
+    <div class="hud-box">⏱<br><span class="hud-val" id="timerVal">--</span></div>
+    <div class="hud-box" style="text-align:center">단계<br><span class="hud-val" id="phaseName">-</span></div>
+    <div class="hud-box" style="text-align:right">점수<br><span class="hud-val" id="scoreVal">0</span></div>
+  </div>
+
+
+  <div id="stirHintDir"></div>
+
+
+  <div id="stirSpeedBar">
+    <div id="stirSpeedOuter"><div id="stirSpeedFill" style="height:0%"></div></div>
+    <div id="stirSpeedLabel">속도</div>
+  </div>
+
+
+  <div id="rhythmWrap">
+    <div id="rhythmLabel">🔥 초록 구간에서 TAP!</div>
+    <div id="rhythmTrack">
+      <div id="rhythmZone" style="left:0%;width:0%"></div>
+      <div id="rhythmCursor" style="left:0%"></div>
+    </div>
+  </div>
+
+
+  <button id="tapBtn">🔥 TAP!</button>
+
+
+  <div id="feedback"></div>
+
+  
+  <div id="ingredientScreen">
+
+    <div id="ingHeader">
+      <div id="ingTitle">열매를 골라 냄비에 넣어봐~ 🍲<span id="ingCount">&nbsp;(0/3)</span></div>
+    </div>
+
+    <!-- 열매 선반 + 조미료 선반 (좌우 분할) -->
+    <div id="ingShelfWrap">
+
+      <!-- 왼쪽: 열매 -->
+      <div id="ingShelf">
+        <div id="ingShelfLabel">🫐 열매</div>
+        <div id="ingShelfInner"></div>
+      </div>
+
+      <!-- 오른쪽: 조미료 -->
+      <div id="seasoningShelf">
+        <div id="seasoningLabel">🧂 조미료</div>
+        <div id="seasoningShelfInner"></div>
+      </div>
+
+    </div>
+
+    <!-- 냄비 캔버스 -->
+    <div id="ingPotArea">
+      <canvas id="ingCanvas"></canvas>
+    </div>
+
+    <!-- 하단 슬롯 + 버튼 -->
+    <div id="ingBottom">
+      <div id="selectedSlots">
+        <div class="slot" id="slot0"></div>
+        <div class="slot" id="slot1"></div>
+        <div class="slot" id="slot2"></div>
+      </div>
+      <button id="confirmIngBtn" disabled>열매를 골라봐~</button>
+    </div>
+
+  </div>
+
+  
+  <div class="full-overlay" id="scoreScreen" style="display:none">
+    <div id="poppinDisplay"></div>
+    <h2 id="poppinName"></h2>
+    <p id="poppinDesc"></p>
+    <div class="score-row"><span>🫐 열매</span><span id="sc0">0</span></div>
+    <div class="score-row"><span>🥄 반죽</span><span id="sc1">0</span></div>
+    <div class="score-row"><span>🔥 불조절</span><span id="sc2">0</span></div>
+    <div class="score-row score-total"><span>🏆 최종 점수</span><span id="totalScore">0점</span></div>
+    <div id="saveStatus"></div>
+    <button class="big-btn" id="restartBtn">다시 만들기 🧁</button>
+  </div>
+
+  
+  <div id="splashScreen">
+    <div id="splashDeco">🧁</div>
+    <h1 class="overlay-h1">포핀 만들기</h1>
+    <div class="rule-box">
+      🫐 <b>열매 선택</b> — 열매를 골라 냄비에 넣어봐~<br>
+      🧂 <b>조미료</b> — 가방에 있으면 넣을 수 있어~<br>
+      🥄 <b>반죽 젓기</b> — 방향 맞춰 빙글빙글!<br>
+      &nbsp;&nbsp;&nbsp;&nbsp;너무 빠르면 넘치고 💦 느리면 타버려 🔥<br>
+      🔥 <b>불조절</b> — 초록 구간에 타이밍 맞게 눌러!
+    </div>
+    <button class="big-btn" id="startBtn">시작하기 🥄</button>
+    <div id="loginStatus" style="font-size:11px;color:#9A6830;margin-top:-6px;position:relative;"></div>
+  </div>
+
+</div>
+
+<script type="module" src="poffin.js"></script>
+</body>
+</html>

@@ -6,111 +6,63 @@
 <title>Battle</title>
 <link rel="stylesheet" href="css/style.css">
 <style>
-
-
-/* 배틀 입장 페이지 */
-.battle-entry-page {
-  min-height: 100vh;
-  background: #fff;
-  display: flex;
-  justify-content: center;
-  align-items: center;
-}
-
-/* 컨테이너 */
-.battle-entry-container {
-  width: 100%;
-  max-width: 420px;
-  padding: 32px 20px;
-  text-align: center;
-}
-
-/* 제목 */
-.title {
-  font-size: 24px;
-  font-weight: 700;
-  margin-bottom: 16px;
-  color: #111;
-}
-
-/* 설명 */
-.desc {
-  font-size: 13px;
-  color: #666;
-  line-height: 1.6;
-  margin-bottom: 30px;
-}
-
-/* 버튼 영역 */
-.battleroom {
-  display: flex;
-  justify-content: center;
-}
-
-/* 큰 버튼 */
-.btn.large {
-  width: 100%;
-  max-width: 260px;
-  padding: 16px;
-
-  font-size: 15px;
-  font-weight: 600;
-
-  border-radius: 10px;
-  background: #000;
-  color: #fff;
-
-  transition: 0.2s;
-}
-
-.btn.large:hover {
-  background: #222;
-}
-
-.btn.large:active {
-  transform: scale(0.97);
-}
-
-/* 모바일 */
-@media (max-width: 480px) {
-  .battle-entry-container {
-    padding: 24px 16px;
+  .battleroom{
+    display: flex;
+    justify-content: center;
+    gap: 4%;
+  }
+  h2{
+    display: flex;
+    justify-content: center;
   }
 
-  .title {
-    font-size: 20px;
-  }
-
-  .desc {
-    font-size: 12px;
-  }
-
-  .btn.large {
-    padding: 14px;
-  }
+#battleroom{
+  margin-bottom: 20px;
 }
 
+.logbtn{
+    display: flex;
+    margin: 0 5% 0 5% ;
+    justify-content: space-between;
+}
+
+.btn{
+  padding: 10px;
+}
+
+hr {
+    margin:10px;
+}
 
 </style>
 
-    <body class="battle-entry-page">
-
-  <div class="battle-entry-container">
-
-    <h2 class="title">Battleroom</h2>
-
-    <p class="desc">
-      방에 입장하기 전 프로필 탭에서 자신의 정보를 확인해주시기 바랍니다.<br>
-      이상이 있을 시 즉시 메리프 괄진에게 문의해주세요.
-    </p>
-
-    <div class="battleroom">
-      <button class="btn large" onclick="enterRoom(1)">ENTER</button>
-    </div>
-
+<div class="container">
+  <div class="header">
+    <div class="title">ZENITH RING</div>
   </div>
 
- 
+  <div class="screen">
+        <div class="screen-top">
+            <span>v1.0</span>
+            <div class="status">ONLINE</div>
+            <div class="battery">
+                <div class="battery-level"></div>
+            </div>
+        </div>
+      <h2>Battleroom</h2>
+    <div class="battleroom">
+      <button class="btn" id="battleroom" onclick="enterRoom(1)">Room1</button>
+      <button class="btn" id="battleroom" onclick="enterRoom(2)">Room2</button>
+      <button class="btn" id="battleroom" onclick="enterRoom(3)">Room3</button>
+    </div>
+    <hr>
+    <div class="logbtn">
+    <button class="btn" onclick="location.href='main.html'">← 돌아가기</button>
+    <button class="btn" onclick="location.href='battlelog.html'">로그 보기</button>
+    </div>
+</div>
+<div class="footer">Made by Sonnet with Ampharos</div>
+</div>
 
 <script type="module" src="js/firebase.js"></script>
 <script type="module" src="js/main.js"></script>

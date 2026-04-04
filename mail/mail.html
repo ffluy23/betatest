@@ -1,0 +1,142 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>메일함</title>
+  <link rel="stylesheet" href="../css/style.css" />
+  <style>
+    .mail-list div {
+      padding: 10px 0;
+      border-bottom: 1px solid #eee;
+      font-size: 14px;
+    }
+    .mail-list p {
+      padding: 10px 0;
+      border-bottom: 1px solid #eee;
+      font-size: 14px;
+      margin: 0;
+    }
+    .note-item {
+      cursor: pointer;
+    }
+    .note-item.unread { font-weight: bold; }
+    .note-item.read   { color: #888; }
+
+    .modal-overlay {
+      display: none; position: fixed; inset: 0;
+      background: rgba(0,0,0,0.4); z-index: 100;
+      align-items: center; justify-content: center;
+    }
+    .modal-overlay.open { display: flex; }
+    .modal-box {
+      background: #fff; padding: 24px; border-radius: 8px;
+      min-width: 280px; max-width: 400px; width: 90%;
+    }
+    .modal-box h3 { margin: 0 0 16px; }
+    .modal-box .btn-row {
+      display: flex; gap: 8px;
+      margin-top: 12px; justify-content: flex-end;
+    }
+    .modal-box button { padding: 8px 16px; cursor: pointer; }
+
+    #note-view-text {
+      white-space: pre-wrap; word-break: break-all;
+      font-size: 15px; line-height: 1.6;
+      padding: 12px; background: #f9f9f9; border-radius: 6px;
+      min-height: 60px;
+    }
+
+    /* 선물 아이템 정보 박스 */
+    #gift-view-info {
+      background: #f9f9f9; border-radius: 6px;
+      padding: 12px; margin-bottom: 4px;
+      font-size: 14px; text-align: center;
+    }
+    #gift-view-info p { margin: 4px 0; }
+
+    #toast {
+      position: fixed; bottom: 20px; left: 50%; transform: translateX(-50%);
+      background: #333; color: #fff; padding: 10px 20px; border-radius: 6px;
+      display: none; z-index: 9999; font-size: 14px;
+    }
+    #toast.show { display: block; }
+
+    .empty-msg { color: #888; font-size: 14px; padding: 12px 0; }
+
+    .mail-box {
+      max-height: 400px;
+      overflow-y: auto;
+    }
+
+    .back-btn {
+      height: auto !important; flex-shrink: 0;
+      width: fit-content; padding: 8px 16px;
+    }
+
+    .btn-reject {
+      color: #aaa;
+      border-color: #ddd;
+    }
+  </style>
+</head>
+<body>
+<div class="noise"></div>
+<div class="container">
+  <div class="header">
+    <div class="title">ZENITH RING</div>
+  </div>
+  <div class="screen">
+    <div class="screen-top">
+      <span>v1.0</span>
+      <div class="status">ONLINE</div>
+      <div class="battery"><div class="battery-level"></div></div>
+    </div>
+    <button onclick="location.href='../main.html'" class="btn back-btn" style="margin-bottom:16px;">← 돌아가기</button>
+    <div id="mail-list" class="mail-list">Loading...</div>
+  </div>
+  <div class="footer">Made by Sonnet with Ampharos</div>
+</div>
+
+<!-- ── 모달: 우정반지 요청 ── -->
+<div id="modal-ring-request" class="modal-overlay">
+  <div class="modal-box">
+    <h3>💍 우정반지 도착!</h3>
+    <p id="ring-req-from" style="font-size:15px;margin:0 0 16px;"></p>
+    <p style="font-size:12px;color:#aaa;margin:0 0 4px;">수락하면 양쪽 가방에 우정반지가 생겨!</p>
+    <div class="btn-row">
+      <button onclick="rejectRing()" style="color:#aaa;">거절</button>
+      <button onclick="acceptRing()">수락 💍</button>
+    </div>
+  </div>
+</div>
+
+<!-- ── 모달: 쪽지 내용 보기 ── -->
+<div id="modal-note-view" class="modal-overlay">
+  <div class="modal-box">
+    <h3>📨 익명의 쪽지</h3>
+    <div id="note-view-text"></div>
+    <p id="note-view-date" style="font-size:12px;color:#aaa;margin-top:10px;"></p>
+    <div class="btn-row">
+      <button onclick="closeNoteModal()">닫기</button>
+    </div>
+  </div>
+</div>
+
+<!-- ── 모달: 선물 보기 / 수락 ── -->
+<div id="modal-gift-view" class="modal-overlay">
+  <div class="modal-box">
+    <h3>🎁 선물 도착!</h3>
+    <div id="gift-view-info"></div>
+    <input type="hidden" id="gift-view-inbox-item" />
+    <div class="btn-row">
+      <button class="btn-reject" onclick="rejectGift()">거절</button>
+      <button onclick="acceptGift()">가방에 넣기</button>
+    </div>
+  </div>
+</div>
+
+<div id="toast"></div>
+<script type="module" src="../js/mail.js"></script>
+</body>
+</html>

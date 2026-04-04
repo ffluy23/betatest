@@ -1,203 +1,198 @@
-/* 기본 리셋 */
 @import url('https://cdn.jsdelivr.net/gh/MonadABXY/mona-font/web/mona.css');
 
-* {
-  margin: 0;
-  padding: 0;
-  box-sizing: border-box;
-  font-family: "Mona12", sans-serif;
+@font-face {
+    font-family: 'BoldRound';
+    src: url('https://cdn.jsdelivr.net/gh/projectnoonnu/2507-2@1.0/BoldDungGeunMo.woff2') format('woff2');
+    font-weight: normal;
+    font-display: swap;
 }
 
-/* 배경 */
-.login-page {
-  height: 100vh;
-  background: #ffffff;
-  display: flex;
-  justify-content: center;
-  align-items: center;
+:root {
+    --accent: #5f8f7a;
+    --accent-soft: #8fb3a3;
 }
 
-/* 컨테이너 */
-.login-container {
-  width: 100%;
-  max-width: 400px;
-  padding: 40px 24px;
-  text-align: center;
+body {
+    background-image: url("https://subtle-crimson-e3cjpehsmx.edgeone.app/%EC%A0%9C%EB%8B%88%EC%8A%A4%EB%A7%81%20%EB%B0%B0%EA%B2%BD.jpg");
+    background-size: cover;      
+    background-position: center; 
+    background-repeat: no-repeat;
+    background-attachment: fixed;
+    margin: 0;
+    height: 100vh;
+    font-family: 'Mona12', sans-serif;
+    display: flex;
+    justify-content: center;
+    align-items: center;
 }
 
-/* 타이틀 */
-.login-container h2 {
-  font-size: 28px;
-  font-weight: 600;
-  margin-bottom: 32px;
-  color: #111;
+/* 본체  */
+.container {
+    width: min(480px, calc(100vw - 32px));
+    height: auto;
+    padding: 22px;
+    background: #2b2f33;
+    border: 3px solid #1f2326;
+    border-radius: 14px;
+    box-shadow: inset 0 0 10px rgba(0,0,0,0.7), 4px 6px 0 #121417;
 }
 
-/* 박스 */
-.login-box {
-  display: flex;
-  flex-direction: column;
-  gap: 16px;
+.header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 10px;
 }
 
-/* 인풋 */
-.login-box input {
-  padding: 14px 16px;
-  border: 1px solid #ddd;
-  border-radius: 8px;
-  font-size: 14px;
-  transition: 0.2s;
+.title {
+    font-family: 'BoldRound', sans-serif;
+    font-size: 20px;
+    letter-spacing: 1px;
+    color: var(--accent);
 }
 
-/* 포커스 */
-.login-box input:focus {
-  outline: none;
-  border-color: #000;
+.status {
+    font-size: 11px;
+    color: #9aa0a6;
+}
+
+/* 화면 */
+.screen {
+    height: clamp(200px, 35vw, 280px);
+    background: #f4fbf7;
+    border: 2px solid #cfd4da;
+    border-radius: 6px;
+    padding: 18px;
+    padding-top: 30px;
+    box-shadow: inset 0 0 6px rgba(0,0,0,0.15);
+    position: relative;
+    overflow: hidden;
+    display: flex;
+    flex-direction: column;
+}
+
+/* 화면 상단 UI */
+.screen-top {
+    position: absolute;
+    top: 6px;
+    left: 10px;
+    right: 10px;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    font-size: 10px;
+    color: #555;
+}
+
+/* CRT 느낌 */
+.screen::before {
+    content: '';
+    position: absolute;
+    inset: 0;
+    background: repeating-linear-gradient(
+        to bottom,
+        rgba(0,0,0,0.03),
+        rgba(0,0,0,0.03) 1px,
+        transparent 1px,
+        transparent 3px
+    );
+    pointer-events: none;
+}
+
+/* 배터리 */
+.battery {
+    width: 28px;
+    height: 14px;
+    border: 2px solid #999;
+    border-radius: 3px;
+    position: relative;
+    padding: 2px;
+    box-sizing: border-box;
+}
+
+.battery::after {
+    content: '';
+    position: absolute;
+    right: -6px;
+    top: 4px;
+    width: 3px;
+    height: 6px;
+    background: #999;
+    border-radius: 1px;
+}
+
+.battery-level {
+    height: 100%;
+    width: 70%;
+    background: var(--accent);
+    border-radius: 1px;
+    animation: batteryBlink 2s infinite;
+}
+
+@keyframes batteryBlink {
+    0%, 100% { opacity: 1; }
+    50% { opacity: 0.4; }
 }
 
 /* 버튼 */
+.grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 12px;
+    flex: 1;
+    grid-template-rows: 1fr 1fr;
+}
+
 .btn {
-  padding: 14px;
-  border: none;
-  border-radius: 8px;
-  background: #000;
-  color: #fff;
-  font-weight: 600;
-  cursor: pointer;
-  transition: 0.2s;
-}
-
-/* 버튼 hover */
-.btn:hover {
-  background: #222;
-}
-
-/* 버튼 active */
-.btn:active {
-  transform: scale(0.98);
-}
-
-/* 모바일 대응 */
-@media (max-width: 480px) {
-  .login-container {
-    padding: 24px 16px;
-  }
-
-  .login-container h2 {
-    font-size: 24px;
-  }
-
-  .login-box input {
-    padding: 12px;
-  }
-
-  .btn {
-    padding: 12px;
-  }
-}
-
-/* 전체 컨테이너 */
-.container {
-  max-width: 420px;
-  margin: 0 auto;
-  padding: 24px 16px;
-}
-
-/* 프로필 카드 */
-.profile {
-  display: flex;
-  flex-direction: column;
-  gap: 8px;
-
-  padding: 20px;
-  border: 1px solid #ddd;
-  border-radius: 12px;
-  background: #fff;
-
-  margin-bottom: 20px;
-}
-
-/* 닉네임 */
-#nickname {
-  font-size: 18px;
-  font-weight: 600;
-  color: #111;
-}
-
-/* 코인 */
-#coins {
-  font-size: 14px;
-  color: #666;
-}
-
-/* 갤러리 박스 */
-.gallery-box {
-  border: 1px solid #ddd;
-  border-radius: 12px;
-  padding: 16px;
-  background: #fff;
-}
-
-/* 제목 */
-.gallery-box h2 {
-  font-size: 16px;
-  font-weight: 600;
-  margin-bottom: 8px;
-  color: #111;
-}
-
-/* 구분선 */
-.gallery-box hr {
-  border: none;
-  border-top: 1px solid #eee;
-  margin-bottom: 12px;
-}
-
-/* 스크롤 영역 */
-.gallery-box {
-  max-height: 400px;
-  overflow-y: auto;
-}
-
-/* 갤러리 */
-#gallery {
-  display: grid;
-  grid-template-columns: repeat(3, 1fr);
-  gap: 8px;
-}
-
-/* 이미지 */
-#gallery img {
-  width: 100%;
-  aspect-ratio: 1 / 1;
-  object-fit: cover;
-
-  border-radius: 8px;
-  border: 1px solid #eee;
-
-  transition: 0.2s;
-}
-
-/* hover */
-#gallery img:hover {
-  transform: scale(1.03);
-}
-
-/* 모바일 대응 */
-@media (max-width: 480px) {
-  .container {
-    padding: 16px 12px;
-  }
-
-  #gallery {
-    grid-template-columns: repeat(2, 1fr);
-  }
-
-  .profile {
-    padding: 16px;
-  }
-
-  .gallery-box {
+    display: flex;
+    font-family: 'Mona12', sans-serif;
+    flex-direction: column;
+    height: 100%;
+    align-items: center;
+    justify-content: center;
     padding: 14px;
-  }
+    border-radius: 6px;
+    cursor: pointer;
+    font-size: 12px;
+    background: #e9ecef;
+    border: 2px solid #ced4da;
+    box-shadow: 3px 3px 0 #adb5bd;
+    transition: 0.1s;
+    color: #495057;
+}
+
+.btn svg {
+    width: 34px;
+    height: 34px;
+    margin-bottom: 4px;
+    fill: var(--accent);
+}
+
+.btn:hover {
+    transform: translateY(-1px);
+    background: #dee2e6;
+}
+
+.btn:active {
+    transform: translateY(3px);
+    box-shadow: 1px 1px 0 #868e96;
+}
+
+.footer {
+    margin-top: 15px;
+    font-size: 11px;
+    text-align: center;
+    color: #868e96;
+    letter-spacing: 1px;
+}
+
+/* 노이즈 */
+.noise {
+    position: absolute;
+    width: 100%;
+    height: 100%;
+    pointer-events: none;
+    background-image: url('https://www.transparenttextures.com/patterns/asfalt-light.png');
+    opacity: 0.35;
+    z-index: 100;
 }

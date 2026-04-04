@@ -178,6 +178,7 @@ function calcAssistPower(pokemon) {
   return 50
 }
 
+// 변경 후
 function calcDamage(attacker, moveName, defender, atkRankBonus = 0, defRankBonus = 0, powerOverride = null, atkStatOverride = null) {
   const move = moves[moveName]
   if (!move) return { damage: 0, multiplier: 1, stab: false, dice: 0, critical: false }
@@ -189,28 +190,24 @@ function calcDamage(attacker, moveName, defender, atkRankBonus = 0, defRankBonus
   const atkTypes = Array.isArray(attacker.type) ? attacker.type : [attacker.type]
   const stab = atkTypes.includes(move.type)
   const power = powerOverride ?? (move.power ?? 40)
-  // atkStatOverride는 속임수 등 특수 케이스용 (공격 실수치 자체를 바꿀 때)
   const atkStat = atkStatOverride ?? (attacker.attack ?? 3)
 
-  // 공식: (위력 + 공격력×4 + 주사위) × 타입상성 × 자속보정
-  const base = power + atkStat * 4 + dice
-  const raw = Math.floor(base * multiplier * (stab ? 1.3 : 1))
-
-  // 공격 랭크: 자속보정 이후 정수로 ± (최대 ±4, 최솟값 0)
-  const afterAtk = Math.max(0, raw + atkRankBonus)
+  // 공식 변경: (위력 + 공격력×4 + 주사위 + 공격 랭크 보너스) × 타입상성 × 자속보정
+  const base = power + atkStat * 4 + dice + atkRankBonus
+  const raw = Math.floor(Math.max(0, base) * multiplier * (stab ? 1.3 : 1))
 
   // 방어력 × 5 차감
-  const afterDef = Math.max(0, afterAtk - (defender.defense ?? 3) * 5)
+  const afterDef = Math.max(0, raw - (defender.defense ?? 3) * 5)
 
   // 방어 랭크: 최종 피해량 이후 랭크 × 3으로 차감 (최솟값 0)
   const baseDmg = Math.max(0, afterDef - defRankBonus * 3)
 
-  // ★ 빛의 장막 데미지 감소 (25% 감소 = 75%만 받음) — breakBarrier 기술은 무시
+  // 빛의 장막 데미지 감소 (25% 감소 = 75%만 받음) — breakBarrier 기술은 무시
   const lightScreenActive = (defender.lightScreenTurns ?? 0) > 0
   const breakBarrier = move.breakBarrier ?? false
   const screenMult = (lightScreenActive && !breakBarrier) ? 0.75 : 1.0
 
-  // ★ 공중날기 중 번개 데미지 1.2배
+  // 공중날기 중 번개 데미지 1.2배
   const flyLightningMult = (defender.flyState?.flying && move.type === "전기") ? 1.2 : 1.0
 
   const critical = Math.random() * 100 < Math.min(100, atkStat * 2)

@@ -1,0 +1,157 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <link rel="stylesheet" href="css/style.css">
+    <style>
+        /* ── 게임 기록 모달 ── */
+  #log-modal {
+    display: none;
+    position: fixed; inset: 0; z-index: 999;
+    background: rgba(0,0,0,0.6);
+    align-items: center; justify-content: center;
+  }
+  #log-modal.open { display: flex; }
+
+  #log-modal-inner {
+    background: #fff;
+    border: 1px solid #ddd;
+    border-radius: 12px;
+    width: 520px; max-width: 95vw;
+    max-height: 80vh;
+    display: flex; flex-direction: column;
+    overflow: hidden;
+  }
+
+  #log-modal-header {
+    display: flex; justify-content: space-between; align-items: center;
+    padding: 14px 18px;
+    border-bottom: 1px solid #eee;
+  }
+  #log-modal-title {
+    font-size: 14px; font-weight: bold; color: #111;
+  }
+  #log-modal-close {
+    background: none; border: none; color: #aaa;
+    font-size: 20px; cursor: pointer; line-height: 1;
+  }
+  #log-modal-close:hover { color: #333; }
+
+  #log-modal-body {
+    padding: 14px 18px;
+    overflow-y: auto;
+    flex: 1;
+    line-height: 1.8;
+    font-size: 13px;
+    color: #333;
+  }
+  #log-modal-body p { margin: 2px 0; }
+
+  /* ── 게임 기록 목록 ── */
+  #game-log-section {
+    margin-top: 32px;
+  }
+  #game-log-section h3 {
+    font-size: 13px; color: #888;
+    margin: 0 0 10px;
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+  }
+
+ .game-log-box {
+  max-height: 30vh;
+  -webkit-overflow-scrolling: touch;
+}
+.screen {
+  overflow-y: auto;
+}
+#game-log-list {
+  display: flex; flex-direction: column; gap: 6px;
+  padding-bottom: 15px;
+}
+
+  .game-log-item {
+    display: flex; flex-direction: column; gap: 4px;
+    padding: 10px 14px;
+    background: rgba(255,255,255,0.04);
+    border: 1px solid #333;
+    border-radius: 8px;
+    cursor: pointer;
+    transition: background 0.15s, border-color 0.15s;
+  }
+  .game-log-item:hover {
+    background: rgba(255,255,255,0.08);
+    border-color: #555;
+  }
+  .game-log-vs {
+    font-size: 14px; font-weight: bold; color: #111;
+  }
+  .game-log-meta {
+    font-size: 11px; color: #888;
+  }
+  #game-log-empty {
+    font-size: 12px; color: #555; padding: 8px 0;
+  }
+
+  .btn{
+    padding: 10px;
+    height: 40px;
+    margin-bottom: 5px;
+  }
+
+  .back-btn {
+  height: auto !important;
+  flex-shrink: 0;
+  width: fit-content;
+  padding: 8px 16px;
+}
+
+    </style>
+    <title>Battle log</title>
+</head>
+<body>
+<div class="container">
+  <div class="header">
+    <div class="title">ZENITH RING</div>
+  </div>
+
+  <div class="screen">
+        <div class="screen-top">
+            <span>v1.0</span>
+            <div class="status">ONLINE</div>
+            <div class="battery">
+                <div class="battery-level"></div>
+            </div>
+        </div>
+<button onclick="location.href='battle.html'" class="btn back-btn" style="margin-bottom:16px;">← 돌아가기</button>
+    <!-- 게임 기록 목록 -->
+<div id="game-log-section">
+  <h3>배틀 기록</h3>
+<div class="game-log-box">
+  <div id="game-log-list">
+    <div id="game-log-empty">Loading...</div>
+  </div>
+ </div>
+</div>
+
+<!-- 로그 모달 -->
+<div id="log-modal">
+  <div id="log-modal-inner">
+    <div id="log-modal-header">
+      <span id="log-modal-title">게임 로그</span>
+      <button id="log-modal-close">✕</button>
+    </div>
+    <div id="log-modal-body"></div>
+  </div>
+</div>
+
+ </div>
+
+<div class="footer">Made by Sonnet with Ampharos</div>
+</div>
+
+<script type="module" src="js/firebase.js"></script>
+<script type="module" src="js/main.js"></script>
+</body>
+</html>
