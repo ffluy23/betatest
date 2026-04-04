@@ -22,7 +22,7 @@ const logsRef = collection(db, "rooms", ROOM_ID, "logs")
 const SFX_DICE = "https://slippery-copper-mzpmcmc2ra.edgeone.app/soundreality-bicycle-bell-155622.mp3"
 const SFX_BTN  = "https://usual-salmon-mnqxptwyvw.edgeone.app/Pokemon%20(A%20Button)%20-%20Sound%20Effect%20(HD)%20(1)%20(1).mp3"
 
-const API = "https://betatest-ten.vercel.app"
+const API = "https://zenithring.vercel.app"
 
 function playSound(url) {
   const a = new Audio(url); a.volume = 0.6; a.play().catch(() => {})
