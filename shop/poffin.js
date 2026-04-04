@@ -12,20 +12,20 @@ import {
 // ══════════════════════════════════════════════════════
   const BASE = 'https://scary-fuchsia-lfntira4xr.edgeone.app/'
   const BERRIES = [
-    { id:'cheri',  img: BASE+'cheriberry.png',  name:'버치열매', spicy:+1,dry:0, sweet:0, bitter:0, sour:-1 },
-    { id:'chesto', img: BASE+'chestoberry.png', name:'유루열매', spicy:-1,dry:+1,sweet:0, bitter:0, sour:0  },
-    { id:'pecha',  img: BASE+'pechaberry.png',  name:'복슝열매', spicy:0, dry:-1,sweet:+1,bitter:0, sour:0  },
-    { id:'rawst',  img: BASE+'rawstberry.png',  name:'복분열매', spicy:0, dry:0, sweet:-1,bitter:+1,sour:0  },
-    { id:'aspear', img: BASE+'aspearberry.png', name:'배리열매', spicy:0, dry:0, sweet:0, bitter:-1,sour:+1 },
-    { id:'leppa',  img: BASE+'leppaberry.png',  name:'과사열매', spicy:+1,dry:-1,sweet:0, bitter:0, sour:0  },
-    { id:'figy',   img: BASE+'figyberry.png',   name:'무화열매', spicy:+1,dry:0, sweet:0, bitter:0, sour:-1 },
-    { id:'wiki',   img: '../img/wikiberry.png',   name:'위키열매', spicy:-1,dry:+1,sweet:0, bitter:0, sour:0  },
-    { id:'mago',   img: BASE+'magoberry.png',   name:'마고열매', spicy:0, dry:-1,sweet:+1,bitter:0, sour:0  },
-    { id:'aguav',  img: BASE+'aguavberry.png',  name:'아바열매', spicy:0, dry:0, sweet:-1,bitter:+1,sour:0  },
-    { id:'iapapa', img: BASE+'iapapaberry.png', name:'파야열매', spicy:0, dry:0, sweet:0, bitter:-1,sour:+1 },
-    { id:'razz',   img: BASE+'razzberry.png',   name:'라즈열매', spicy:0, dry:+1,sweet:0, bitter:0, sour:-1 },
-    { id:'bluk',   img: BASE+'blukberry.png',   name:'블리열매', spicy:-1,dry:0, sweet:+1,bitter:0, sour:0  },
-    { id:'wepear', img: BASE+'wepearberry.png', name:'서배열매', spicy:0, dry:0, sweet:-1,bitter:0, sour:+1 },
+    { id:'cheri',  img: "../img/cheriberry.png",  name:'버치열매', spicy:+1,dry:0, sweet:0, bitter:0, sour:-1 },
+    { id:'chesto', img: "../img/chestoberry.png", name:'유루열매', spicy:-1,dry:+1,sweet:0, bitter:0, sour:0  },
+    { id:'pecha',  img: "../img/pechaberry.png",  name:'복슝열매', spicy:0, dry:-1,sweet:+1,bitter:0, sour:0  },
+    { id:'rawst',  img: "../img/rawstberry.png",  name:'복분열매', spicy:0, dry:0, sweet:-1,bitter:+1,sour:0  },
+    { id:'aspear', img: "../img/aspearberry.png", name:'배리열매', spicy:0, dry:0, sweet:0, bitter:-1,sour:+1 },
+    { id:'leppa',  img: "../img/leppaberry.png",  name:'과사열매', spicy:+1,dry:-1,sweet:0, bitter:0, sour:0  },
+    { id:'figy',   img: "../img/figyrberry.png",   name:'무화열매', spicy:+1,dry:0, sweet:0, bitter:0, sour:-1 },
+    { id:'wiki',   img: "../img/wikiberry.png",   name:'위키열매', spicy:-1,dry:+1,sweet:0, bitter:0, sour:0  },
+    { id:'mago',   img: "../img/magoberry.png",   name:'마고열매', spicy:0, dry:-1,sweet:+1,bitter:0, sour:0  },
+    { id:'aguav',  img: "../img/aguavberry.png",  name:'아바열매', spicy:0, dry:0, sweet:-1,bitter:+1,sour:0  },
+    { id:'iapapa', img: "../img/iapapaberry.png", name:'파야열매', spicy:0, dry:0, sweet:0, bitter:-1,sour:+1 },
+    { id:'razz',   img: "../img/razzberry.png",   name:'라즈열매', spicy:0, dry:+1,sweet:0, bitter:0, sour:-1 },
+    { id:'bluk',   img: "../img/blukberry.png",   name:'블리열매', spicy:-1,dry:0, sweet:+1,bitter:0, sour:0  },
+    { id:'wepear', img: "../img/wepearberry.png", name:'서배열매', spicy:0, dry:0, sweet:-1,bitter:0, sour:+1 },
   ]
 
 // 열매 이미지 캐시
