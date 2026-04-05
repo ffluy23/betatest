@@ -141,6 +141,8 @@ function calcHit(attacker, moveInfo, defender) {
   if (moveInfo.alwaysHit || moveInfo.skipEvasion) return { hit: true, hitType: "hit" }
   // 공중날기 중인 수비 포켓몬 → 자동 회피 (번개 제외)
   if (defender.flyState?.flying && moveInfo.type !== "전기") return { hit: false, hitType: "evaded" }
+  // 구멍파기 중인 수비 포켓몬 → 자동 회피 (지진 제외)
+  if (defender.digState?.digging && moveInfo.type !== "땅") return { hit: false, hitType: "evaded" }
   const as = Math.max(1, (attacker.speed ?? 3) - getStatusSpdPenalty(attacker))
   const ds = Math.max(1, (defender.speed ?? 3) - getStatusSpdPenalty(defender))
   // 스피드 랭크: 실수치 - 기본 스피드 = 보너스분만 %p로 적용 (최대 ±5%p)
@@ -178,7 +180,6 @@ function calcAssistPower(pokemon) {
   return 50
 }
 
-// 변경 후
 function calcDamage(attacker, moveName, defender, atkRankBonus = 0, defRankBonus = 0, powerOverride = null, atkStatOverride = null) {
   const move = moves[moveName]
   if (!move) return { damage: 0, multiplier: 1, stab: false, dice: 0, critical: false }
@@ -190,28 +191,35 @@ function calcDamage(attacker, moveName, defender, atkRankBonus = 0, defRankBonus
   const atkTypes = Array.isArray(attacker.type) ? attacker.type : [attacker.type]
   const stab = atkTypes.includes(move.type)
   const power = powerOverride ?? (move.power ?? 40)
+  // atkStatOverride는 속임수 등 특수 케이스용 (공격 실수치 자체를 바꿀 때)
   const atkStat = atkStatOverride ?? (attacker.attack ?? 3)
 
-  // 공식 변경: (위력 + 공격력×4 + 주사위 + 공격 랭크 보너스) × 타입상성 × 자속보정
-  const base = power + atkStat * 4 + dice + atkRankBonus
-  const raw = Math.floor(Math.max(0, base) * multiplier * (stab ? 1.3 : 1))
+  // 공식: (위력 + 공격력×4 + 주사위) × 타입상성 × 자속보정
+  const base = power + atkStat * 4 + dice
+  const raw = Math.floor(base * multiplier * (stab ? 1.3 : 1))
+
+  // 공격 랭크: 자속보정 이후 정수로 ± (최대 ±4, 최솟값 0)
+  const afterAtk = Math.max(0, raw + atkRankBonus)
 
   // 방어력 × 5 차감
-  const afterDef = Math.max(0, raw - (defender.defense ?? 3) * 5)
+  const afterDef = Math.max(0, afterAtk - (defender.defense ?? 3) * 5)
 
   // 방어 랭크: 최종 피해량 이후 랭크 × 3으로 차감 (최솟값 0)
   const baseDmg = Math.max(0, afterDef - defRankBonus * 3)
 
-  // 빛의 장막 데미지 감소 (25% 감소 = 75%만 받음) — breakBarrier 기술은 무시
+  // ★ 빛의 장막 데미지 감소 (25% 감소 = 75%만 받음) — breakBarrier 기술은 무시
   const lightScreenActive = (defender.lightScreenTurns ?? 0) > 0
   const breakBarrier = move.breakBarrier ?? false
   const screenMult = (lightScreenActive && !breakBarrier) ? 0.75 : 1.0
 
-  // 공중날기 중 번개 데미지 1.2배
+  // ★ 공중날기 중 번개 데미지 1.2배
   const flyLightningMult = (defender.flyState?.flying && move.type === "전기") ? 1.2 : 1.0
 
+  // ★ 구멍파기 중 지진 데미지 1.2배
+  const digEarthquakeMult = (defender.digState?.digging && move.type === "땅") ? 1.2 : 1.0
+
   const critical = Math.random() * 100 < Math.min(100, atkStat * 2)
-  const finalDmg = Math.floor(baseDmg * screenMult * flyLightningMult)
+  const finalDmg = Math.floor(baseDmg * screenMult * flyLightningMult * digEarthquakeMult)
   return { damage: critical ? Math.floor(finalDmg * 1.5) : finalDmg, multiplier, stab, dice, critical }
 }
 
@@ -385,6 +393,49 @@ export default async function handler(req, res) {
       return res.status(200).json({ ok: true })
     }
 
+    // ── 구멍파기 2턴째 자동 처리
+    if (myPokemon.digState?.digging) {
+      myPokemon.digState = null
+      await log(logsRef, `${myPokemon.name}${josa(myPokemon.name, "은는")} 땅속에서 튀어나왔다!`)
+      await log(logsRef, "", "attack", { attacker: mySlot })
+      const atkRankDig = getActiveRank(myPokemon, "atk")
+      const defRankEneDig = getActiveRank(enePokemon, "def")
+      const wasDefendingDig = enePokemon.defending ?? false
+      enePokemon.defending = false; enePokemon.defendTurns = 0
+      if (wasDefendingDig) {
+        await log(logsRef, `${enePokemon.name}${josa(enePokemon.name, "은는")} 방어했다!`)
+      } else {
+        const { hit, hitType } = calcHit(myPokemon, { accuracy: 100, type: "땅" }, enePokemon)
+        if (!hit) {
+          await log(logsRef, hitType === "evaded" ? `${enePokemon.name}에게는 맞지 않았다!` : `그러나 ${myPokemon.name}의 공격은 빗나갔다!`, hitType === "evaded" ? "evade" : "normal")
+        } else {
+          const digMoveName = myPokemon.digMoveName ?? "구멍파기"
+          const { damage, multiplier, critical } = calcDamage(myPokemon, digMoveName, enePokemon, atkRankDig, defRankEneDig)
+          if (multiplier === 0) {
+            await log(logsRef, `${enePokemon.name}에게는 효과가 없다…`)
+          } else {
+            enePokemon.hp = Math.max(0, enePokemon.hp - damage)
+            if (enePokemon.hp <= 0 && enePokemon.enduring) { enePokemon.hp = 1; enePokemon.enduring = false }
+            await log(logsRef, "", "hit", { defender: enemySlot, hp: enePokemon.hp, maxHp: enePokemon.maxHp ?? enePokemon.hp })
+            if (multiplier > 1) await log(logsRef, "효과가 굉장했다!")
+            if (multiplier < 1) await log(logsRef, "효과가 별로인 듯하다…")
+            if (critical) await log(logsRef, "급소에 맞았다!", "critical")
+            if (enePokemon.hp <= 0) await log(logsRef, `${enePokemon.name}${josa(enePokemon.name, "은는")} 쓰러졌다!`, "faint")
+          }
+        }
+      }
+      myPokemon.digMoveName = null
+      const expMsgsDig = tickMyRanks(myPokemon); clearRankStack(myPokemon)
+      for (const msg of expMsgsDig) await log(logsRef, msg)
+      if (isAllFainted(enemyEntry)) {
+        await safeUpdate(roomRef, { [`${mySlot}_entry`]: myEntry, [`${enemySlot}_entry`]: enemyEntry, turn_count: nextTurnCount, game_over: true, winner: myName, current_turn: null })
+        await log(logsRef, `${myName}의 승리!`, "win")
+      } else {
+        await safeUpdate(roomRef, { [`${mySlot}_entry`]: myEntry, [`${enemySlot}_entry`]: enemyEntry, current_turn: enemySlot, turn_count: nextTurnCount })
+      }
+      return res.status(200).json({ ok: true })
+    }
+
     // ── 참기 중이면 자동으로 턴 스킵
     if (myPokemon.bideState && (!moveInfo || !moveInfo?.bide)) {
       myPokemon.bideState.turnsLeft--
@@ -452,6 +503,7 @@ export default async function handler(req, res) {
       myPokemon.rollState = { active: false, turn: 0 }
       // 공중날기 중 행동 불능이면 flyState 해제
       myPokemon.flyState = null
+      myPokemon.digState = null
       if ((myPokemon.defendTurns ?? 0) > 0) { myPokemon.defendTurns--; if (!myPokemon.defendTurns) myPokemon.defending = false }
       await safeUpdate(roomRef, { [`${mySlot}_entry`]: myEntry, current_turn: enemySlot, turn_count: nextTurnCount })
       return res.status(200).json({ ok: true })
@@ -464,6 +516,7 @@ export default async function handler(req, res) {
       resetRankStack(myPokemon)
       myPokemon.rollState = { active: false, turn: 0 }
       myPokemon.flyState = null
+      myPokemon.digState = null
       await hitSelfLog()
       if (isAllFainted(myEntry)) {
         await safeUpdate(roomRef, { [`${mySlot}_entry`]: myEntry, turn_count: nextTurnCount, game_over: true, winner: enemyName, current_turn: null })
@@ -539,8 +592,8 @@ export default async function handler(req, res) {
 
       const myFainted = myPokemon.hp <= 0
       const eneFainted = enePokemon.hp <= 0
-      if (myFainted) { myPokemon.bideState = null; myPokemon.rollState = { active: false, turn: 0 }; myPokemon.flyState = null }
-      if (eneFainted) { enePokemon.bideState = null; enePokemon.rollState = { active: false, turn: 0 }; enePokemon.flyState = null }
+      if (myFainted) { myPokemon.bideState = null; myPokemon.rollState = { active: false, turn: 0 }; myPokemon.flyState = null; myPokemon.digState = null }
+      if (eneFainted) { enePokemon.bideState = null; enePokemon.rollState = { active: false, turn: 0 }; enePokemon.flyState = null; enePokemon.digState = null }
       if (eneFainted) revengeUpdate[`revenge_ready_${enemySlot}`] = false
       if (myFainted) {
         revengeUpdate[`revenge_ready_${enemySlot}`] = true
@@ -566,19 +619,21 @@ export default async function handler(req, res) {
     //  특수 기술 처리
     // ══════════════════════════════════════════════════
 
-    // ── 방어
+    // ── 방어 / 판별 공통 처리
     if (moveInfo?.defend) {
-      const prevDefend = myPokemon.lastDefendMove === "방어"
+      const moveName = moveData.name  // "방어" 또는 "판별"
+      const prevSame = myPokemon.lastDefendMove === moveName
       const stack = myPokemon.defendStack ?? 0
-      let chance = 1.0
-      if (prevDefend && stack >= 1) chance = stack >= 2 ? 0.25 : 0.5
+      // 처음 사용 100%, 연속 사용 시 33%
+      const chance = (prevSame && stack >= 1) ? (1 / 3) : 1.0
       if (Math.random() < chance) {
         myPokemon.defending = true; myPokemon.defendTurns = 2
-        myPokemon.lastDefendMove = "방어"; myPokemon.defendStack = prevDefend ? Math.min(2, stack + 1) : 1
+        myPokemon.lastDefendMove = moveName
+        myPokemon.defendStack = prevSame ? stack + 1 : 1
         await log(logsRef, `${myPokemon.name}${josa(myPokemon.name, "은는")} 방어 태세에 들어갔다!`)
       } else {
         myPokemon.lastDefendMove = null; myPokemon.defendStack = 0
-        await log(logsRef, `그러나 방어에 실패했다!`)
+        await log(logsRef, `그러나 ${moveName}에 실패했다!`)
       }
       await safeUpdate(roomRef, { [`${mySlot}_entry`]: myEntry, [`${enemySlot}_entry`]: enemyEntry, current_turn: enemySlot, turn_count: nextTurnCount })
       return res.status(200).json({ ok: true })
@@ -738,6 +793,15 @@ export default async function handler(req, res) {
       myPokemon.flyState = { flying: true }
       myPokemon.flyMoveName = moveData.name
       await log(logsRef, `${myPokemon.name}${josa(myPokemon.name, "은는")} 하늘 높이 날아올랐다!`)
+      await safeUpdate(roomRef, { [`${mySlot}_entry`]: myEntry, [`${enemySlot}_entry`]: enemyEntry, current_turn: enemySlot, turn_count: nextTurnCount })
+      return res.status(200).json({ ok: true })
+    }
+
+    // ★ ── 구멍파기 1턴째 (차징)
+    if (moveInfo?.dig && !myPokemon.digState?.digging) {
+      myPokemon.digState = { digging: true }
+      myPokemon.digMoveName = moveData.name
+      await log(logsRef, `${myPokemon.name}${josa(myPokemon.name, "은는")} 땅속으로 파고들었다!`)
       await safeUpdate(roomRef, { [`${mySlot}_entry`]: myEntry, [`${enemySlot}_entry`]: enemyEntry, current_turn: enemySlot, turn_count: nextTurnCount })
       return res.status(200).json({ ok: true })
     }

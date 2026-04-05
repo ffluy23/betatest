@@ -22,7 +22,7 @@ const logsRef = collection(db, "rooms", ROOM_ID, "logs")
 const SFX_DICE = "https://slippery-copper-mzpmcmc2ra.edgeone.app/soundreality-bicycle-bell-155622.mp3"
 const SFX_BTN  = "https://usual-salmon-mnqxptwyvw.edgeone.app/Pokemon%20(A%20Button)%20-%20Sound%20Effect%20(HD)%20(1)%20(1).mp3"
 
-const API = "https://zenithring.vercel.app"
+const API = "https://betatest-ten.vercel.app"
 
 function playSound(url) {
   const a = new Audio(url); a.volume = 0.6; a.play().catch(() => {})
@@ -350,7 +350,7 @@ async function grantWinCoins(winnerName, data) {
   try {
     await updateDoc(doc(db, "users", myUid), { coins: increment(300) })
     await addLog("🏆 승리 보상으로 300ZP를 받았다!")
-  } catch(e) { console.warn("ZP 지급 실패", e) }
+  } catch(e) { console.warn("코인 지급 실패", e) }
 }
 
 async function saveGameLog() {
@@ -496,6 +496,16 @@ function listenRoom() {
           return
         }
 
+        // ★ 구멍파기 2턴째 자동 발동
+        if (myPokemon?.digState?.digging) {
+          actionDone = true
+          fetch(`${API}/api/use-move`, {
+            method: "POST", headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ roomId: ROOM_ID, mySlot, moveIdx: 0 })
+          })
+          return
+        }
+
         // 구르기 자동 발동
         if (myPokemon?.rollState?.active) {
           const rollMoveIdx = (myPokemon.moves ?? []).findIndex(m => m.name === "구르기")
@@ -539,8 +549,9 @@ function updateActiveUINoHp(slot, data, prefix) {
   const ls = ""
   // ★ 공중날기 표시
   const fly = pokemon.flyState?.flying ? " [비행중]" : ""
+  const dig = pokemon.digState?.digging ? " [굴착]" : ""
   const nameEl = document.getElementById(`${prefix}-active-name`)
-  if (nameEl) nameEl.innerText = data.intro_done ? (pokemon.name + st + cf + ls + fly) : "???"
+  if (nameEl) nameEl.innerText = data.intro_done ? (pokemon.name + st + cf + ls + fly + dig) : "???"
   if (data.intro_done) updatePortrait(prefix, pokemon)
   updateConfusionEffect(prefix, (pokemon.confusion ?? 0) > 0)
   // ★ 빛의 장막 시각 효과
@@ -627,8 +638,9 @@ function updateMoveButtons(data) {
   const myPokemon = data[`${mySlot}_entry`]?.[data[`${mySlot}_active_idx`]]
   const fainted = !myPokemon || myPokemon.hp <= 0, movesArr = myPokemon?.moves ?? []
 
-  // ★ 공중날기 중이면 모든 버튼 비활성 (자동 처리됨)
+  // ★ 공중날기/구멍파기 중이면 모든 버튼 비활성 (자동 처리됨)
   const isFlying = myPokemon?.flyState?.flying ?? false
+  const isDigging = myPokemon?.digState?.digging ?? false
 
   for (let i = 0; i < 4; i++) {
     const btn = document.getElementById(`move-btn-${i}`); if (!btn) continue
@@ -650,7 +662,7 @@ function updateMoveButtons(data) {
     const queueBusy = logQueue.length > 0 || isProcessing
     const disabled = isSpectator || fainted || move.pp <= 0 || !myTurn || actionDone
       || !lrUnlocked || lockedByRoll || lockedByChain || lockedByBide || queueBusy
-      || isFlying  // ★ 비행 중 비활성
+      || isFlying || isDigging
     if (disabled) { btn.disabled = true; btn.onclick = null }
     else { btn.disabled = false; btn.onclick = () => { playSound(SFX_BTN); useMove(i, data) } }
   }
@@ -678,9 +690,10 @@ function updateBenchButtons(data) {
       const activeFainted = (myEntry[activeIdx]?.hp ?? 0) <= 0
       // ★ 비행 중에는 교체 불가
       const isFlying = myEntry[activeIdx]?.flyState?.flying ?? false
+      const isDigging = myEntry[activeIdx]?.digState?.digging ?? false
       btn.disabled = isSpectator || !myTurn || actionDone || queueBusy
         || (!activeFainted && !!(myEntry[activeIdx]?.bideState?.turnsLeft > 0))
-        || isFlying
+        || isFlying || isDigging
       if (!isSpectator) btn.onclick = () => { playSound(SFX_BTN); switchPokemon(idx) }
     }
     bench.appendChild(btn)

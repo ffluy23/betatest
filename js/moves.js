@@ -97,8 +97,12 @@ export const moves = {
   "10만볼트":     { power: 50, type: "전기", accuracy: 100, alwaysHit: false, effect: { chance: 0.3, status: "마비" } },
   "방전":         { power: 50, type: "전기", accuracy: 100, alwaysHit: false, effect: { chance: 0.3, status: "마비" } },
   "번개":         { power: 60, type: "전기", accuracy: 70,  alwaysHit: false, effect: { chance: 0.3, status: "마비" } },
-  "전기쇼크":     { power: 40, type: "전기", accuracy: 100, alwaysHit: false, effect: { chance: 0.1, status: "마비" } },
+  "전기쇼크":     { power: 30, type: "전기", accuracy: 100, alwaysHit: false, effect: { chance: 0.1, status: "마비" } },
   "전기자석파":   { power: 0,  type: "전기", accuracy: 90,  alwaysHit: false, targetSelf: false,
+                    effect: { chance: 1, status: "마비" } },
+  "볼부비부비":   { power: 30,  type: "전기", accuracy: 100,  alwaysHit: false, targetSelf: false,
+                    effect: { chance: 1, status: "마비" } },
+  "전자포":   { power: 60,  type: "전기", accuracy: 50,  alwaysHit: false, targetSelf: false,
                     effect: { chance: 1, status: "마비" } },
   "충전":         { power: 0,  type: "전기", accuracy: 100, alwaysHit: true, targetSelf: true, effect: null,
                     rank: { atk: 2, def: 1, turns: 1 } },
@@ -165,13 +169,15 @@ export const moves = {
   "열풍비행":   { power: 40, type: "비행", accuracy: 100, alwaysHit: false, effect: { chance: 0.1, status: "화상" } },
   "쪼기":       { power: 40, type: "비행", accuracy: 100, alwaysHit: false, effect: null },
   "날개치기":   { power: 40, type: "비행", accuracy: 100, alwaysHit: false, effect: null },
-  "제비반환":   { power: 35, type: "비행", accuracy: 100, alwaysHit: false, effect: null },
+  "제비반환":   { power: 45, type: "비행", accuracy: 100, alwaysHit: true, effect: null },
   // 공중날기: flyState로 2턴 처리
   "공중날기":   { power: 50, type: "비행", accuracy: 95, alwaysHit: false, effect: null, fly: true },
 
   // ───── 에스퍼 ─────
   "사이코키네시스": { power: 50, type: "에스퍼", accuracy: 100, alwaysHit: false, effect: null,
                       rank: { chance: 0.1, targetDef: -1, turns: 1 } },
+  "망각술": { power: 0, type: "에스퍼", accuracy: 100, alwaysHit: true, effect: null,
+                      rank: { chance: 0.1, def: 2, turns: 1 } },
   "사이코쇼크":     { power: 50, type: "에스퍼", accuracy: 100, alwaysHit: false, effect: null },
   "염동력":         { power: 40, type: "에스퍼", accuracy: 100, alwaysHit: false,
                       effect: { chance: 0.1, volatile: "혼란" } },
@@ -206,8 +212,10 @@ export const moves = {
   "핥기":       { power: 30, type: "고스트", accuracy: 100, alwaysHit: false,
                   effect: { chance: 0.3, status: "마비" } },
   "야습":       { power: 45, type: "고스트", accuracy: 100, alwaysHit: true,  effect: null },
+  "기습":       { power: 45, type: "고스트", accuracy: 100, alwaysHit: true,  effect: null },
   "놀래키기":   { power: 30, type: "고스트", accuracy: 100, alwaysHit: false,
                   effect: { chance: 0.3, volatile: "풀죽음" } },
+  "괴상한바람":   { power: 40, type: "고스트", accuracy: 100, alwaysHit: false, effect: null, rank: { chance: 0.1, spd: 1, def: 1, atk: 1, turns: 2 } },
 
   // ───── 드래곤 ─────
   "드래곤크루":   { power: 50, type: "드래곤", accuracy: 100, alwaysHit: false, effect: null },
@@ -263,6 +271,7 @@ export const moves = {
   // ───── 특수 기술 ─────
   "무릎차기":   { power: 70, type: "격투", accuracy: 90,  alwaysHit: false, effect: null, jumpKick: true },
   "방어":       { power: 0,  type: "노말", accuracy: 100, alwaysHit: true,  effect: null, defend: true, targetSelf: true },
+   "판별":       { power: 0,  type: "격투", accuracy: 100, alwaysHit: true,  effect: null, defend: true, targetSelf: true },
   "울부짖기":   { power: 0,  type: "노말", accuracy: 100, alwaysHit: false, effect: null, roar: true, targetSelf: false },
   "원수갚기":   { power: 40, type: "노말", accuracy: 100, alwaysHit: false, effect: null, revenge: true },
   "뒀다쓰기":   { power: 70, type: "노말", accuracy: 100, alwaysHit: false, effect: null, lastResort: true },
@@ -300,4 +309,6 @@ export const moves = {
                       healPulse: true, targetSelf: false },
   "참기":           { power: 0,  type: "노말",  accuracy: 100, alwaysHit: true,  effect: null,
                       bide: true, targetSelf: true },
+  "구멍파기":   { power: 50, type: "땅",   accuracy: 100, alwaysHit: false, effect: null, dig: true },
+
 }
