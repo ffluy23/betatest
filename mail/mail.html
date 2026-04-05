@@ -47,6 +47,24 @@
       min-height: 60px;
     }
 
+    /* 편지 본문 */
+    #letter-view-from {
+      font-size: 13px;
+      color: #888;
+      margin-bottom: 4px;
+    }
+    #letter-view-title {
+      font-size: 16px;
+      font-weight: bold;
+      margin-bottom: 12px;
+    }
+    #letter-view-text {
+      white-space: pre-wrap; word-break: break-all;
+      font-size: 15px; line-height: 1.6;
+      padding: 12px; background: #f9f9f9; border-radius: 6px;
+      min-height: 60px;
+    }
+
     /* 선물 아이템 정보 박스 */
     #gift-view-info {
       background: #f9f9f9; border-radius: 6px;
@@ -119,6 +137,20 @@
     <p id="note-view-date" style="font-size:12px;color:#aaa;margin-top:10px;"></p>
     <div class="btn-row">
       <button onclick="closeNoteModal()">닫기</button>
+    </div>
+  </div>
+</div>
+
+<!-- ── 모달: 일반 편지 보기 ── -->
+<div id="modal-letter-view" class="modal-overlay">
+  <div class="modal-box">
+    <h3>✉️ 편지 도착!</h3>
+    <div id="letter-view-from"></div>
+    <div id="letter-view-title"></div>
+    <div id="letter-view-text"></div>
+    <p id="letter-view-date" style="font-size:12px;color:#aaa;margin-top:10px;"></p>
+    <div class="btn-row">
+      <button onclick="closeLetterModal()">닫기</button>
     </div>
   </div>
 </div>

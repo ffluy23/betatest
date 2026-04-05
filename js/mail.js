@@ -63,6 +63,9 @@ window.closeGiftModal = function() {
   document.getElementById("modal-gift-view").classList.remove("open")
   currentGiftMailItem = null
 }
+window.closeLetterModal = function() {
+  document.getElementById("modal-letter-view").classList.remove("open")
+}
 
 // ══════════════════════════════════════════════════════
 //  메일함 렌더
@@ -99,6 +102,12 @@ async function renderMail() {
       div.className = `note-item ${item.read ? "read" : "unread"}`
       div.innerHTML = `📨 익명의 쪽지 · ${date}`
       div.addEventListener("click", () => openNoteModal(item, i))
+
+    } else if (item.type === "letter") {
+      // ── 일반 편지
+      div.className = `note-item ${item.read ? "read" : "unread"}`
+      div.innerHTML = `✉️ <strong>${item.fromName ?? "익명"}</strong>의 편지: ${item.title ?? "(제목 없음)"} · ${date}`
+      div.addEventListener("click", () => openLetterModal(item, i))
 
     } else if (item.type === "ring_request") {
       // ── 우정반지 요청
@@ -213,6 +222,21 @@ function openNoteModal(item, index) {
   document.getElementById("modal-note-view").classList.add("open")
 
   if (!item.read) markRead(item, "note")
+}
+
+// ══════════════════════════════════════════════════════
+//  일반 편지 모달
+// ══════════════════════════════════════════════════════
+function openLetterModal(item, index) {
+  document.getElementById("letter-view-from").innerText  = `보낸 사람: ${item.fromName ?? "익명"}`
+  document.getElementById("letter-view-title").innerText = item.title ?? "(제목 없음)"
+  document.getElementById("letter-view-text").innerText  = item.text  ?? "(내용 없음)"
+  document.getElementById("letter-view-date").innerText  = item.at
+    ? new Date(item.at).toLocaleString("ko-KR")
+    : ""
+  document.getElementById("modal-letter-view").classList.add("open")
+
+  if (!item.read) markRead(item, "letter")
 }
 
 // ══════════════════════════════════════════════════════
