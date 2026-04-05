@@ -139,7 +139,7 @@ function applyRankChanges(r, self, target, moveName) {
 function calcHit(attacker, moveInfo, defender) {
   if (Math.random() * 100 >= (moveInfo.accuracy ?? 100)) return { hit: false, hitType: "missed" }
   // 공중날기/구멍파기 중인 수비 포켓몬 → alwaysHit보다 먼저 체크
-  if (defender.flyState?.flying && moveInfo.type !== "전기") return { hit: false, hitType: "evaded" }
+  if (defender.flyState?.flying && moveInfo.type !== "전기" && !moveInfo.twister) return { hit: false, hitType: "evaded" }
   if (defender.digState?.digging && moveInfo.type !== "땅") return { hit: false, hitType: "evaded" }
   if (moveInfo.alwaysHit || moveInfo.skipEvasion) return { hit: true, hitType: "hit" }
   const as = Math.max(1, (attacker.speed ?? 3) - getStatusSpdPenalty(attacker))
@@ -214,12 +214,15 @@ function calcDamage(attacker, moveName, defender, atkRankBonus = 0, defRankBonus
   // ★ 공중날기 중 번개 데미지 1.2배
   const flyLightningMult = (defender.flyState?.flying && move.type === "전기") ? 1.2 : 1.0
 
+  // ★ 회오리 - 공중날기 중인 대상에게 1.2배
+  const twisterFlyMult = (move.twister && defender.flyState?.flying) ? 1.2 : 1.0
+
   // ★ 구멍파기 중 지진 데미지 1.2배
   const digEarthquakeMult = (defender.digState?.digging && move.type === "땅") ? 1.2 : 1.0
 
   const critRate = Math.min(100, atkStat * 2 + (move.highCrit ? 3 : 0))
   const critical = Math.random() * 100 < critRate
-  const finalDmg = Math.floor(baseDmg * screenMult * flyLightningMult * digEarthquakeMult)
+  const finalDmg = Math.floor(baseDmg * screenMult * flyLightningMult * twisterFlyMult * digEarthquakeMult)
   return { damage: critical ? Math.floor(finalDmg * 1.5) : finalDmg, multiplier, stab, dice, critical }
 }
 
@@ -802,6 +805,69 @@ export default async function handler(req, res) {
       myPokemon.digState = { digging: true }
       myPokemon.digMoveName = moveData.name
       await log(logsRef, `${myPokemon.name}${josa(myPokemon.name, "은는")} 땅속으로 파고들었다!`)
+      await safeUpdate(roomRef, { [`${mySlot}_entry`]: myEntry, [`${enemySlot}_entry`]: enemyEntry, current_turn: enemySlot, turn_count: nextTurnCount })
+      return res.status(200).json({ ok: true })
+    }
+
+    // ★ ── 속이기 (50% 성공: 확정 풀죽음 / 50% 실패: 자신 방어 -2)
+    if (moveInfo?.fakeOut) {
+      const { hit, hitType } = calcHit(myPokemon, moveInfo, enePokemon)
+      if (!hit) {
+        await log(logsRef, hitType === "evaded" ? `${enePokemon.name}에게는 맞지 않았다!` : `그러나 ${myPokemon.name}의 공격은 빗나갔다!`, hitType === "evaded" ? "evade" : "normal")
+        await safeUpdate(roomRef, { [`${mySlot}_entry`]: myEntry, [`${enemySlot}_entry`]: enemyEntry, current_turn: enemySlot, turn_count: nextTurnCount })
+        return res.status(200).json({ ok: true })
+      }
+      if (Math.random() < 0.5) {
+        // 성공: 데미지 + 확정 풀죽음
+        await log(logsRef, "", "attack", { attacker: mySlot })
+        const atkRankFO = getActiveRank(myPokemon, "atk")
+        const defRankFO = getActiveRank(enePokemon, "def")
+        const wasDefendingFO = enePokemon.defending ?? false
+        enePokemon.defending = false; enePokemon.defendTurns = 0
+        if (wasDefendingFO) {
+          await log(logsRef, `${enePokemon.name}${josa(enePokemon.name, "은는")} 방어했다!`)
+        } else {
+          const { damage, multiplier, critical } = calcDamage(myPokemon, moveData.name, enePokemon, atkRankFO, defRankFO)
+          if (multiplier === 0) {
+            await log(logsRef, `${enePokemon.name}에게는 효과가 없다…`)
+          } else {
+            enePokemon.hp = Math.max(0, enePokemon.hp - damage)
+            if (enePokemon.hp <= 0 && enePokemon.enduring) { enePokemon.hp = 1; enePokemon.enduring = false }
+            await log(logsRef, "", "hit", { defender: enemySlot, hp: enePokemon.hp, maxHp: enePokemon.maxHp ?? enePokemon.hp })
+            if (multiplier > 1) await log(logsRef, "효과가 굉장했다!")
+            if (multiplier < 1) await log(logsRef, "효과가 별로인 듯하다…")
+            if (critical) await log(logsRef, "급소에 맞았다!", "critical")
+            // 확정 풀죽음
+            if (enePokemon.hp > 0) {
+              enePokemon.flinch = true
+              await log(logsRef, `${enePokemon.name}${josa(enePokemon.name, "은는")} 풀이 죽었다!`)
+            }
+            if (enePokemon.hp <= 0) await log(logsRef, `${enePokemon.name}${josa(enePokemon.name, "은는")} 쓰러졌다!`, "faint")
+          }
+        }
+      } else {
+        // 실패: 자신 방어 -2
+        await log(logsRef, `속이기에 실패했다!`)
+        const rankMsgsFO = applyRankChanges({ def: -2, turns: 2 }, myPokemon, enePokemon, null)
+        for (const msg of rankMsgsFO) await log(logsRef, msg)
+      }
+      await finishTurn({})
+      return res.status(200).json({ ok: true })
+    }
+
+    // ★ ── 흑안개 (전원 랭크 초기화)
+    if (moveInfo?.haze) {
+      const resetR = (p) => {
+        if (p.ranks) {
+          p.ranks.atk = p.attack ?? 3; p.ranks.atkTurns = 0
+          p.ranks.def = p.defense ?? 3; p.ranks.defTurns = 0
+          p.ranks.spd = p.speed ?? 3;   p.ranks.spdTurns = 0
+        }
+        p.lastRankMove = null; p.rankStack = 0
+      }
+      resetR(myPokemon); resetR(enePokemon)
+      await log(logsRef, `흑안개가 배틀 전체를 뒤덮었다!`)
+      await log(logsRef, `모든 포켓몬의 능력 변화가 원래대로 돌아왔다!`)
       await safeUpdate(roomRef, { [`${mySlot}_entry`]: myEntry, [`${enemySlot}_entry`]: enemyEntry, current_turn: enemySlot, turn_count: nextTurnCount })
       return res.status(200).json({ ok: true })
     }
