@@ -138,11 +138,10 @@ function applyRankChanges(r, self, target, moveName) {
 
 function calcHit(attacker, moveInfo, defender) {
   if (Math.random() * 100 >= (moveInfo.accuracy ?? 100)) return { hit: false, hitType: "missed" }
-  if (moveInfo.alwaysHit || moveInfo.skipEvasion) return { hit: true, hitType: "hit" }
-  // 공중날기 중인 수비 포켓몬 → 자동 회피 (번개 제외)
+  // 공중날기/구멍파기 중인 수비 포켓몬 → alwaysHit보다 먼저 체크
   if (defender.flyState?.flying && moveInfo.type !== "전기") return { hit: false, hitType: "evaded" }
-  // 구멍파기 중인 수비 포켓몬 → 자동 회피 (지진 제외)
   if (defender.digState?.digging && moveInfo.type !== "땅") return { hit: false, hitType: "evaded" }
+  if (moveInfo.alwaysHit || moveInfo.skipEvasion) return { hit: true, hitType: "hit" }
   const as = Math.max(1, (attacker.speed ?? 3) - getStatusSpdPenalty(attacker))
   const ds = Math.max(1, (defender.speed ?? 3) - getStatusSpdPenalty(defender))
   // 스피드 랭크: 실수치 - 기본 스피드 = 보너스분만 %p로 적용 (최대 ±5%p)
