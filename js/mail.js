@@ -40,7 +40,6 @@ const POPPIN_COLOR = {
 let myUid  = null
 let myData = null
 
-// 현재 열린 선물 메일 아이템 (수락/거절용)
 let currentGiftMailItem = null
 
 // ══════════════════════════════════════════════════════
@@ -84,7 +83,6 @@ async function renderMail() {
   listEl.innerHTML = '<div class="mail-box" id="mail-box"></div>'
   const boxEl = document.getElementById("mail-box")
 
-  // 날짜 내림차순 정렬 (원본 인덱스 보존)
   const sorted = inbox
     .map((item, i) => ({ item, i }))
     .sort((a, b) => (b.item.at ?? 0) - (a.item.at ?? 0))
@@ -98,25 +96,21 @@ async function renderMail() {
       : ""
 
     if (item.type === "note") {
-      // ── 익명 쪽지
       div.className = `note-item ${item.read ? "read" : "unread"}`
       div.innerHTML = `📨 익명의 쪽지 · ${date}`
       div.addEventListener("click", () => openNoteModal(item, i))
 
     } else if (item.type === "letter") {
-      // ── 일반 편지
       div.className = `note-item ${item.read ? "read" : "unread"}`
       div.innerHTML = `✉️ <strong>${item.fromName ?? "익명"}</strong>의 편지: ${item.title ?? "(제목 없음)"} · ${date}`
       div.addEventListener("click", () => openLetterModal(item, i))
 
     } else if (item.type === "ring_request") {
-      // ── 우정반지 요청
       div.className = `note-item ${item.read ? "read" : "unread"}`
       div.innerHTML = `💍 <strong>${item.fromNickname}</strong>${josa(item.fromNickname, "이가")} 우정반지를 보냈어! · ${date}`
       div.addEventListener("click", () => openRingRequestModal(item, i))
 
     } else if (item.type === "gift") {
-      // ── 선물
       const gItem = item.item ?? {}
       let label   = "📦 알 수 없는 아이템"
       if (gItem.type === "ingredient") {
@@ -160,7 +154,6 @@ window.acceptRing = async function() {
   if (!currentRingMailItem) return
   const mailItem = currentRingMailItem
   try {
-    // 내 inventory에 우정반지 추가
     const ringItem = {
       type: "friendship_ring",
       withUid: mailItem.fromUid,
@@ -169,10 +162,7 @@ window.acceptRing = async function() {
       at: Date.now(),
     }
     await updateDoc(doc(db, "users", myUid), { inventory: arrayUnion(ringItem) })
-    // inbox에서 요청 제거
     await updateDoc(doc(db, "users", myUid), { inbox: arrayRemove(mailItem) })
-    // 보낸 사람 inventory의 반지 status를 accepted로 업데이트
-    // (arrayRemove + arrayUnion으로 교체)
     const senderSnap = await getDoc(doc(db, "users", mailItem.fromUid))
     const senderInv  = senderSnap.data()?.inventory ?? []
     const oldRing = senderInv.find(
@@ -180,14 +170,9 @@ window.acceptRing = async function() {
     )
     if (oldRing) {
       const newRing = { ...oldRing, status: "accepted" }
-      await updateDoc(doc(db, "users", mailItem.fromUid), {
-        inventory: arrayRemove(oldRing)
-      })
-      await updateDoc(doc(db, "users", mailItem.fromUid), {
-        inventory: arrayUnion(newRing)
-      })
+      await updateDoc(doc(db, "users", mailItem.fromUid), { inventory: arrayRemove(oldRing) })
+      await updateDoc(doc(db, "users", mailItem.fromUid), { inventory: arrayUnion(newRing) })
     }
-
     showToast(`💍 ${mailItem.fromNickname}${josa(mailItem.fromNickname, "과와")}의 우정반지를 수락했어!`)
     closeRingRequestModal()
     await renderMail()
@@ -220,7 +205,6 @@ function openNoteModal(item, index) {
     ? new Date(item.at).toLocaleString("ko-KR")
     : ""
   document.getElementById("modal-note-view").classList.add("open")
-
   if (!item.read) markRead(item, "note")
 }
 
@@ -235,17 +219,19 @@ function openLetterModal(item, index) {
     ? new Date(item.at).toLocaleString("ko-KR")
     : ""
   document.getElementById("modal-letter-view").classList.add("open")
-
   if (!item.read) markRead(item, "letter")
 }
 
 // ══════════════════════════════════════════════════════
 //  선물 보기 모달
+//  message 필드가 있으면 아이템 아래에 메시지 표시
 // ══════════════════════════════════════════════════════
 function openGiftViewModal(item, index) {
-  currentGiftMailItem = item   // 수락/거절에서 사용
+  currentGiftMailItem = item
 
   const gItem = item.item ?? {}
+
+  // ── 발신자 + 아이템 정보
   let infoHtml = `
     <p style="font-size:13px;color:#666;margin-bottom:10px;">
       <strong>${item.fromNickname}</strong>${josa(item.fromNickname, "이가")} 선물을 보냈어!
@@ -253,7 +239,7 @@ function openGiftViewModal(item, index) {
   `
 
   if (gItem.type === "ingredient") {
-    infoHtml += `<p style="font-size:16px;margin:0;">🧂 <strong>${gItem.name}</strong></p>`
+    infoHtml += `<p style="font-size:16px;margin:0 0 8px;">🧂 <strong>${gItem.name}</strong></p>`
 
   } else if (gItem.type === "poppin") {
     const color   = POPPIN_COLOR[gItem.pType] ?? "#aaa"
@@ -264,7 +250,25 @@ function openGiftViewModal(item, index) {
       : `<div style="font-size:40px;text-align:center;margin-bottom:8px;">🧁</div>`
     infoHtml += `
       ${imgHtml}
-      <p style="font-size:16px;margin:0;font-weight:bold;color:${color};">${gItem.name}</p>
+      <p style="font-size:16px;margin:0 0 8px;font-weight:bold;color:${color};">${gItem.name}</p>
+    `
+  }
+
+  // ── 메시지 (있을 때만 표시)
+  if (item.message && item.message.trim()) {
+    infoHtml += `
+      <div style="
+        margin-top:10px;
+        padding:10px 12px;
+        background:#f9f9f9;
+        border-radius:6px;
+        font-size:14px;
+        line-height:1.6;
+        color:#444;
+        white-space:pre-wrap;
+        word-break:break-all;
+        text-align:left;
+      ">${item.message}</div>
     `
   }
 
@@ -276,7 +280,6 @@ function openGiftViewModal(item, index) {
 
 // ══════════════════════════════════════════════════════
 //  읽음 처리
-//  arrayRemove + arrayUnion으로 read:true 업데이트
 // ══════════════════════════════════════════════════════
 async function markRead(item, type) {
   if (item.read) return
@@ -284,7 +287,6 @@ async function markRead(item, type) {
   try {
     await updateDoc(doc(db, "users", myUid), { inbox: arrayRemove(item) })
     await updateDoc(doc(db, "users", myUid), { inbox: arrayUnion(updated) })
-    // 로컬 반영
     const idx = (myData?.inbox ?? []).findIndex(x => x.at === item.at && x.type === item.type)
     if (idx >= 0 && myData.inbox) myData.inbox[idx] = updated
   } catch(e) {
@@ -301,11 +303,8 @@ window.acceptGift = async function() {
   const gItem    = mailItem.item
 
   try {
-    // 내 inventory에 아이템 추가
     await updateDoc(doc(db, "users", myUid), { inventory: arrayUnion(gItem) })
-    // inbox에서 선물 제거
     await updateDoc(doc(db, "users", myUid), { inbox: arrayRemove(mailItem) })
-
     showToast("🎁 선물을 가방에 넣었어!")
     closeGiftModal()
     await renderMail()
@@ -316,7 +315,7 @@ window.acceptGift = async function() {
 }
 
 // ══════════════════════════════════════════════════════
-//  선물 거절 (inbox에서만 제거)
+//  선물 거절
 // ══════════════════════════════════════════════════════
 window.rejectGift = async function() {
   if (!currentGiftMailItem) return

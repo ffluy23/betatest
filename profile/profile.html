@@ -1,71 +1,170 @@
 <!DOCTYPE html>
 <html lang="ko">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <link rel="stylesheet" href="../css/style.css">
-    <style>
-        
-        .profile{
-            display: flex;
-            flex-direction: column;
-            gap: 10px;
-        }
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <link rel="stylesheet" href="../css/style.css" />
+  <title>Profile</title>
+  <style>
+    .profile {
+      display: flex;
+      flex-direction: column;
+      gap: 10px;
+    }
+    .gallery-box {
+      max-height: 400px;
+      overflow-y: auto;
+      margin-top: 2px;
+    }
+    #gallery {
+      display: flex;
+      gap: 8px;
+      flex-wrap: wrap;
+    }
+    #gallery img {
+      width: 100px;
+      height: 100px;
+      object-fit: cover;
+      border-radius: 4px;
+    }
 
-        #gallery img {
-            width: 100px;
-            height: 100px;
-            object-fit: cover;
-        }
+    /* ── 토스트 ── */
+    #toast {
+      position: fixed; bottom: 20px; left: 50%; transform: translateX(-50%);
+      background: #333; color: #fff; padding: 10px 20px; border-radius: 6px;
+      display: none; z-index: 9999; font-size: 14px;
+    }
+    #toast.show { display: block; }
 
-       .gallery-box {
-            max-height: 400px;
-            overflow-y: auto;
-            margin-top: 2px;
-        }
-
-        #gallery {
-            display: flex;
-            gap: 8px;
-        }
-
-        #gallery img {
-            border-radius: 4px;
-        }
-
-    </style>
-    <title>Profile</title>
+    /* ── 관리자 패널: container 완전 바깥 ── */
+    #admin-panel {
+      display: none;
+      max-width: 480px;
+      margin: 16px auto;
+      padding: 16px;
+      border: 2px dashed #e0b000;
+      border-radius: 8px;
+      background: #fffdf0;
+      font-size: 13px;
+    }
+    #admin-panel label { font-size: 13px; }
+    #admin-panel input,
+    #admin-panel textarea,
+    #admin-panel select {
+      width: 100%;
+      box-sizing: border-box;
+      padding: 7px 10px;
+      font-size: 13px;
+      border: 1px solid #ddd;
+      border-radius: 6px;
+      margin-bottom: 6px;
+      background: #fff;
+    }
+    #admin-panel textarea { height: 80px; resize: none; }
+    .ap-row { display: flex; gap: 6px; margin-bottom: 6px; }
+    .ap-row input { margin-bottom: 0; }
+    .ap-tags { display: flex; flex-wrap: wrap; gap: 6px; min-height: 24px; margin-bottom: 8px; }
+    .ap-tag {
+      display: inline-flex; align-items: center; gap: 4px;
+      background: #eee; border-radius: 20px; padding: 2px 10px;
+    }
+    .ap-tag button { background: none; border: none; cursor: pointer; color: #999; font-size: 13px; padding: 0; }
+    .ap-tabs { display: flex; gap: 6px; margin-bottom: 10px; }
+    .ap-tab {
+      flex: 1; padding: 6px 4px; font-size: 12px;
+      border: 1px solid #ddd; border-radius: 6px;
+      background: #f5f5f5; color: #888; cursor: pointer;
+    }
+    .ap-tab.on { background: #333; color: #fff; border-color: #333; }
+    .ap-send {
+      width: 100%; padding: 9px; font-size: 14px; font-weight: bold;
+      background: #333; color: #fff; border: none; border-radius: 6px;
+      cursor: pointer; margin-top: 8px;
+    }
+    .ap-send:disabled { background: #aaa; }
+    .ap-result { font-size: 12px; color: #888; text-align: center; margin-top: 6px; min-height: 16px; }
+  </style>
 </head>
-
 <body>
-    <div class="container">
-        <div class="header">
-            <div class="title">ZENITH RING</div>
-        </div>
+  <div class="noise"></div>
 
-        <div class="screen">
-            <div class="screen-top">
-                <span>v1.0</span>
-                <div class="status">ONLINE</div>
-                <div class="battery">
-                    <div class="battery-level"></div>
-                </div>
-            </div>
+  <!-- 기존 프로필 영역 -->
+  <div class="container">
+    <div class="header">
+      <div class="title">ZENITH RING</div>
+    </div>
+    <div class="screen">
+      <div class="screen-top">
+        <span>v1.0</span>
+        <div class="status">ONLINE</div>
+        <div class="battery"><div class="battery-level"></div></div>
+      </div>
+      <div class="profile">
+        <div id="nickname"></div>
+        <div id="coins"></div>
+      </div>
+      <div class="gallery-box">
+        <h2>Entry</h2>
+        <hr>
+        <div id="gallery"></div>
+      </div>
+    </div>
+    <div class="footer">Made by Sonnet with Ampharos</div>
+  </div>
 
-            <div class="profile">
-                <div id="nickname"></div>
-                <div id="coins"></div>
-            </div>
-              <div class="gallery-box">
-                <h2>Entry</h2>
-                <hr>
-                <div id="gallery"></div>
-              </div>
-        </div>
-
-        <div class="footer">Made by Sonnet with Ampharos</div>
+  <!-- 관리자 패널: container 완전 바깥 -->
+  <div id="admin-panel">
+    <div style="font-weight:bold;color:#b07800;margin-bottom:12px;">
+      📮 관리자 메일 발송
+      <span style="font-size:10px;background:#fff3cd;border:1px solid #e0c060;border-radius:4px;padding:1px 6px;margin-left:4px;">ADMIN</span>
     </div>
 
-    <script type="module" src="../js/profile.js"></script>
+    <!-- 수신자 -->
+    <div style="color:#888;margin-bottom:4px;">수신자</div>
+    <div class="ap-row">
+      <input id="ap-recv" type="text" placeholder="닉네임..."
+             onkeydown="if(event.key==='Enter')apAdd()" style="flex:1;margin:0;" />
+      <button onclick="apAdd()" style="padding:7px 12px;font-size:13px;border:1px solid #ddd;border-radius:6px;background:#fff;cursor:pointer;white-space:nowrap;">추가</button>
+    </div>
+    <label style="display:flex;align-items:center;gap:6px;margin-bottom:8px;cursor:pointer;">
+      <input type="checkbox" id="ap-all" onchange="apToggleAll(this)" /> 전체 발송
+    </label>
+    <div id="ap-tags" class="ap-tags">
+      <span style="color:#bbb;font-size:12px;">수신자를 추가해줘</span>
+    </div>
+
+    <!-- 탭 -->
+    <div style="color:#888;margin-bottom:6px;margin-top:4px;">메일 종류</div>
+    <div class="ap-tabs">
+      <button id="ap-tab-letter" class="ap-tab on" onclick="apSwitch('letter')">✉️ 편지</button>
+      <button id="ap-tab-item"   class="ap-tab"    onclick="apSwitch('item')">🎁 아이템</button>
+      <button id="ap-tab-both"   class="ap-tab"    onclick="apSwitch('both')">✉️+🎁 같이</button>
+    </div>
+
+    <!-- 편지 폼 -->
+    <div id="ap-form-letter">
+      <div id="ap-title-row">
+        <input id="ap-title" type="text" placeholder="제목" />
+      </div>
+      <textarea id="ap-body" placeholder="내용..."></textarea>
+    </div>
+
+    <!-- 아이템 폼 -->
+    <div id="ap-form-item" style="display:none;">
+      <select id="ap-item-type" onchange="apItemChange()">
+        <option value="ingredient_good">🧂 좋은 조미료</option>
+        <option value="ingredient_bad">🫙 이상한 조미료</option>
+        <option value="custom_ingredient">✏️ 조미료 — 이름 직접 입력</option>
+        <option value="custom_etc">📦 기타 — 이름 직접 입력</option>
+      </select>
+      <input id="ap-custom" type="text" placeholder="아이템 이름" style="display:none;" />
+    </div>
+
+    <button id="ap-send" class="ap-send" onclick="apSend()">📮 발송하기</button>
+    <div id="ap-result" class="ap-result"></div>
+  </div>
+
+  <div id="toast"></div>
+  <script type="module" src="../js/profile.js"></script>
 </body>
 </html>
