@@ -145,8 +145,6 @@ export const moves = {
   "독찌르기": { power: 50, type: "독", accuracy: 100, alwaysHit: false, effect: { chance: 0.3, status: "독" } },
   "독가루":   { power: 0,  type: "독", accuracy: 75,  alwaysHit: false, targetSelf: false,
                 effect: { chance: 1, status: "독" }, poisonPowder: true },
-  "맹독":   { power: 0,  type: "독", accuracy: 90,  alwaysHit: false, targetSelf: false,
-                effect: { chance: 1, status: "독" }, poisonPowder: true },
 
   // ───── 땅 ─────
   "지진":       { power: 50, type: "땅", accuracy: 100, alwaysHit: false, effect: null },
