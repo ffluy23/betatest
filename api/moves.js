@@ -176,8 +176,8 @@ export const moves = {
   // ───── 에스퍼 ─────
   "사이코키네시스": { power: 50, type: "에스퍼", accuracy: 100, alwaysHit: false, effect: null,
                       rank: { chance: 0.1, targetDef: -1, turns: 1 } },
-  "": { power: 0, type: "에스퍼", accuracy: 100, alwaysHit: true, effect: null,
-                      rank: { chance: 0.1, def: 2, turns: 1 } },
+  "망각술": { power: 0, type: "에스퍼", accuracy: 100, alwaysHit: true, effect: null,
+                      rank: { chance: 1, def: 2, turns: 1 } },
   "사이코쇼크":     { power: 50, type: "에스퍼", accuracy: 100, alwaysHit: false, effect: null },
   "염동력":         { power: 40, type: "에스퍼", accuracy: 100, alwaysHit: false,
                       effect: { chance: 0.1, volatile: "혼란" } },
