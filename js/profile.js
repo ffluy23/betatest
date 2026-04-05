@@ -177,7 +177,7 @@ window.apSend = async function() {
   }
 
   const now    = Date.now()
-  const sender = `[관리자] ${myData?.nickname ?? "운영자"}`
+  const sender = myData?.nickname ?? "운영자"
   let mailItem = null
 
   if (apMailType === "letter") {
