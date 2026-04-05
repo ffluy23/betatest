@@ -42,8 +42,8 @@ export const moves = {
   "할퀴기":     { power: 30, type: "노말", accuracy: 100, alwaysHit: false, effect: null },
   "몸통박치기": { power: 30, type: "노말", accuracy: 100, alwaysHit: false, effect: null },
   "하이퍼보이스":{ power: 50, type: "노말", accuracy: 100, alwaysHit: false, effect: null },
-  "속이기":     { power: 30, type: "노말", accuracy: 50,  alwaysHit: false, skipEvasion: true,
-                  effect: { chance: 1, volatile: "풀죽음" } },
+  "속이기":     { power: 30, type: "노말", accuracy: 70, alwaysHit: false,
+                  effect: null, fakeOut: true },
   "야금야금":   { power: 40, type: "노말", accuracy: 100, alwaysHit: false, skipEvasion: true, effect: null },
   "박치기":     { power: 40, type: "노말", accuracy: 100, alwaysHit: false,
                   effect: { chance: 0.3, volatile: "풀죽음" } },
@@ -139,7 +139,7 @@ export const moves = {
   "아이스펀치":     { power: 40, type: "얼음", accuracy: 100, alwaysHit: false, effect: { chance: 0.1, status: "얼음" } },
   "얼음엄니":       { power: 40, type: "얼음", accuracy: 100, alwaysHit: false, effect: { chance: 0.1, status: "얼음" } },
   "눈싸라기":       { power: 30, type: "얼음", accuracy: 100, alwaysHit: false, effect: { chance: 0.1, status: "얼음" } },
-
+  "흑안개":     { power: 0,  type: "얼음", accuracy: 100, alwaysHit: true, effect: null, haze: true, targetSelf: true },
   // ───── 격투 ─────
   "인파이트":           { power: 60, type: "격투", accuracy: 100, alwaysHit: false, targetSelf: true, effect: null,
                           rank: { def: -1, turns: 1 } },
@@ -239,6 +239,8 @@ export const moves = {
                     effect: null, fixedDamage: 40 },
   // 자이로볼: gyroBall 플래그
   "자이로볼":     { power: 30, type: "강철", accuracy: 100, alwaysHit: false, effect: null, gyroBall: true },
+  "회오리":     { power: 30, type: "드래곤", accuracy: 100, alwaysHit: false,
+                  effect: { chance: 0.2, volatile: "풀죽음" }, twister: true },
 
   // ───── 악 ─────
   "악의파동":   { power: 50, type: "악", accuracy: 100, alwaysHit: false,
