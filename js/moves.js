@@ -52,6 +52,8 @@ export const moves = {
                   rank: { targetDef: -1, turns: 1 } },
 "싫은소리":   { power: 0, type: "노말", accuracy: 85, alwaysHit: false, effect: null,
                   rank: { targetDef: -2, turns: 1 } },
+  "비축하기":   { power: 0, type: "노말", accuracy: 100, alwaysHit: true, effect: null,
+                  rank: { def: 2, turns: 1 } },
   "꼬리흔들기": { power: 0, type: "노말", accuracy: 100, alwaysHit: false, effect: null,
                   rank: { targetDef: -1, turns: 1 } },
   "웅크리기":   { power: 0, type: "노말", accuracy: 100, alwaysHit: true, effect: null,
@@ -143,9 +145,11 @@ export const moves = {
   "독찌르기": { power: 50, type: "독", accuracy: 100, alwaysHit: false, effect: { chance: 0.3, status: "독" } },
   "독가루":   { power: 0,  type: "독", accuracy: 75,  alwaysHit: false, targetSelf: false,
                 effect: { chance: 1, status: "독" }, poisonPowder: true },
+  "맹독":   { power: 0,  type: "독", accuracy: 90,  alwaysHit: false, targetSelf: false,
+                effect: { chance: 1, status: "독" }, poisonPowder: true },
 
   // ───── 땅 ─────
-  "지진":       { power: 40, type: "땅", accuracy: 100, alwaysHit: false, effect: null },
+  "지진":       { power: 50, type: "땅", accuracy: 100, alwaysHit: false, effect: null },
   "땅고르기":   { power: 40, type: "땅", accuracy: 100, alwaysHit: false, effect: null,
                   rank: { targetSpd: -1, turns: 2 } },
   "모래뿌리기": { power: 0,  type: "땅", accuracy: 100, alwaysHit: false, targetSelf: false, effect: null,
@@ -204,7 +208,7 @@ export const moves = {
   // ───── 고스트 ─────
   "섀도볼":     { power: 50, type: "고스트", accuracy: 100, alwaysHit: false, effect: null,
                   rank: { chance: 0.2, targetDef: -1, turns: 2 } },
-  "섀도크루":   { power: 55, type: "고스트", accuracy: 100, alwaysHit: false, effect: null },
+  "섀도크루":   { power: 55, type: "고스트", accuracy: 100, alwaysHit: false, effect: null, highCrit: true },
   "나이트헤드": { power: 40, type: "고스트", accuracy: 100, alwaysHit: true,  effect: null },
   "섀도스니크": { power: 40, type: "고스트", accuracy: 100, alwaysHit: false, effect: null },
   "이상한빛":   { power: 0,  type: "고스트", accuracy: 100, alwaysHit: false,

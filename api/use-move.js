@@ -217,7 +217,8 @@ function calcDamage(attacker, moveName, defender, atkRankBonus = 0, defRankBonus
   // ★ 구멍파기 중 지진 데미지 1.2배
   const digEarthquakeMult = (defender.digState?.digging && move.type === "땅") ? 1.2 : 1.0
 
-  const critical = Math.random() * 100 < Math.min(100, atkStat * 2)
+  const critRate = Math.min(100, atkStat * 2 + (move.highCrit ? 3 : 0))
+  const critical = Math.random() * 100 < critRate
   const finalDmg = Math.floor(baseDmg * screenMult * flyLightningMult * digEarthquakeMult)
   return { damage: critical ? Math.floor(finalDmg * 1.5) : finalDmg, multiplier, stab, dice, critical }
 }
