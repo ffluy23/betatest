@@ -872,6 +872,13 @@ export default async function handler(req, res) {
       return res.status(200).json({ ok: true })
     }
 
+    // ★ ── 튀어오르기 (아무 효과 없음)
+    if (moveInfo?.splash) {
+      await log(logsRef, `그러나 아무 일도 일어나지 않았다!`)
+      await safeUpdate(roomRef, { [`${mySlot}_entry`]: myEntry, [`${enemySlot}_entry`]: enemyEntry, current_turn: enemySlot, turn_count: nextTurnCount })
+      return res.status(200).json({ ok: true })
+    }
+
     // ★ ── 독가루 (풀타입 면역)
     if (moveInfo?.poisonPowder) {
       const eneTypes = Array.isArray(enePokemon.type) ? enePokemon.type : [enePokemon.type]
@@ -1096,6 +1103,8 @@ export default async function handler(req, res) {
         const comebackMult = (moveInfo?.comeback && comebackReady) ? 1.2 : 1.0
         const sickMult = (moveInfo?.sickPower && enePokemon.status) ? 1.2 : 1.0
         const gutsMult = (moveInfo?.guts && myPokemon.status) ? 1.2 : 1.0
+        // ★ 승부굳히기: 상대 HP 50% 이하면 1.2배
+        const finisherMult = (moveInfo?.finisher && enePokemon.hp <= (enePokemon.maxHp ?? enePokemon.hp) * 0.5) ? 1.2 : 1.0
 
         let revivedMult = 1.0
         if (moveInfo?.reversal) {
@@ -1143,7 +1152,7 @@ export default async function handler(req, res) {
 
         const { damage: rawDmg, multiplier, critical } = calcDamage(myPokemon, moveData.name, enePokemon, atkRank, defRankEne, powerOverride, atkStatOverride)
         const tricksterMult = moveInfo?.trickster ? 0.7 : 1.0
-        const damage = counterDamage ?? Math.floor(rawDmg * comebackMult * sickMult * gutsMult * revivedMult * tricksterMult)
+        const damage = counterDamage ?? Math.floor(rawDmg * comebackMult * sickMult * gutsMult * revivedMult * tricksterMult * finisherMult)
 
         if (multiplier === 0) {
           await log(logsRef, `${enePokemon.name}에게는 효과가 없다…`)

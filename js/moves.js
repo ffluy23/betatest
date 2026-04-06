@@ -44,6 +44,8 @@ export const moves = {
   "하이퍼보이스":{ power: 50, type: "노말", accuracy: 100, alwaysHit: false, effect: null },
   "속이기":     { power: 30, type: "노말", accuracy: 70, alwaysHit: false,
                   effect: null, fakeOut: true },
+  "성장":     { power: 0, type: "노말", accuracy: 100, alwaysHit: true, effect: null,
+                rank: { atk: 1, turns: 1 } },
   "야금야금":   { power: 40, type: "노말", accuracy: 100, alwaysHit: false, skipEvasion: true, effect: null },
   "박치기":     { power: 40, type: "노말", accuracy: 100, alwaysHit: false,
                   effect: { chance: 0.3, volatile: "풀죽음" } },
@@ -77,6 +79,7 @@ export const moves = {
                   effect: { chance: 0.3, status: "마비" } },
   "소닉붐":     { power: 1, type: "노말", accuracy: 90, alwaysHit: false,
                     effect: null, fixedDamage: 40 },
+  "튀어오르기": { power: 0, type: "노말", accuracy: 100, alwaysHit: true, effect: null, splash: true, targetSelf: true },
 
   // ───── 불 ─────
   "화염바퀴":     { power: 40, type: "불", accuracy: 100, alwaysHit: false, effect: { chance: 0.1, status: "화상" } },
@@ -103,7 +106,7 @@ export const moves = {
                     rank: { chance: 0.5, targetDef: -1, turns: 1 } },
 
   // ───── 전기 ─────
-  "번개펀치":     { power: 40, type: "전기", accuracy: 100, alwaysHit: false, effect: { chance: 0.1, status: "마비" } },
+  "번개펀치":     { power: 45, type: "전기", accuracy: 100, alwaysHit: false, effect: { chance: 0.1, status: "마비" } },
   "10만볼트":     { power: 50, type: "전기", accuracy: 100, alwaysHit: false, effect: { chance: 0.3, status: "마비" } },
   "방전":         { power: 50, type: "전기", accuracy: 100, alwaysHit: false, effect: { chance: 0.3, status: "마비" } },
   "번개":         { power: 60, type: "전기", accuracy: 70,  alwaysHit: false, effect: { chance: 0.3, status: "마비" } },
@@ -132,7 +135,7 @@ export const moves = {
 
   // ───── 얼음 ─────
   "눈보라":         { power: 40, type: "얼음", accuracy: 70,  alwaysHit: false, effect: { chance: 0.1, status: "얼음" } },
-  "얼음뭉치":       { power: 40, type: "얼음", accuracy: 100, alwaysHit: true,  effect: null },
+  "얼음뭉치":       { power: 35, type: "얼음", accuracy: 100, alwaysHit: true,  effect: null },
   "냉동빔":         { power: 50, type: "얼음", accuracy: 100, alwaysHit: false, effect: { chance: 0.1, status: "얼음" } },
   "얼어붙은바람":   { power: 40, type: "얼음", accuracy: 95,  alwaysHit: false, targetSelf: false, effect: null,
                       rank: { targetSpd: -1, turns: 2 } },
@@ -253,6 +256,7 @@ export const moves = {
                   rank: { targetAtk: -1, turns: 2 } },
   "거짓울음":   { power: 0, type: "악", accuracy: 100, alwaysHit: false, effect: null,
                   rank: { targetDef: -2, turns: 1 } },
+  "승부굳히기": { power: 40, type: "악", accuracy: 100, alwaysHit: false, effect: null, finisher: true },
 
   // ───── 강철 ─────
   "아이언테일": { power: 50, type: "강철", accuracy: 75,  alwaysHit: false, effect: null,
@@ -276,6 +280,9 @@ export const moves = {
   "드레인키스":   { power: 40, type: "페어리", accuracy: 100, alwaysHit: false, effect: { drain: 0.2 } },
   "애교부리기":   { power: 0,  type: "페어리", accuracy: 100, alwaysHit: false, targetSelf: false, effect: null,
                     rank: { targetAtk: -1, turns: 1 } },
+  "초롱초롱눈동자":   { power: 0,  type: "페어리", accuracy: 100, alwaysHit: true, targetSelf: false, effect: null,
+                    rank: { targetAtk: -1, turns: 1 } },
+
 
   // ───── 날씨 ─────
   "맑게개다": { power: 0, type: "불",   accuracy: 100, alwaysHit: false, effect: { chance: 1.0, weather: "쾌청" } },
