@@ -599,7 +599,7 @@ export default async function handler(req, res) {
       if (eneFainted) { enePokemon.bideState = null; enePokemon.rollState = { active: false, turn: 0 }; enePokemon.flyState = null; enePokemon.digState = null }
       if (eneFainted) revengeUpdate[`revenge_ready_${enemySlot}`] = false
       if (myFainted) {
-        revengeUpdate[`revenge_ready_${enemySlot}`] = true
+        revengeUpdate[`revenge_ready_${mySlot}`] = true 
         revengeUpdate[`force_switch_${mySlot}`] = true
       } else {
         revengeUpdate[`force_switch_${mySlot}`] = false
