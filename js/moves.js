@@ -301,7 +301,7 @@ export const moves = {
   "클리어스모그":{ power: 40, type: "독",  accuracy: 100, alwaysHit: true,  effect: null, clearSmog: true },
   "구르기":     { power: 30, type: "바위", accuracy: 90,  alwaysHit: false, effect: null, rollout: true },
   "태만함":     { power: 0,  type: "노말", accuracy: 100, alwaysHit: true,  effect: { heal: 0.15 }, targetSelf: true },
-  "HP회복":     { power: 0,  type: "노말", accuracy: 100, alwaysHit: true,  effect: { heal: 0.2 }, targetSelf: true },
+  "HP회복":     { power: 0,  type: "노말", accuracy: 100, alwaysHit: true,  effect: { heal: 0.22 }, targetSelf: true },
   "생명의물방울":{ power: 0,  type: "물",   accuracy: 100, alwaysHit: true,  effect: { heal: 0.2 },  targetSelf: true },
   "희망사항":   { power: 0,  type: "노말", accuracy: 100, alwaysHit: true,  effect: null, wish: true, targetSelf: true },
 
