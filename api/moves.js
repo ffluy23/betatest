@@ -183,6 +183,7 @@ export const moves = {
   "열풍비행":   { power: 40, type: "비행", accuracy: 100, alwaysHit: false, effect: { chance: 0.1, status: "화상" } },
   "쪼기":       { power: 40, type: "비행", accuracy: 100, alwaysHit: false, effect: null },
   "날개치기":   { power: 40, type: "비행", accuracy: 100, alwaysHit: false, effect: null },
+  "회전부리":   { power: 50, type: "비행", accuracy: 100, alwaysHit: false, effect: null },
   "제비반환":   { power: 45, type: "비행", accuracy: 100, alwaysHit: true, effect: null },
   // 공중날기: flyState로 2턴 처리
   "공중날기":   { power: 50, type: "비행", accuracy: 95, alwaysHit: false, effect: null, fly: true },
@@ -265,10 +266,19 @@ export const moves = {
                   effect: { chance: 0.3, volatile: "풀죽음" } },
   "메탈크로우": { power: 40, type: "강철", accuracy: 95,  alwaysHit: false, effect: null,
                   rank: { chance: 0.1, atk: 1, turns: 2 } },
+  "코멧펀치": { power: 50, type: "강철", accuracy: 90,  alwaysHit: false, effect: null,
+                  rank: { chance: 0.2, atk: 1, turns: 2 } },
+  "러스터캐논": { power: 50, type: "강철", accuracy: 100,  alwaysHit: false, effect: null,
+                  rank: { chance: 0.1, targetAtk: -1, turns: 1 } },
   "불릿펀치":   { power: 40, type: "강철", accuracy: 100, alwaysHit: false, effect: null },
   "플래시캐논": { power: 40, type: "강철", accuracy: 100, alwaysHit: true,  effect: null },
   "강철날개":   { power: 50, type: "강철", accuracy: 100, alwaysHit: false,
                   effect: { chance: 0.1, def: 1, turns: 2 } },
+  "금속음":   { power: 0, type: "강철", accuracy: 85, alwaysHit: false, effect: null,
+                  rank: { targetDef: -2, turns: 1 } },
+  "철벽":   { power: 0, type: "강철", accuracy: 85, alwaysHit: true, effect: null,
+                  rank: { def: 2, turns: 1 } },
+
 
   // ───── 페어리 ─────
   "문포스":       { power: 40, type: "페어리", accuracy: 100, alwaysHit: false, effect: null },
