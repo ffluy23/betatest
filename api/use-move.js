@@ -523,17 +523,27 @@ export default async function handler(req, res) {
       const expiredMsgs = tickMyRanks(myPokemon)
       clearRankStack(myPokemon)
 
-      if (enePokemon.chainBound && mySlot === firstSlot) {
-        enePokemon.chainBound.turnsLeft--
-        if (enePokemon.chainBound.turnsLeft <= 0) {
-          await log(logsRef, `${enePokemon.name}${josa(enePokemon.name, "의")} 사슬묶기가 풀렸다!`)
-          enePokemon.chainBound = null
-        }
-      }
       const nextTurn = nextTurnCount
 
-      // ★ EOT(씨뿌리기/독/화상)는 후공 행동 완료 시에만 1번 발동
+      // ★ EOT(사슬묶기/씨뿌리기/독/화상)는 후공 행동 완료 시에만 1번 발동
       if (isSecondToAct) {
+        // ── 사슬묶기 턴 감소 (양쪽 모두)
+        if (enePokemon.chainBound) {
+          enePokemon.chainBound.turnsLeft--
+          if (enePokemon.chainBound.turnsLeft <= 0) {
+            await log(logsRef, `${enePokemon.name}${josa(enePokemon.name, "의")} 사슬묶기가 풀렸다!`)
+            enePokemon.chainBound = null
+          }
+        }
+        if (myPokemon.chainBound) {
+          myPokemon.chainBound.turnsLeft--
+          if (myPokemon.chainBound.turnsLeft <= 0) {
+            await log(logsRef, `${myPokemon.name}${josa(myPokemon.name, "의")} 사슬묶기가 풀렸다!`)
+            myPokemon.chainBound = null
+          }
+        }
+
+        // ── 씨뿌리기
         if (enePokemon.seeded && (nextTurn - (enePokemon.seededSince ?? 0)) >= 2 && (nextTurn - (enePokemon.seededSince ?? 0)) % 2 === 0) {
           const seedMsgs = applyLeechSeed(myEntry, myActiveIdx, enemyEntry, eneActiveIdx)
           for (const msg of seedMsgs) await log(logsRef, msg)
@@ -548,6 +558,7 @@ export default async function handler(req, res) {
           if (eneAfter && eneAfter.hp > 0) await log(logsRef, "", "heal", { slot: enemySlot, hp: eneAfter.hp, maxHp: eneAfter.maxHp ?? eneAfter.hp })
         }
 
+        // ── 독/화상 EOT
         const eotHpBefore = { my: myPokemon.hp, ene: enePokemon.hp }
         const { msgs: eotMsgs, anyFainted } = applyEndOfTurnDamage([[myPokemon], [enePokemon]])
         for (const msg of eotMsgs) await log(logsRef, msg)
@@ -631,7 +642,6 @@ export default async function handler(req, res) {
         await log(logsRef, `${enePokemon.name}${josa(enePokemon.name, "은는")} 물러났다!`)
         await log(logsRef, `${chosen.p.name}${josa(chosen.p.name, "이가")} 나왔다!`)
         chosen.p.seeded = false
-        // roar는 강제교체라 EOT 없이 바로 처리 (원본 유지)
         await safeUpdate(roomRef, { [`${mySlot}_entry`]: myEntry, [`${enemySlot}_entry`]: enemyEntry, [`${enemySlot}_active_idx`]: chosen.i, current_turn: enemySlot, turn_count: nextTurnCount })
         return res.status(200).json({ ok: true })
       }
