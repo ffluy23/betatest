@@ -27,7 +27,7 @@ export const moves = {
   "고속이동": { power: 0, type: "노말", accuracy: 100, alwaysHit: true, effect: null,
                 rank: { spd: 3, turns: 1 } },
   "명상":     { power: 0, type: "에스퍼", accuracy: 100, alwaysHit: true, effect: null,
-                rank: { atk: 1, def: 1, turns: 1 } },
+                rank: { atk: 1, def: 1, turns: 2 } },
   "용의춤":   { power: 0, type: "드래곤", accuracy: 100, alwaysHit: true, effect: null,
                 rank: { atk: 1, spd: 1, turns: 1 } },
 
