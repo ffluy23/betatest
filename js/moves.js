@@ -131,7 +131,7 @@ export const moves = {
                   rank: { atk: 1, turns: 1 } },
   "흡수":       { power: 30, type: "풀", accuracy: 100, alwaysHit: false, effect: { drain: 0.15 } },
   "메가드레인": { power: 30, type: "풀", accuracy: 100, alwaysHit: false, effect: { drain: 0.15 } },
-  "기가드레인": { power: 45, type: "풀", accuracy: 100, alwaysHit: false, effect: { drain: 0.18 } },
+  "기가드레인": { power: 45, type: "풀", accuracy: 100, alwaysHit: false, effect: { drain: 0.15 } },
 
   // ───── 얼음 ─────
   "눈보라":         { power: 40, type: "얼음", accuracy: 70,  alwaysHit: false, effect: { chance: 0.1, status: "얼음" } },
@@ -300,9 +300,9 @@ export const moves = {
   "신비의부적": { power: 0,  type: "노말", accuracy: 100, alwaysHit: true,  effect: null, amulet: true, targetSelf: true },
   "클리어스모그":{ power: 40, type: "독",  accuracy: 100, alwaysHit: true,  effect: null, clearSmog: true },
   "구르기":     { power: 30, type: "바위", accuracy: 90,  alwaysHit: false, effect: null, rollout: true },
-  "태만함":     { power: 0,  type: "노말", accuracy: 100, alwaysHit: true,  effect: { heal: 0.15 }, targetSelf: true },
+  "태만함":     { power: 0,  type: "노말", accuracy: 100, alwaysHit: true,  effect: { heal: 0.22 }, targetSelf: true },
   "HP회복":     { power: 0,  type: "노말", accuracy: 100, alwaysHit: true,  effect: { heal: 0.22 }, targetSelf: true },
-  "생명의물방울":{ power: 0,  type: "물",   accuracy: 100, alwaysHit: true,  effect: { heal: 0.2 },  targetSelf: true },
+  "생명의물방울":{ power: 0,  type: "물",   accuracy: 100, alwaysHit: true,  effect: { heal: 0.22 },  targetSelf: true },
   "희망사항":   { power: 0,  type: "노말", accuracy: 100, alwaysHit: true,  effect: null, wish: true, targetSelf: true },
 
   "속임수":         { power: 50, type: "악",    accuracy: 100, alwaysHit: false, effect: null, trickster: true },
