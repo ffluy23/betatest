@@ -6,6 +6,9 @@
   <title>메일함</title>
   <link rel="stylesheet" href="../css/style.css" />
   <style>
+    .mail{
+      overflow-y: auto;
+    }
     .mail-list div {
       padding: 10px 0;
       border-bottom: 1px solid #eee;
@@ -117,7 +120,9 @@
       <div class="battery"><div class="battery-level"></div></div>
     </div>
     <button onclick="location.href='../main.html'" class="btn back-btn" style="margin-bottom:16px;">← 돌아가기</button>
+    <div class="mail">
     <div id="mail-list" class="mail-list">Loading...</div>
+    </div>
   </div>
   <div class="footer">Made by Sonnet with Ampharos</div>
 </div>
