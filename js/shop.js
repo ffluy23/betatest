@@ -335,7 +335,10 @@ window.buyNote = async function() {
   const ok = await spendCoins(300)
   if (!ok) return
 
-  const noteItem = { type: "note", text, at: Date.now(), read: false }
+  const noteItem = { type: "note", text, at: Date.now(), read: false,
+     senderUid: myUid,         
+    senderNickname: myData.nickname ?? "익명",
+   }
   await setDoc(doc(db, "users", foundUserUid), { inbox: arrayUnion(noteItem) }, { merge: true })
 
   showToast(`📨 ${foundUserNickname}에게 쪽지${josa("쪽지", "을를")} 보냈어!`)
