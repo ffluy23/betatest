@@ -534,13 +534,13 @@ export default async function handler(req, res) {
 
       // ★ EOT(씨뿌리기/독/화상)는 후공 행동 완료 시에만 1번 발동
       if (isSecondToAct) {
-        if (enePokemon.seeded && (enePokemon.seededSince ?? 0) < nextTurn && (nextTurn - (enePokemon.seededSince ?? 0)) % 2 === 1) {
+        if (enePokemon.seeded && (nextTurn - (enePokemon.seededSince ?? 0)) >= 2 && (nextTurn - (enePokemon.seededSince ?? 0)) % 2 === 0) {
           const seedMsgs = applyLeechSeed(myEntry, myActiveIdx, enemyEntry, eneActiveIdx)
           for (const msg of seedMsgs) await log(logsRef, msg)
           await log(logsRef, "", "hit", { defender: enemySlot, hp: enePokemon.hp, maxHp: enePokemon.maxHp ?? enePokemon.hp })
           if (myPokemon.hp > 0) await log(logsRef, "", "heal", { slot: mySlot, hp: myPokemon.hp, maxHp: myPokemon.maxHp ?? myPokemon.hp })
         }
-        if (myPokemon.seeded && (myPokemon.seededSince ?? 0) < nextTurn && (nextTurn - (myPokemon.seededSince ?? 0)) % 2 === 1) {
+        if (myPokemon.seeded && (nextTurn - (myPokemon.seededSince ?? 0)) >= 2 && (nextTurn - (myPokemon.seededSince ?? 0)) % 2 === 0) {
           const seedMsgs2 = applyLeechSeed(enemyEntry, eneActiveIdx, myEntry, myActiveIdx)
           for (const msg of seedMsgs2) await log(logsRef, msg)
           await log(logsRef, "", "hit", { defender: mySlot, hp: myPokemon.hp, maxHp: myPokemon.maxHp ?? myPokemon.hp })
