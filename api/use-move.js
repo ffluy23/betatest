@@ -529,22 +529,23 @@ export default async function handler(req, res) {
       }
       const nextTurn = nextTurnCount
 
-      // ★ EOT(씨뿌리기/독/화상)는 후공 행동 완료 시에만 1번 발동
-      if (isSecondToAct) {
-        if (enePokemon.seeded && (enePokemon.seededSince ?? 0) < nextTurn) {
-          const seedMsgs = applyLeechSeed(myEntry, myActiveIdx, enemyEntry, eneActiveIdx)
-          for (const msg of seedMsgs) await log(logsRef, msg)
-          await log(logsRef, "", "hit", { defender: enemySlot, hp: enePokemon.hp, maxHp: enePokemon.maxHp ?? enePokemon.hp })
-          if (myPokemon.hp > 0) await log(logsRef, "", "heal", { slot: mySlot, hp: myPokemon.hp, maxHp: myPokemon.maxHp ?? myPokemon.hp })
-        }
-        if (myPokemon.seeded && (myPokemon.seededSince ?? 0) < nextTurn) {
-          const seedMsgs2 = applyLeechSeed(enemyEntry, eneActiveIdx, myEntry, myActiveIdx)
-          for (const msg of seedMsgs2) await log(logsRef, msg)
-          await log(logsRef, "", "hit", { defender: mySlot, hp: myPokemon.hp, maxHp: myPokemon.maxHp ?? myPokemon.hp })
-          const eneAfter = enemyEntry[eneActiveIdx]
-          if (eneAfter && eneAfter.hp > 0) await log(logsRef, "", "heal", { slot: enemySlot, hp: eneAfter.hp, maxHp: eneAfter.maxHp ?? eneAfter.hp })
-        }
+      // ★ 씨뿌리기: 선/후공 상관없이 매 행동 후 발동
+      if (enePokemon.seeded && (enePokemon.seededSince ?? 0) < nextTurn) {
+        const seedMsgs = applyLeechSeed(myEntry, myActiveIdx, enemyEntry, eneActiveIdx)
+        for (const msg of seedMsgs) await log(logsRef, msg)
+        await log(logsRef, "", "hit", { defender: enemySlot, hp: enePokemon.hp, maxHp: enePokemon.maxHp ?? enePokemon.hp })
+        if (myPokemon.hp > 0) await log(logsRef, "", "heal", { slot: mySlot, hp: myPokemon.hp, maxHp: myPokemon.maxHp ?? myPokemon.hp })
+      }
+      if (myPokemon.seeded && (myPokemon.seededSince ?? 0) < nextTurn) {
+        const seedMsgs2 = applyLeechSeed(enemyEntry, eneActiveIdx, myEntry, myActiveIdx)
+        for (const msg of seedMsgs2) await log(logsRef, msg)
+        await log(logsRef, "", "hit", { defender: mySlot, hp: myPokemon.hp, maxHp: myPokemon.maxHp ?? myPokemon.hp })
+        const eneAfter = enemyEntry[eneActiveIdx]
+        if (eneAfter && eneAfter.hp > 0) await log(logsRef, "", "heal", { slot: enemySlot, hp: eneAfter.hp, maxHp: eneAfter.maxHp ?? eneAfter.hp })
+      }
 
+      // ★ 독/화상 EOT: 후공 행동 완료 시에만 1번 발동
+      if (isSecondToAct) {
         const eotHpBefore = { my: myPokemon.hp, ene: enePokemon.hp }
         const { msgs: eotMsgs, anyFainted } = applyEndOfTurnDamage([[myPokemon], [enePokemon]])
         for (const msg of eotMsgs) await log(logsRef, msg)
@@ -566,7 +567,6 @@ export default async function handler(req, res) {
           }
         }
       } else {
-        // 선공 행동 완료 → EOT 스킵, sanitize만
         sanitizeEntries()
       }
 
@@ -673,7 +673,7 @@ export default async function handler(req, res) {
       return res.status(200).json({ ok: true })
     }
 
-    // ── 구르기 (원래 코드 그대로)
+    // ── 구르기
     if (moveInfo?.rollout) {
       const rollState = myPokemon.rollState ?? { active: false, turn: 0 }
       const rollTurn = rollState.active ? rollState.turn + 1 : 1
