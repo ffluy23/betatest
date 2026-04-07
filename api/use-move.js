@@ -543,19 +543,29 @@ export default async function handler(req, res) {
           }
         }
 
-        // ── 씨뿌리기
-        if (enePokemon.seeded && (nextTurn - (enePokemon.seededSince ?? 0)) >= 2 && (nextTurn - (enePokemon.seededSince ?? 0)) % 2 === 0) {
-          const seedMsgs = applyLeechSeed(myEntry, myActiveIdx, enemyEntry, eneActiveIdx)
-          for (const msg of seedMsgs) await log(logsRef, msg)
-          await log(logsRef, "", "hit", { defender: enemySlot, hp: enePokemon.hp, maxHp: enePokemon.maxHp ?? enePokemon.hp })
-          if (myPokemon.hp > 0) await log(logsRef, "", "heal", { slot: mySlot, hp: myPokemon.hp, maxHp: myPokemon.maxHp ?? myPokemon.hp })
+        // ── 씨뿌리기 EOT
+        // ★ 수정: seededLastTick 기반으로 "마지막 발동으로부터 2턴 후" 판정
+        //         % 2 방식은 교체로 인한 턴 카운트 홀짝 뒤집힘 버그 있음
+        if (enePokemon.seeded) {
+          const lastTick = enePokemon.seededLastTick ?? (enePokemon.seededSince ?? nextTurn)
+          if (nextTurn - lastTick >= 2) {
+            const seedMsgs = applyLeechSeed(myEntry, myActiveIdx, enemyEntry, eneActiveIdx)
+            for (const msg of seedMsgs) await log(logsRef, msg)
+            await log(logsRef, "", "hit", { defender: enemySlot, hp: enePokemon.hp, maxHp: enePokemon.maxHp ?? enePokemon.hp })
+            if (myPokemon.hp > 0) await log(logsRef, "", "heal", { slot: mySlot, hp: myPokemon.hp, maxHp: myPokemon.maxHp ?? myPokemon.hp })
+            enePokemon.seededLastTick = nextTurn  // ★ 발동 턴 갱신
+          }
         }
-        if (myPokemon.seeded && (nextTurn - (myPokemon.seededSince ?? 0)) >= 2 && (nextTurn - (myPokemon.seededSince ?? 0)) % 2 === 0) {
-          const seedMsgs2 = applyLeechSeed(enemyEntry, eneActiveIdx, myEntry, myActiveIdx)
-          for (const msg of seedMsgs2) await log(logsRef, msg)
-          await log(logsRef, "", "hit", { defender: mySlot, hp: myPokemon.hp, maxHp: myPokemon.maxHp ?? myPokemon.hp })
-          const eneAfter = enemyEntry[eneActiveIdx]
-          if (eneAfter && eneAfter.hp > 0) await log(logsRef, "", "heal", { slot: enemySlot, hp: eneAfter.hp, maxHp: eneAfter.maxHp ?? eneAfter.hp })
+        if (myPokemon.seeded) {
+          const lastTick = myPokemon.seededLastTick ?? (myPokemon.seededSince ?? nextTurn)
+          if (nextTurn - lastTick >= 2) {
+            const seedMsgs2 = applyLeechSeed(enemyEntry, eneActiveIdx, myEntry, myActiveIdx)
+            for (const msg of seedMsgs2) await log(logsRef, msg)
+            await log(logsRef, "", "hit", { defender: mySlot, hp: myPokemon.hp, maxHp: myPokemon.maxHp ?? myPokemon.hp })
+            const eneAfter = enemyEntry[eneActiveIdx]
+            if (eneAfter && eneAfter.hp > 0) await log(logsRef, "", "heal", { slot: enemySlot, hp: eneAfter.hp, maxHp: eneAfter.maxHp ?? eneAfter.hp })
+            myPokemon.seededLastTick = nextTurn  // ★ 발동 턴 갱신
+          }
         }
 
         // ── 독/화상 EOT
@@ -751,6 +761,7 @@ export default async function handler(req, res) {
         } else {
           enePokemon.seeded = true
           enePokemon.seededSince = nextTurnCount
+          enePokemon.seededLastTick = nextTurnCount  // ★ 추가: 초기 기준점 설정
           await log(logsRef, `${enePokemon.name}${josa(enePokemon.name, "의")} 몸에 씨를 뿌렸다!`)
         }
       }
