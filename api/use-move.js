@@ -523,7 +523,7 @@ export default async function handler(req, res) {
       const expiredMsgs = tickMyRanks(myPokemon)
       clearRankStack(myPokemon)
 
-      if (enePokemon.chainBound) {
+      if (enePokemon.chainBound && mySlot === firstSlot) {
         enePokemon.chainBound.turnsLeft--
         if (enePokemon.chainBound.turnsLeft <= 0) {
           await log(logsRef, `${enePokemon.name}${josa(enePokemon.name, "의")} 사슬묶기가 풀렸다!`)
