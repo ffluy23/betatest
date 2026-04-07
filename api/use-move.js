@@ -1,6 +1,6 @@
 // battle.js
 
-import { auth, db } from "./firebase.js"
+import { db } from "./_firebase.js" 
 import { onAuthStateChanged } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-auth.js"
 import {
   doc, collection, getDoc, getDocs, updateDoc, addDoc, deleteDoc,
