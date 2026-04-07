@@ -514,6 +514,9 @@ export default async function handler(req, res) {
     const diceRoll = rollD10()
     await log(logsRef, "", "dice", { slot: mySlot, roll: diceRoll })
 
+    // ══════════════════════════════════════════════════
+    //  finishTurn: 모든 행동 종료 후 공통 처리 (EOT 포함)
+    // ══════════════════════════════════════════════════
     async function finishTurn(revengeUpdate = {}) {
       const weatherResult = applyWeatherEffect(moveInfo?.effect)
       if (weatherResult.weather) for (const msg of weatherResult.msgs) await log(logsRef, msg)
@@ -598,7 +601,7 @@ export default async function handler(req, res) {
     }
 
     // ══════════════════════════════════════════════════
-    //  특수 기술 처리
+    //  특수 기술 처리 — 모두 finishTurn()으로 EOT 통과
     // ══════════════════════════════════════════════════
 
     if (moveInfo?.defend) {
@@ -615,7 +618,7 @@ export default async function handler(req, res) {
         myPokemon.lastDefendMove = null; myPokemon.defendStack = 0
         await log(logsRef, `그러나 ${moveName}에 실패했다!`)
       }
-      await safeUpdate(roomRef, { [`${mySlot}_entry`]: myEntry, [`${enemySlot}_entry`]: enemyEntry, current_turn: enemySlot, turn_count: nextTurnCount })
+      await finishTurn({})
       return res.status(200).json({ ok: true })
     }
 
@@ -623,35 +626,37 @@ export default async function handler(req, res) {
       const candidates = enemyEntry.map((p, i) => ({ p, i })).filter(({ p, i }) => i !== eneActiveIdx && p.hp > 0)
       if (candidates.length === 0) {
         await log(logsRef, `그러나 ${enePokemon.name}에게는 맞지 않았다!`)
-        await safeUpdate(roomRef, { [`${mySlot}_entry`]: myEntry, [`${enemySlot}_entry`]: enemyEntry, current_turn: enemySlot, turn_count: nextTurnCount })
+      } else {
+        const chosen = candidates[Math.floor(Math.random() * candidates.length)]
+        await log(logsRef, `${enePokemon.name}${josa(enePokemon.name, "은는")} 물러났다!`)
+        await log(logsRef, `${chosen.p.name}${josa(chosen.p.name, "이가")} 나왔다!`)
+        chosen.p.seeded = false
+        // roar는 강제교체라 EOT 없이 바로 처리 (원본 유지)
+        await safeUpdate(roomRef, { [`${mySlot}_entry`]: myEntry, [`${enemySlot}_entry`]: enemyEntry, [`${enemySlot}_active_idx`]: chosen.i, current_turn: enemySlot, turn_count: nextTurnCount })
         return res.status(200).json({ ok: true })
       }
-      const chosen = candidates[Math.floor(Math.random() * candidates.length)]
-      await log(logsRef, `${enePokemon.name}${josa(enePokemon.name, "은는")} 물러났다!`)
-      await log(logsRef, `${chosen.p.name}${josa(chosen.p.name, "이가")} 나왔다!`)
-      chosen.p.seeded = false
-      await safeUpdate(roomRef, { [`${mySlot}_entry`]: myEntry, [`${enemySlot}_entry`]: enemyEntry, [`${enemySlot}_active_idx`]: chosen.i, current_turn: enemySlot, turn_count: nextTurnCount })
+      await finishTurn({})
       return res.status(200).json({ ok: true })
     }
 
     if (moveInfo?.amulet) {
       myPokemon.amuletTurns = 3
       await log(logsRef, `${myPokemon.name}${josa(myPokemon.name, "은는")} 신비의 부적으로 몸을 감쌌다!`)
-      await safeUpdate(roomRef, { [`${mySlot}_entry`]: myEntry, [`${enemySlot}_entry`]: enemyEntry, current_turn: enemySlot, turn_count: nextTurnCount })
+      await finishTurn({})
       return res.status(200).json({ ok: true })
     }
 
     if (moveInfo?.wish) {
       myPokemon.wishTurns = 2
       await log(logsRef, `${myPokemon.name}${josa(myPokemon.name, "은는")} 희망사항을 빌었다!`)
-      await safeUpdate(roomRef, { [`${mySlot}_entry`]: myEntry, [`${enemySlot}_entry`]: enemyEntry, current_turn: enemySlot, turn_count: nextTurnCount })
+      await finishTurn({})
       return res.status(200).json({ ok: true })
     }
 
     if (moveInfo?.lightScreen) {
       myPokemon.lightScreenTurns = 5
       await log(logsRef, `${myPokemon.name}${josa(myPokemon.name, "은는")} 빛의 장막을 쳤다!`)
-      await safeUpdate(roomRef, { [`${mySlot}_entry`]: myEntry, [`${enemySlot}_entry`]: enemyEntry, current_turn: enemySlot, turn_count: nextTurnCount })
+      await finishTurn({})
       return res.status(200).json({ ok: true })
     }
 
@@ -659,7 +664,7 @@ export default async function handler(req, res) {
       const { hit, hitType } = calcHit(myPokemon, moveInfo, enePokemon)
       if (!hit) {
         await log(logsRef, hitType === "evaded" ? `${enePokemon.name}에게는 맞지 않았다!` : `그러나 ${myPokemon.name}의 공격은 빗나갔다!`, hitType === "evaded" ? "evade" : "normal")
-        await safeUpdate(roomRef, { [`${mySlot}_entry`]: myEntry, [`${enemySlot}_entry`]: enemyEntry, current_turn: enemySlot, turn_count: nextTurnCount })
+        await finishTurn({})
         return res.status(200).json({ ok: true })
       }
       const lastMove = enePokemon.lastUsedMove ?? null
@@ -669,11 +674,11 @@ export default async function handler(req, res) {
         enePokemon.chainBound = { moveName: lastMove, turnsLeft: 2 }
         await log(logsRef, `${enePokemon.name}${josa(enePokemon.name, "은는")} ${lastMove}${josa(lastMove, "을를")} 2턴간 사용할 수 없게 됐다!`)
       }
-      await safeUpdate(roomRef, { [`${mySlot}_entry`]: myEntry, [`${enemySlot}_entry`]: enemyEntry, current_turn: enemySlot, turn_count: nextTurnCount })
+      await finishTurn({})
       return res.status(200).json({ ok: true })
     }
 
-    // ── 구르기 (원래 코드 그대로)
+    // ── 구르기 (rollout: 자체 EOT 처리 유지)
     if (moveInfo?.rollout) {
       const rollState = myPokemon.rollState ?? { active: false, turn: 0 }
       const rollTurn = rollState.active ? rollState.turn + 1 : 1
@@ -739,7 +744,7 @@ export default async function handler(req, res) {
           await log(logsRef, `${enePokemon.name}${josa(enePokemon.name, "의")} 몸에 씨를 뿌렸다!`)
         }
       }
-      await safeUpdate(roomRef, { [`${mySlot}_entry`]: myEntry, [`${enemySlot}_entry`]: enemyEntry, current_turn: enemySlot, turn_count: nextTurnCount })
+      await finishTurn({})
       return res.status(200).json({ ok: true })
     }
 
@@ -748,14 +753,14 @@ export default async function handler(req, res) {
       enePokemon.hp = Math.min(enePokemon.maxHp ?? enePokemon.hp, enePokemon.hp + heal)
       await log(logsRef, "", "hit", { defender: enemySlot, hp: enePokemon.hp, maxHp: enePokemon.maxHp ?? enePokemon.hp })
       await log(logsRef, `${enePokemon.name}${josa(enePokemon.name, "은는")} HP를 회복했다! (+${heal})`)
-      await safeUpdate(roomRef, { [`${mySlot}_entry`]: myEntry, [`${enemySlot}_entry`]: enemyEntry, current_turn: enemySlot, turn_count: nextTurnCount })
+      await finishTurn({})
       return res.status(200).json({ ok: true })
     }
 
     if (moveInfo?.bide) {
       myPokemon.bideState = { turnsLeft: 2, damage: 0 }
       await log(logsRef, `${myPokemon.name}${josa(myPokemon.name, "은는")} 참기 시작했다!`)
-      await safeUpdate(roomRef, { [`${mySlot}_entry`]: myEntry, [`${enemySlot}_entry`]: enemyEntry, current_turn: enemySlot, turn_count: nextTurnCount })
+      await finishTurn({})
       return res.status(200).json({ ok: true })
     }
 
@@ -763,7 +768,7 @@ export default async function handler(req, res) {
       myPokemon.flyState = { flying: true }
       myPokemon.flyMoveName = moveData.name
       await log(logsRef, `${myPokemon.name}${josa(myPokemon.name, "은는")} 하늘 높이 날아올랐다!`)
-      await safeUpdate(roomRef, { [`${mySlot}_entry`]: myEntry, [`${enemySlot}_entry`]: enemyEntry, current_turn: enemySlot, turn_count: nextTurnCount })
+      await finishTurn({})
       return res.status(200).json({ ok: true })
     }
 
@@ -771,7 +776,7 @@ export default async function handler(req, res) {
       myPokemon.digState = { digging: true }
       myPokemon.digMoveName = moveData.name
       await log(logsRef, `${myPokemon.name}${josa(myPokemon.name, "은는")} 땅속으로 파고들었다!`)
-      await safeUpdate(roomRef, { [`${mySlot}_entry`]: myEntry, [`${enemySlot}_entry`]: enemyEntry, current_turn: enemySlot, turn_count: nextTurnCount })
+      await finishTurn({})
       return res.status(200).json({ ok: true })
     }
 
@@ -779,7 +784,7 @@ export default async function handler(req, res) {
       const { hit, hitType } = calcHit(myPokemon, moveInfo, enePokemon)
       if (!hit) {
         await log(logsRef, hitType === "evaded" ? `${enePokemon.name}에게는 맞지 않았다!` : `그러나 ${myPokemon.name}의 공격은 빗나갔다!`, hitType === "evaded" ? "evade" : "normal")
-        await safeUpdate(roomRef, { [`${mySlot}_entry`]: myEntry, [`${enemySlot}_entry`]: enemyEntry, current_turn: enemySlot, turn_count: nextTurnCount })
+        await finishTurn({})
         return res.status(200).json({ ok: true })
       }
       if (Math.random() < 0.5) {
@@ -829,13 +834,13 @@ export default async function handler(req, res) {
       resetR(myPokemon); resetR(enePokemon)
       await log(logsRef, `흑안개가 배틀 전체를 뒤덮었다!`)
       await log(logsRef, `모든 포켓몬의 능력 변화가 원래대로 돌아왔다!`)
-      await safeUpdate(roomRef, { [`${mySlot}_entry`]: myEntry, [`${enemySlot}_entry`]: enemyEntry, current_turn: enemySlot, turn_count: nextTurnCount })
+      await finishTurn({})
       return res.status(200).json({ ok: true })
     }
 
     if (moveInfo?.splash) {
       await log(logsRef, `그러나 아무 일도 일어나지 않았다!`)
-      await safeUpdate(roomRef, { [`${mySlot}_entry`]: myEntry, [`${enemySlot}_entry`]: enemyEntry, current_turn: enemySlot, turn_count: nextTurnCount })
+      await finishTurn({})
       return res.status(200).json({ ok: true })
     }
 
@@ -854,7 +859,7 @@ export default async function handler(req, res) {
           await log(logsRef, `${enePokemon.name}${josa(enePokemon.name, "은는")} 독 상태가 됐다!`)
         }
       }
-      await safeUpdate(roomRef, { [`${mySlot}_entry`]: myEntry, [`${enemySlot}_entry`]: enemyEntry, current_turn: enemySlot, turn_count: nextTurnCount })
+      await finishTurn({})
       return res.status(200).json({ ok: true })
     }
 
@@ -865,13 +870,13 @@ export default async function handler(req, res) {
         const { hit, hitType } = calcHit(myPokemon, moveInfo, enePokemon)
         if (!hit) {
           await log(logsRef, hitType === "evaded" ? `${enePokemon.name}에게는 맞지 않았다!` : `그러나 ${myPokemon.name}의 공격은 빗나갔다!`, hitType === "evaded" ? "evade" : "normal")
-          await safeUpdate(roomRef, { [`${mySlot}_entry`]: myEntry, [`${enemySlot}_entry`]: enemyEntry, current_turn: enemySlot, turn_count: nextTurnCount })
+          await finishTurn({})
           return res.status(200).json({ ok: true })
         }
       } else {
         if (!moveInfo?.alwaysHit && Math.random() * 100 >= (moveInfo?.accuracy ?? 100)) {
           await log(logsRef, `그러나 ${myPokemon.name}의 기술은 실패했다!`)
-          await safeUpdate(roomRef, { [`${mySlot}_entry`]: myEntry, [`${enemySlot}_entry`]: enemyEntry, current_turn: enemySlot, turn_count: nextTurnCount })
+          await finishTurn({})
           return res.status(200).json({ ok: true })
         }
       }
@@ -895,7 +900,7 @@ export default async function handler(req, res) {
         }
         myPokemon.roostTurns = 1
         await log(logsRef, `${myPokemon.name}${josa(myPokemon.name, "은는")} 땅에 내려앉아 비행 타입이 사라졌다!`)
-        await safeUpdate(roomRef, { [`${mySlot}_entry`]: myEntry, [`${enemySlot}_entry`]: enemyEntry, current_turn: enemySlot, turn_count: nextTurnCount })
+        await finishTurn({})
         return res.status(200).json({ ok: true })
       }
       const rankMsgs = applyRankChanges(r, myPokemon, enePokemon, moveData.name)
@@ -906,14 +911,14 @@ export default async function handler(req, res) {
         myPokemon.hp = Math.min(myPokemon.maxHp ?? myPokemon.hp, myPokemon.hp + heal)
         await log(logsRef, "", "heal_self", { slot: mySlot, hp: myPokemon.hp, maxHp: myPokemon.maxHp ?? myPokemon.hp })
         await log(logsRef, `${myPokemon.name}${josa(myPokemon.name, "은는")} HP를 회복했다! (+${heal})`)
-        await safeUpdate(roomRef, { [`${mySlot}_entry`]: myEntry, [`${enemySlot}_entry`]: enemyEntry, current_turn: enemySlot, turn_count: nextTurnCount })
+        await finishTurn({})
         return res.status(200).json({ ok: true })
       } else {
         const rankEffectMsgs = applyMoveEffect(moveInfo?.effect, myPokemon, enePokemon, 0)
         for (const msg of rankEffectMsgs) await log(logsRef, msg)
       }
       enePokemon.defending = false; enePokemon.defendTurns = 0
-      await safeUpdate(roomRef, { [`${mySlot}_entry`]: myEntry, [`${enemySlot}_entry`]: enemyEntry, current_turn: enemySlot, turn_count: nextTurnCount })
+      await finishTurn({})
       return res.status(200).json({ ok: true })
     }
 
