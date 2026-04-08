@@ -283,12 +283,22 @@ function openGiftViewModal(item, index) {
 // ══════════════════════════════════════════════════════
 async function markRead(item, type) {
   if (item.read) return
+
   const updated = { ...item, read: true }
   try {
     await updateDoc(doc(db, "users", myUid), { inbox: arrayRemove(item) })
     await updateDoc(doc(db, "users", myUid), { inbox: arrayUnion(updated) })
-    const idx = (myData?.inbox ?? []).findIndex(x => x.at === item.at && x.type === item.type)
-    if (idx >= 0 && myData.inbox) myData.inbox[idx] = updated
+
+    // ✅ 로컬 myData 동기화
+    const inbox = myData?.inbox ?? []
+    const idx = inbox.findIndex(x => x.at === item.at && x.type === item.type)
+    if (idx >= 0 && myData.inbox) {
+      myData.inbox[idx] = updated
+    }
+
+    // ✅ 클로저가 참조하는 원본 객체도 직접 뮤테이션 → 재클릭 시 early return 보장
+    item.read = true
+
   } catch(e) {
     console.warn("읽음 처리 실패", e)
   }
