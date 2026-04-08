@@ -691,7 +691,7 @@ export default async function handler(req, res) {
       if (!lastMove) {
         await log(logsRef, `그러나 ${enePokemon.name}에게는 효과가 없었다!`)
       } else {
-        enePokemon.chainBound = { moveName: lastMove, turnsLeft: 2 }
+        enePokemon.chainBound = { moveName: lastMove, turnsLeft: isSecondToAct ? 3 : 2 }
         await log(logsRef, `${enePokemon.name}${josa(enePokemon.name, "은는")} ${lastMove}${josa(lastMove, "을를")} 2턴간 사용할 수 없게 됐다!`)
       }
       await finishTurn({})
