@@ -183,8 +183,9 @@ function calcDamage(attacker, moveName, defender, atkRankBonus = 0, defRankBonus
   const dice = rollD10()
   const defTypes = Array.isArray(defender.type) ? defender.type : [defender.type]
   let multiplier = 1
-  for (const dt of defTypes) multiplier *= getTypeMultiplier(move.type, dt)
-  if (multiplier === 0) return { damage: 0, multiplier: 0, stab: false, dice, critical: false }
+for (const dt of defTypes) multiplier *= getTypeMultiplier(move.type, dt)
+if (multiplier === 0) return { damage: 0, multiplier: 0, stab: false, dice, critical: false }
+multiplier = Math.round(multiplier * 10) / 10  //
   const atkTypes = Array.isArray(attacker.type) ? attacker.type : [attacker.type]
   const stab = atkTypes.includes(move.type)
   const power = powerOverride ?? (move.power ?? 40)
