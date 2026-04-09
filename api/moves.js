@@ -295,11 +295,10 @@ export const moves = {
 
 
   // ───── 날씨 ─────
-  "맑게개다": { power: 0, type: "불",   accuracy: 100, alwaysHit: false, effect: { chance: 1.0, weather: "쾌청" } },
-  "비바라기": { power: 0, type: "물",   accuracy: 100, alwaysHit: false, effect: { chance: 1.0, weather: "비" } },
-  "모래바람": { power: 0, type: "바위", accuracy: 100, alwaysHit: false, effect: { chance: 1.0, weather: "모래바람" } },
-  "싸라기눈": { power: 0, type: "얼음", accuracy: 100, alwaysHit: false, effect: { chance: 1.0, weather: "싸라기눈" } },
-
+  "맑게개다": { power: 0, type: "불",   accuracy: 100, alwaysHit: true, effect: { weather: "쾌청", weatherTurns: 5 } },
+"비바라기": { power: 0, type: "물",   accuracy: 100, alwaysHit: true, effect: { weather: "비", weatherTurns: 5 } },
+"모래바람": { power: 0, type: "바위", accuracy: 100, alwaysHit: true, effect: { weather: "모래바람", weatherTurns: 5 } },
+"싸라기눈": { power: 0, type: "얼음", accuracy: 100, alwaysHit: true, effect: { weather: "싸라기눈", weatherTurns: 5 } },
   // ───── 특수 기술 ─────
   "무릎차기":   { power: 70, type: "격투", accuracy: 90,  alwaysHit: false, effect: null, jumpKick: true },
   "방어":       { power: 0,  type: "노말", accuracy: 100, alwaysHit: true,  effect: null, defend: true, targetSelf: true },

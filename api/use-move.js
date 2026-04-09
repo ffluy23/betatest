@@ -4,9 +4,14 @@ import { getTypeMultiplier } from "./typeChart.js"
 import {
   josa,
   applyMoveEffect, checkPreActionStatus, checkConfusion,
-  applyEndOfTurnDamage, applyWeatherEffect, tickVolatiles,
+  applyEndOfTurnDamage, tickVolatiles,
   applyLeechSeed, getStatusSpdPenalty
 } from "./effecthandler.js"
+import {
+  startWeather, endWeather, tickWeather, getWeatherLog,
+  applyWeatherDamage, getWeatherDamageMult,
+  patchMoveForWeather, getSunnyGrowthBonus
+} from "./weather.js"
 
 function rollD10() { return Math.floor(Math.random() * 10) + 1 }
 
@@ -171,7 +176,8 @@ function calcAssistPower(pokemon) {
   return 50
 }
 
-function calcDamage(attacker, moveName, defender, atkRankBonus = 0, defRankBonus = 0, powerOverride = null, atkStatOverride = null) {
+// ★ weather 인수 추가 — 쾌청/비 배율 적용
+function calcDamage(attacker, moveName, defender, atkRankBonus = 0, defRankBonus = 0, powerOverride = null, atkStatOverride = null, weather = null) {
   const move = moves[moveName]
   if (!move) return { damage: 0, multiplier: 1, stab: false, dice: 0, critical: false }
   const dice = rollD10()
@@ -194,9 +200,11 @@ function calcDamage(attacker, moveName, defender, atkRankBonus = 0, defRankBonus
   const flyLightningMult = (defender.flyState?.flying && move.type === "전기") ? 1.2 : 1.0
   const twisterFlyMult = (move.twister && defender.flyState?.flying) ? 1.2 : 1.0
   const digEarthquakeMult = (defender.digState?.digging && move.type === "땅") ? 1.2 : 1.0
+  // ★ 날씨 배율
+  const weatherMult = getWeatherDamageMult(weather, move.type)
   const critRate = Math.min(100, atkStat * 2 + (move.highCrit ? 3 : 0))
   const critical = Math.random() * 100 < critRate
-  const finalDmg = Math.floor(baseDmg * screenMult * flyLightningMult * twisterFlyMult * digEarthquakeMult)
+  const finalDmg = Math.floor(baseDmg * screenMult * flyLightningMult * twisterFlyMult * digEarthquakeMult * weatherMult)
   return { damage: critical ? Math.floor(finalDmg * 1.5) : finalDmg, multiplier, stab, dice, critical }
 }
 
@@ -243,6 +251,10 @@ export default async function handler(req, res) {
     const enemySlot = mySlot === "p1" ? "p2" : "p1"
     const myActiveIdx = freshData[`${mySlot}_active_idx`]
     const eneActiveIdx = freshData[`${enemySlot}_active_idx`]
+
+    // ★ 현재 날씨
+    const currentWeather = freshData.weather ?? null
+    const currentWeatherTurns = freshData.weatherTurns ?? 0
 
     // ★ 후공 판정 — first_slot 기준으로 고정
     const firstSlot = freshData.first_slot ?? "p1"
@@ -348,7 +360,7 @@ export default async function handler(req, res) {
           await log(logsRef, hitType === "evaded" ? `${enePokemon.name}에게는 맞지 않았다!` : `그러나 ${myPokemon.name}의 공격은 빗나갔다!`, hitType === "evaded" ? "evade" : "normal")
         } else {
           const flyMoveName = myPokemon.flyMoveName ?? "공중날기"
-          const { damage, multiplier, critical } = calcDamage(myPokemon, flyMoveName, enePokemon, atkRankFly, defRankEneFly)
+          const { damage, multiplier, critical } = calcDamage(myPokemon, flyMoveName, enePokemon, atkRankFly, defRankEneFly, null, null, currentWeather)
           if (multiplier === 0) {
             await log(logsRef, `${enePokemon.name}에게는 효과가 없다…`)
           } else {
@@ -391,7 +403,7 @@ export default async function handler(req, res) {
           await log(logsRef, hitType === "evaded" ? `${enePokemon.name}에게는 맞지 않았다!` : `그러나 ${myPokemon.name}의 공격은 빗나갔다!`, hitType === "evaded" ? "evade" : "normal")
         } else {
           const digMoveName = myPokemon.digMoveName ?? "구멍파기"
-          const { damage, multiplier, critical } = calcDamage(myPokemon, digMoveName, enePokemon, atkRankDig, defRankEneDig)
+          const { damage, multiplier, critical } = calcDamage(myPokemon, digMoveName, enePokemon, atkRankDig, defRankEneDig, null, null, currentWeather)
           if (multiplier === 0) {
             await log(logsRef, `${enePokemon.name}에게는 효과가 없다…`)
           } else {
@@ -518,16 +530,14 @@ export default async function handler(req, res) {
     //  finishTurn: 모든 행동 종료 후 공통 처리 (EOT 포함)
     // ══════════════════════════════════════════════════
     async function finishTurn(revengeUpdate = {}) {
-      const weatherResult = applyWeatherEffect(moveInfo?.effect)
-      if (weatherResult.weather) for (const msg of weatherResult.msgs) await log(logsRef, msg)
       const expiredMsgs = tickMyRanks(myPokemon)
       clearRankStack(myPokemon)
 
       const nextTurn = nextTurnCount
 
-      // ★ EOT(사슬묶기/씨뿌리기/독/화상)는 후공 행동 완료 시에만 1번 발동
+      // ★ EOT는 후공 행동 완료 시에만 1번 발동
       if (isSecondToAct) {
-        // ── 사슬묶기 턴 감소 (양쪽 모두)
+        // ── 사슬묶기 턴 감소
         if (enePokemon.chainBound) {
           enePokemon.chainBound.turnsLeft--
           if (enePokemon.chainBound.turnsLeft <= 0) {
@@ -544,8 +554,6 @@ export default async function handler(req, res) {
         }
 
         // ── 씨뿌리기 EOT
-        // ★ 수정: seededLastTick 기반으로 "마지막 발동으로부터 2턴 후" 판정
-        //         % 2 방식은 교체로 인한 턴 카운트 홀짝 뒤집힘 버그 있음
         if (enePokemon.seeded) {
           const lastTick = enePokemon.seededLastTick ?? (enePokemon.seededSince ?? nextTurn)
           if (nextTurn - lastTick >= 2) {
@@ -553,7 +561,7 @@ export default async function handler(req, res) {
             for (const msg of seedMsgs) await log(logsRef, msg)
             await log(logsRef, "", "hit", { defender: enemySlot, hp: enePokemon.hp, maxHp: enePokemon.maxHp ?? enePokemon.hp })
             if (myPokemon.hp > 0) await log(logsRef, "", "heal", { slot: mySlot, hp: myPokemon.hp, maxHp: myPokemon.maxHp ?? myPokemon.hp })
-            enePokemon.seededLastTick = nextTurn  // ★ 발동 턴 갱신
+            enePokemon.seededLastTick = nextTurn
           }
         }
         if (myPokemon.seeded) {
@@ -564,7 +572,7 @@ export default async function handler(req, res) {
             await log(logsRef, "", "hit", { defender: mySlot, hp: myPokemon.hp, maxHp: myPokemon.maxHp ?? myPokemon.hp })
             const eneAfter = enemyEntry[eneActiveIdx]
             if (eneAfter && eneAfter.hp > 0) await log(logsRef, "", "heal", { slot: enemySlot, hp: eneAfter.hp, maxHp: eneAfter.maxHp ?? eneAfter.hp })
-            myPokemon.seededLastTick = nextTurn  // ★ 발동 턴 갱신
+            myPokemon.seededLastTick = nextTurn
           }
         }
 
@@ -577,15 +585,54 @@ export default async function handler(req, res) {
         if (enePokemon.hp !== eotHpBefore.ene)
           await log(logsRef, "", "hit", { defender: enemySlot, hp: enePokemon.hp, maxHp: enePokemon.maxHp ?? enePokemon.hp })
 
+        // ── 날씨 EOT
+        const weatherForEot = revengeUpdate.weather !== undefined ? revengeUpdate.weather : currentWeather
+        if (weatherForEot) {
+          // 지속 로그
+          const weatherLog = getWeatherLog(weatherForEot)
+          if (weatherLog) await log(logsRef, weatherLog)
+
+          // 데미지 (모래바람 / 싸라기눈)
+          const { msgs: wMsgs, hitLogs, anyFainted: wFainted } =
+            applyWeatherDamage(weatherForEot, myPokemon, mySlot, enePokemon, enemySlot)
+          for (let i = 0; i < wMsgs.length; i++) {
+            await log(logsRef, wMsgs[i])
+            if (hitLogs[i]) {
+              const hl = hitLogs[i]
+              const isMySlot = hl.slot === mySlot
+              await log(logsRef, "", isMySlot ? "hit_self" : "hit",
+                isMySlot
+                  ? { slot: hl.slot, hp: hl.hp, maxHp: hl.maxHp }
+                  : { defender: hl.slot, hp: hl.hp, maxHp: hl.maxHp })
+            }
+          }
+
+          // 날씨 턴 감소
+          const weatherTurnsForTick = revengeUpdate.weatherTurns !== undefined
+            ? revengeUpdate.weatherTurns
+            : currentWeatherTurns
+          const { expired, weatherTurns: nextWeatherTurns } = tickWeather(weatherTurnsForTick)
+          if (expired) {
+            const allPokemon = [...myEntry, ...enemyEntry]
+            const { msgs: endMsgs } = endWeather(weatherForEot, allPokemon)
+            for (const msg of endMsgs) await log(logsRef, msg)
+            revengeUpdate.weather = null
+            revengeUpdate.weatherTurns = 0
+          } else {
+            revengeUpdate.weather = weatherForEot
+            revengeUpdate.weatherTurns = nextWeatherTurns
+          }
+        }
+
         sanitizeEntries()
 
         if (anyFainted) {
           if (!isAllFainted(enemyEntry)) revengeUpdate[`revenge_ready_${enemySlot}`] = true
           if (isAllFainted(enemyEntry)) {
-            await safeUpdate(roomRef, { [`${mySlot}_entry`]: myEntry, [`${enemySlot}_entry`]: enemyEntry, turn_count: nextTurn, game_over: true, winner: myName, current_turn: null, ...revengeUpdate, ...(weatherResult.weather ? { weather: weatherResult.weather } : {}) })
+            await safeUpdate(roomRef, { [`${mySlot}_entry`]: myEntry, [`${enemySlot}_entry`]: enemyEntry, turn_count: nextTurn, game_over: true, winner: myName, current_turn: null, ...revengeUpdate })
             await log(logsRef, `${myName}의 승리!`, "win"); return
           } else if (isAllFainted(myEntry)) {
-            await safeUpdate(roomRef, { [`${mySlot}_entry`]: myEntry, [`${enemySlot}_entry`]: enemyEntry, turn_count: nextTurn, game_over: true, winner: enemyName, current_turn: null, ...revengeUpdate, ...(weatherResult.weather ? { weather: weatherResult.weather } : {}) })
+            await safeUpdate(roomRef, { [`${mySlot}_entry`]: myEntry, [`${enemySlot}_entry`]: enemyEntry, turn_count: nextTurn, game_over: true, winner: enemyName, current_turn: null, ...revengeUpdate })
             await log(logsRef, `${enemyName}의 승리!`, "win"); return
           }
         }
@@ -609,20 +656,20 @@ export default async function handler(req, res) {
       }
 
       if (isAllFainted(enemyEntry)) {
-        await safeUpdate(roomRef, { [`${mySlot}_entry`]: myEntry, [`${enemySlot}_entry`]: enemyEntry, turn_count: nextTurn, game_over: true, winner: myName, current_turn: null, ...revengeUpdate, ...(weatherResult.weather ? { weather: weatherResult.weather } : {}) })
+        await safeUpdate(roomRef, { [`${mySlot}_entry`]: myEntry, [`${enemySlot}_entry`]: enemyEntry, turn_count: nextTurn, game_over: true, winner: myName, current_turn: null, ...revengeUpdate })
         await log(logsRef, `${myName}의 승리!`, "win")
       } else if (isAllFainted(myEntry)) {
-        await safeUpdate(roomRef, { [`${mySlot}_entry`]: myEntry, [`${enemySlot}_entry`]: enemyEntry, turn_count: nextTurn, game_over: true, winner: enemyName, current_turn: null, ...revengeUpdate, ...(weatherResult.weather ? { weather: weatherResult.weather } : {}) })
+        await safeUpdate(roomRef, { [`${mySlot}_entry`]: myEntry, [`${enemySlot}_entry`]: enemyEntry, turn_count: nextTurn, game_over: true, winner: enemyName, current_turn: null, ...revengeUpdate })
         await log(logsRef, `${enemyName}의 승리!`, "win")
       } else if (myFainted) {
-        await safeUpdate(roomRef, { [`${mySlot}_entry`]: myEntry, [`${enemySlot}_entry`]: enemyEntry, current_turn: enemySlot, turn_count: nextTurn, ...revengeUpdate, ...(weatherResult.weather ? { weather: weatherResult.weather } : {}) })
+        await safeUpdate(roomRef, { [`${mySlot}_entry`]: myEntry, [`${enemySlot}_entry`]: enemyEntry, current_turn: enemySlot, turn_count: nextTurn, ...revengeUpdate })
       } else {
-        await safeUpdate(roomRef, { [`${mySlot}_entry`]: myEntry, [`${enemySlot}_entry`]: enemyEntry, current_turn: enemySlot, turn_count: nextTurn, ...revengeUpdate, ...(weatherResult.weather ? { weather: weatherResult.weather } : {}) })
+        await safeUpdate(roomRef, { [`${mySlot}_entry`]: myEntry, [`${enemySlot}_entry`]: enemyEntry, current_turn: enemySlot, turn_count: nextTurn, ...revengeUpdate })
       }
     }
 
     // ══════════════════════════════════════════════════
-    //  특수 기술 처리 — 모두 finishTurn()으로 EOT 통과
+    //  특수 기술 처리
     // ══════════════════════════════════════════════════
 
     if (moveInfo?.defend) {
@@ -698,7 +745,7 @@ export default async function handler(req, res) {
       return res.status(200).json({ ok: true })
     }
 
-    // ── 구르기 (rollout: 자체 EOT 처리 유지)
+    // ── 구르기
     if (moveInfo?.rollout) {
       const rollState = myPokemon.rollState ?? { active: false, turn: 0 }
       const rollTurn = rollState.active ? rollState.turn + 1 : 1
@@ -761,7 +808,7 @@ export default async function handler(req, res) {
         } else {
           enePokemon.seeded = true
           enePokemon.seededSince = nextTurnCount
-          enePokemon.seededLastTick = nextTurnCount  // ★ 추가: 초기 기준점 설정
+          enePokemon.seededLastTick = nextTurnCount
           await log(logsRef, `${enePokemon.name}${josa(enePokemon.name, "의")} 몸에 씨를 뿌렸다!`)
         }
       }
@@ -817,7 +864,7 @@ export default async function handler(req, res) {
         if (wasDefendingFO) {
           await log(logsRef, `${enePokemon.name}${josa(enePokemon.name, "은는")} 방어했다!`)
         } else {
-          const { damage, multiplier, critical } = calcDamage(myPokemon, moveData.name, enePokemon, atkRankFO, defRankFO)
+          const { damage, multiplier, critical } = calcDamage(myPokemon, moveData.name, enePokemon, atkRankFO, defRankFO, null, null, currentWeather)
           if (multiplier === 0) {
             await log(logsRef, `${enePokemon.name}에게는 효과가 없다…`)
           } else {
@@ -851,6 +898,8 @@ export default async function handler(req, res) {
           p.ranks.spd = p.speed ?? 3;   p.ranks.spdTurns = 0
         }
         p.lastRankMove = null; p.rankStack = 0
+        // ★ 모래바람 방어 부스트도 제거
+        p.weatherDefBoost = false
       }
       resetR(myPokemon); resetR(enePokemon)
       await log(logsRef, `흑안개가 배틀 전체를 뒤덮었다!`)
@@ -901,6 +950,16 @@ export default async function handler(req, res) {
           return res.status(200).json({ ok: true })
         }
       }
+      // ★ 날씨 기술 처리 (applyWeatherEffect 대체)
+      if (moveInfo?.effect?.weather) {
+        const allPokemon = [...myEntry, ...enemyEntry]
+        const prevWeather = currentWeather
+        const { msgs: wStartMsgs, weather: newWeather, weatherTurns: newTurns } =
+          startWeather(moveInfo.effect.weather, moveInfo.effect.weatherTurns ?? 5, prevWeather, allPokemon)
+        for (const msg of wStartMsgs) await log(logsRef, msg)
+        await finishTurn({ weather: newWeather, weatherTurns: newTurns })
+        return res.status(200).json({ ok: true })
+      }
       if (moveInfo?.clearSmog) {
         enePokemon.ranks = defaultRanks()
         await log(logsRef, `${enePokemon.name}${josa(enePokemon.name, "의")} 능력 변화가 원래대로 돌아왔다!`)
@@ -924,7 +983,12 @@ export default async function handler(req, res) {
         await finishTurn({})
         return res.status(200).json({ ok: true })
       }
-      const rankMsgs = applyRankChanges(r, myPokemon, enePokemon, moveData.name)
+      // ★ 성장 기술 — 쾌청 시 공격 랭크 보정
+      let rankToApply = r
+      if (moveData.name === "성장" && r) {
+        rankToApply = { ...r, atk: getSunnyGrowthBonus(currentWeather) }
+      }
+      const rankMsgs = applyRankChanges(rankToApply, myPokemon, enePokemon, moveData.name)
       for (const msg of rankMsgs) await log(logsRef, msg)
       if (moveInfo?.effect?.heal) {
         const healRate = moveInfo.effect.heal
@@ -935,7 +999,7 @@ export default async function handler(req, res) {
         await finishTurn({})
         return res.status(200).json({ ok: true })
       } else {
-        const rankEffectMsgs = applyMoveEffect(moveInfo?.effect, myPokemon, enePokemon, 0)
+        const rankEffectMsgs = applyMoveEffect(moveInfo?.effect, myPokemon, enePokemon, 0, currentWeather)
         for (const msg of rankEffectMsgs) await log(logsRef, msg)
       }
       enePokemon.defending = false; enePokemon.defendTurns = 0
@@ -977,7 +1041,9 @@ export default async function handler(req, res) {
 
     if (moveInfo?.multiHit) {
       const { min, max, fixedDamage } = moveInfo.multiHit
-      const { hit, hitType } = calcHit(myPokemon, moveInfo, enePokemon)
+      // ★ 번개 날씨 패치 적용
+      const patchedMI = patchMoveForWeather(currentWeather, moveData.name, moveInfo)
+      const { hit, hitType } = calcHit(myPokemon, patchedMI, enePokemon)
       if (!hit) {
         if (hitType === "evaded") { await log(logsRef, `${enePokemon.name}에게는 맞지 않았다!`, "evade") }
         else { await log(logsRef, `그러나 ${myPokemon.name}의 공격은 빗나갔다!`) }
@@ -993,7 +1059,7 @@ export default async function handler(req, res) {
             for (const dt of defTypes) multiplier *= getTypeMultiplier(moves[moveData.name]?.type, dt)
             dmg = multiplier === 0 ? 0 : Math.floor(fixedDamage * multiplier)
           } else {
-            const result = calcDamage(myPokemon, moveData.name, enePokemon, atkRank, defRankEne)
+            const result = calcDamage(myPokemon, moveData.name, enePokemon, atkRank, defRankEne, null, null, currentWeather)
             dmg = result.damage; critical = result.critical; multiplier = result.multiplier
           }
           lastMultiplier = multiplier
@@ -1025,7 +1091,7 @@ export default async function handler(req, res) {
           if (hitType === "evaded") { await log(logsRef, `${enePokemon.name}에게는 맞지 않았다!`, "evade") }
           else { await log(logsRef, `그러나 ${myPokemon.name}의 공격은 빗나갔다!`) }
         } else {
-          const { damage, multiplier, critical } = calcDamage(myPokemon, moveData.name, enePokemon, atkRank, defRankEne)
+          const { damage, multiplier, critical } = calcDamage(myPokemon, moveData.name, enePokemon, atkRank, defRankEne, null, null, currentWeather)
           if (multiplier === 0) {
             await log(logsRef, `${enePokemon.name}에게는 효과가 없다…`)
           } else {
@@ -1066,7 +1132,9 @@ export default async function handler(req, res) {
         await log(logsRef, `${myPokemon.name}${josa(myPokemon.name, "은는")} 반동으로 ${selfDmg} 데미지를 입었다!`)
       }
     } else {
-      const { hit, hitType } = calcHit(myPokemon, moveInfo, enePokemon)
+      // ★ 번개 날씨 패치 적용
+      const patchedMoveInfo = patchMoveForWeather(currentWeather, moveData.name, moveInfo)
+      const { hit, hitType } = calcHit(myPokemon, patchedMoveInfo, enePokemon)
       if (!hit) {
         if (hitType === "evaded") { await log(logsRef, `${enePokemon.name}에게는 맞지 않았다!`, "evade") }
         else { await log(logsRef, `그러나 ${myPokemon.name}의 공격은 빗나갔다!`) }
@@ -1122,7 +1190,8 @@ export default async function handler(req, res) {
           return res.status(200).json({ ok: true })
         }
 
-        const { damage: rawDmg, multiplier, critical } = calcDamage(myPokemon, moveData.name, enePokemon, atkRank, defRankEne, powerOverride, atkStatOverride)
+        // ★ calcDamage에 currentWeather 전달
+        const { damage: rawDmg, multiplier, critical } = calcDamage(myPokemon, moveData.name, enePokemon, atkRank, defRankEne, powerOverride, atkStatOverride, currentWeather)
         const tricksterMult = moveInfo?.trickster ? 0.7 : 1.0
         const damage = counterDamage ?? Math.floor(rawDmg * comebackMult * sickMult * gutsMult * revivedMult * tricksterMult * finisherMult)
 
@@ -1155,7 +1224,8 @@ export default async function handler(req, res) {
             enePokemon.ranks = defaultRanks()
             await log(logsRef, `${enePokemon.name}${josa(enePokemon.name, "의")} 능력 변화가 원래대로 돌아왔다!`)
           }
-          const effectMsgs = applyMoveEffect(moveInfo?.effect ?? null, myPokemon, enePokemon, damage)
+          // ★ applyMoveEffect에 currentWeather 전달
+          const effectMsgs = applyMoveEffect(moveInfo?.effect ?? null, myPokemon, enePokemon, damage, currentWeather)
           for (const msg of effectMsgs) await log(logsRef, msg)
           if (moveInfo?.effect?.drain && damage > 0 && myPokemon.hp > (freshData[`${mySlot}_entry`][myActiveIdx].hp)) {
             await log(logsRef, "", "heal_self", { slot: mySlot, hp: myPokemon.hp, maxHp: myPokemon.maxHp ?? myPokemon.hp })

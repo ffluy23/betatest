@@ -19,11 +19,15 @@ export function josa(word, type) {
   return ""
 }
 
-export function applyStatus(pokemon, status) {
+// weather 인수 추가 — 쾌청 시 얼음 면역
+export function applyStatus(pokemon, status, weather = null) {
   if (pokemon.status) return []
   if (pokemon.hp <= 0) return []
   // 신비의부적: 상태이상 무효
   if ((pokemon.amuletTurns ?? 0) > 0) return [`${pokemon.name}${josa(pokemon.name, "은는")} 신비의 부적으로 상태이상을 막았다!`]
+  // 쾌청: 얼음 면역
+  if (weather === "쾌청" && status === "얼음")
+    return [`${pokemon.name}${josa(pokemon.name, "은는")} 맑은 날씨로 얼음에 걸리지 않는다!`]
   // 타입 면역
   const types = Array.isArray(pokemon.type) ? pokemon.type : [pokemon.type]
   if (status === "독" && (types.includes("독") || types.includes("강철")))
@@ -51,7 +55,8 @@ export function applyVolatile(pokemon, volatile) {
   return []
 }
 
-export function applyMoveEffect(moveEffect, attacker, defender, damage = 0) {
+// weather 인수 추가 — applyStatus에 전달
+export function applyMoveEffect(moveEffect, attacker, defender, damage = 0, weather = null) {
   if (!moveEffect) return []
   const msgs = []
 
@@ -81,9 +86,9 @@ export function applyMoveEffect(moveEffect, attacker, defender, damage = 0) {
     msgs.push(`${defender.name}${josa(defender.name, "은는")} 얼음 상태에서 회복됐다!`)
   }
 
-  // 상태이상 부여
+  // 상태이상 부여 (weather 전달)
   if (moveEffect.status && Math.random() < moveEffect.chance) {
-    msgs.push(...applyStatus(defender, moveEffect.status))
+    msgs.push(...applyStatus(defender, moveEffect.status, weather))
   }
 
   // 상태변화 부여
@@ -174,8 +179,7 @@ export function tickVolatiles(pokemon) {
   return msgs
 }
 
-// 씨뿌리기 EOT: seeder entry 배열에서 회복
-// entries[0] = 씨 심은 쪽, entries[1] = 씨 당한 쪽
+// 씨뿌리기 EOT
 export function applyLeechSeed(seederEntry, seederActiveIdx, seededEntry, seededActiveIdx) {
   const seeder = seederEntry[seederActiveIdx]
   const seeded = seededEntry[seededActiveIdx]
@@ -207,10 +211,7 @@ export function applyEndOfTurnDamage(entries) {
   return { msgs, anyFainted }
 }
 
-export function applyWeatherEffect(moveEffect) {
-  if (!moveEffect?.weather) return { weather: null, msgs: [] }
-  return { weather: moveEffect.weather, msgs: [`날씨가 ${moveEffect.weather}(으)로 바뀌었다!`] }
-}
+// ★ applyWeatherEffect 제거 — weather.js로 이전됨
 
 export function getStatusSpdPenalty(pokemon) {
   if (pokemon.status === "마비") return 1
