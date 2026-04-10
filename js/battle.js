@@ -517,6 +517,19 @@ function listenRoom() {
           return
         }
 
+        // 역린/꽃잎댄스/소란피기 자동 발동
+if (myPokemon?.outrageState?.active) {
+  const outrageMoveIdx = (myPokemon.moves ?? []).findIndex(m => m.name === myPokemon.outrageState.moveName)
+  if (outrageMoveIdx !== -1) {
+    actionDone = true
+    fetch(`${API}/api/use-move`, {
+      method: "POST", headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ roomId: ROOM_ID, mySlot, moveIdx: outrageMoveIdx })
+    })
+    return
+  }
+}
+
         // 구르기 자동 발동
         if (myPokemon?.rollState?.active) {
           const rollMoveIdx = (myPokemon.moves ?? []).findIndex(m => m.name === "구르기")
@@ -671,8 +684,8 @@ function updateMoveButtons(data) {
     btn.style.boxShadow = `inset 0 0 0 2px white, 0 0 0 2px ${color}`
     const queueBusy = logQueue.length > 0 || isProcessing
     const disabled = isSpectator || fainted || move.pp <= 0 || !myTurn || actionDone
-      || !lrUnlocked || lockedByRoll || lockedByChain || lockedByBide || queueBusy
-      || isFlying || isDigging || forceSwitch
+  || !lrUnlocked || lockedByRoll || lockedByChain || lockedByBide || lockedByOutrage || queueBusy
+  || isFlying || isDigging || forceSwitch
     if (disabled) { btn.disabled = true; btn.onclick = null }
     else { btn.disabled = false; btn.onclick = () => { playSound(SFX_BTN); useMove(i, data) } }
   }
