@@ -797,9 +797,9 @@ export default async function handler(req, res) {
    // ── 역린 / 꽃잎댄스 / 소란피기
     // ── 역린 / 꽃잎댄스 / 소란피기
     if (moveInfo?.outrage) {
-      const atkRank = getActiveRank(myPokemon, "atk")
-      const defRankEne = getActiveRank(enePokemon, "def")
-      const revengeUpdate = {}
+      const atkRankOut = getActiveRank(myPokemon, "atk")   // ← 이름 변경
+  const defRankEneOut = getActiveRank(enePokemon, "def") // ← 이름 변경
+  const outrageUpdate = {}  // ← revengeUpdate → outrageUpdate
       const wasDefendingOutrage = enePokemon.defending ?? false
       enePokemon.defending = false; enePokemon.defendTurns = 0
 
@@ -822,14 +822,14 @@ export default async function handler(req, res) {
       } else if (wasDefendingOutrage) {
         await log(logsRef, `${enePokemon.name}${josa(enePokemon.name, "은는")} 방어했다!`)
       } else {
-        const { damage, multiplier, critical } = calcDamage(myPokemon, moveData.name, enePokemon, atkRank, defRankEne, power, null, currentWeather)
+        const { damage, multiplier, critical } = calcDamage(myPokemon, moveData.name, enePokemon, atkRankOut, defRankEneOut, power, null, currentWeather)
         if (multiplier === 0) {
           await log(logsRef, `${enePokemon.name}에게는 효과가 없다…`)
         } else {
           enePokemon.hp = Math.max(0, enePokemon.hp - damage)
           if (enePokemon.hp <= 0 && enePokemon.enduring) { enePokemon.hp = 1; enePokemon.enduring = false }
           await hitLog(enemySlot, enePokemon)
-           revengeUpdate[`last_damage_taken_${enemySlot}`] = damage
+             outrageUpdate[`last_damage_taken_${enemySlot}`] = damage
           recordDmg(enemySlot, damage)
           if (multiplier > 1) await log(logsRef, "효과가 굉장했다!")
           if (multiplier < 1) await log(logsRef, "효과가 별로인 듯하다…")
@@ -853,7 +853,7 @@ export default async function handler(req, res) {
         }
       }
 
-      await finishTurn(revengeUpdate)
+      await finishTurn(outrageUpdate)
       return res.status(200).json({ ok: true })
     }
 
