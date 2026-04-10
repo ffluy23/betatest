@@ -152,7 +152,7 @@ export const moves = {
 
   // ───── 독 ─────
   "용해액":   { power: 30, type: "독", accuracy: 100, alwaysHit: false, effect: null,
-                rank: { chance: 0.1, def: -1, turns: 2 } },
+                rank: { chance: 0.1, targetDef: -1, turns: 2 } },
   "독침":     { power: 30, type: "독", accuracy: 100, alwaysHit: false, effect: { chance: 0.3, status: "독" } },
   "독찌르기": { power: 50, type: "독", accuracy: 100, alwaysHit: false, effect: { chance: 0.3, status: "독" } },
   "독가루":   { power: 0,  type: "독", accuracy: 75,  alwaysHit: false, targetSelf: false,
@@ -295,10 +295,16 @@ export const moves = {
 
 
   // ───── 날씨 ─────
-  "맑게개다": { power: 0, type: "불",   accuracy: 100, alwaysHit: false, effect: { chance: 1.0, weather: "쾌청" } },
-  "비바라기": { power: 0, type: "물",   accuracy: 100, alwaysHit: false, effect: { chance: 1.0, weather: "비" } },
-  "모래바람": { power: 0, type: "바위", accuracy: 100, alwaysHit: false, effect: { chance: 1.0, weather: "모래바람" } },
-  "싸라기눈": { power: 0, type: "얼음", accuracy: 100, alwaysHit: false, effect: { chance: 1.0, weather: "싸라기눈" } },
+  "맑게개다": { power: 0, type: "불",   accuracy: 100, alwaysHit: true, effect: { weather: "쾌청", weatherTurns: 5 } },
+"비바라기": { power: 0, type: "물",   accuracy: 100, alwaysHit: true, effect: { weather: "비", weatherTurns: 5 } },
+"모래바람": { power: 0, type: "바위", accuracy: 100, alwaysHit: true, effect: { weather: "모래바람", weatherTurns: 5 } },
+"싸라기눈": { power: 0, type: "얼음", accuracy: 100, alwaysHit: true, effect: { weather: "싸라기눈", weatherTurns: 5 } },
+
+  // ───── 장판 ─────
+"스텔스록": { power: 0, type: "바위", accuracy: 100, alwaysHit: true,
+              effect: null, field: "stealth_rock", targetSelf: false },
+"독압정":   { power: 0, type: "독",   accuracy: 100, alwaysHit: true,
+              effect: null, field: "toxic_spikes", targetSelf: false },
 
   // ───── 특수 기술 ─────
   "무릎차기":   { power: 70, type: "격투", accuracy: 90,  alwaysHit: false, effect: null, jumpKick: true },
