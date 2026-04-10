@@ -795,10 +795,11 @@ export default async function handler(req, res) {
     }
 
    // ── 역린 / 꽃잎댄스 / 소란피기
+    // ── 역린 / 꽃잎댄스 / 소란피기
     if (moveInfo?.outrage) {
-      const atkRank = getActiveRank(myPokemon, "atk")      
+      const atkRank = getActiveRank(myPokemon, "atk")
       const defRankEne = getActiveRank(enePokemon, "def")
-      const revengeUpdate = {}    
+      const revengeUpdate = {}
       const wasDefendingOutrage = enePokemon.defending ?? false
       enePokemon.defending = false; enePokemon.defendTurns = 0
 
@@ -828,6 +829,7 @@ export default async function handler(req, res) {
           enePokemon.hp = Math.max(0, enePokemon.hp - damage)
           if (enePokemon.hp <= 0 && enePokemon.enduring) { enePokemon.hp = 1; enePokemon.enduring = false }
           await hitLog(enemySlot, enePokemon)
+           revengeUpdate[`last_damage_taken_${enemySlot}`] = damage
           recordDmg(enemySlot, damage)
           if (multiplier > 1) await log(logsRef, "효과가 굉장했다!")
           if (multiplier < 1) await log(logsRef, "효과가 별로인 듯하다…")
