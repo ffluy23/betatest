@@ -269,7 +269,7 @@ export const moves = {
   "아이언테일": { power: 50, type: "강철", accuracy: 75,  alwaysHit: false, effect: null,
                   rank: { chance: 0.3, targetDef: -1, turns: 3 } },
   "아이언헤드": { power: 50, type: "강철", accuracy: 75,  alwaysHit: false,
-                  effect: { chance: 0.2, volatile: "풀죽음" } },
+                  effect: { chance: 0.3, volatile: "풀죽음" } },
   "메탈크로우": { power: 40, type: "강철", accuracy: 95,  alwaysHit: false, effect: null,
                   rank: { chance: 0.1, atk: 1, turns: 3 } },
   "코멧펀치": { power: 50, type: "강철", accuracy: 90,  alwaysHit: false, effect: null,
