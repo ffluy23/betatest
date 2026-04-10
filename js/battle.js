@@ -11,7 +11,7 @@ import { getTypeMultiplier } from "./typeChart.js"
 import {
   statusName, josa as josaEH,
   applyMoveEffect, checkPreActionStatus, checkConfusion,
-  applyEndOfTurnDamage, applyWeatherEffect, tickVolatiles,
+  applyEndOfTurnDamage, tickVolatiles,
   getStatusSpdPenalty
 } from "./effecthandler.js"
 import { fadeBgmOut } from "./intro.js"
