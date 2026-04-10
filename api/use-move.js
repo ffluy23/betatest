@@ -217,6 +217,40 @@ function calcRolloutDamage(moveName, defender, power) {
   return Math.floor(power * multiplier)
 }
 
+function calcBodyPressDamage(attacker, defender, defRankBonus = 0, weather = null) {
+  const move = moves["바디프레스"]
+  const dice = rollD10()
+  const defTypes = Array.isArray(defender.type) ? defender.type : [defender.type]
+  let multiplier = 1
+  for (const dt of defTypes) multiplier *= getTypeMultiplier(move.type, dt)
+  if (multiplier === 0) return { damage: 0, multiplier: 0, dice, critical: false }
+
+  const atkTypes = Array.isArray(attacker.type) ? attacker.type : [attacker.type]
+  const stab = atkTypes.includes(move.type)
+
+  const baseDef = attacker.defense ?? 3
+  const defRank = attacker.ranks ?? {}
+  const activeDef = (defRank.defTurns ?? 0) > 0 ? (defRank.def ?? baseDef) : baseDef
+
+  const base = move.power + activeDef * 1.3 + dice
+  const raw = Math.floor(base * multiplier * (stab ? 1.3 : 1))
+  const afterDef = Math.max(0, raw - (defender.defense ?? 3) * 5)
+  const finalDmg = Math.max(0, afterDef - defRankBonus * 3)
+
+  const lightScreenActive = (defender.lightScreenTurns ?? 0) > 0
+  const screenMult = lightScreenActive ? 0.75 : 1.0
+  const weatherMult = getWeatherDamageMult(weather, move.type)
+
+  const critRate = Math.min(100, (attacker.defense ?? 3) * 2)
+  const critical = Math.random() * 100 < critRate
+  const dmgAfterScreen = Math.floor(finalDmg * screenMult * weatherMult)
+
+  return {
+    damage: critical ? Math.floor(dmgAfterScreen * 1.5) : dmgAfterScreen,
+    multiplier, stab, dice, critical
+  }
+}
+
 // ★ recordDmg: obj를 명시적으로 받아 클로저 TDZ 문제 완전 제거
 function recordDmg(obj, slot, dmg) { obj[`last_damage_taken_${slot}`] = dmg }
 
@@ -1255,6 +1289,60 @@ export default async function handler(req, res) {
         if (moveInfo?.gyroBall) powerOverride = calcGyroBallPower(myPokemon, enePokemon)
         if (moveInfo?.assistPower) powerOverride = calcAssistPower(myPokemon)
 
+          function calcBodyPressDamage(attacker, defender, defRankBonus = 0, weather = null) {
+  const move = moves["바디프레스"]
+  const dice = rollD10()
+  const defTypes = Array.isArray(defender.type) ? defender.type : [defender.type]
+  let multiplier = 1
+  for (const dt of defTypes) multiplier *= getTypeMultiplier(move.type, dt)
+  if (multiplier === 0) return { damage: 0, multiplier: 0, dice, critical: false }
+
+  const atkTypes = Array.isArray(attacker.type) ? attacker.type : [attacker.type]
+  const stab = atkTypes.includes(move.type)
+
+  // 방어 스탯 + 랭크업 반영
+  const baseDef = attacker.defense ?? 3
+  const defRank = attacker.ranks ?? {}
+  const activeDef = (defRank.defTurns ?? 0) > 0 ? (defRank.def ?? baseDef) : baseDef
+
+  const base = move.power + activeDef * 1.3 + dice
+  const raw = Math.floor(base * multiplier * (stab ? 1.3 : 1))
+  const afterAtk = Math.max(0, raw)
+  const afterDef = Math.max(0, afterAtk - (defender.defense ?? 3) * 5)
+  const finalDmg = Math.max(0, afterDef - defRankBonus * 3)
+
+  const lightScreenActive = (defender.lightScreenTurns ?? 0) > 0
+  const screenMult = lightScreenActive ? 0.75 : 1.0
+  const weatherMult = getWeatherDamageMult(weather, move.type)
+
+  const critRate = Math.min(100, (attacker.attack ?? 3) * 2)
+  const critical = Math.random() * 100 < critRate
+  const dmgAfterScreen = Math.floor(finalDmg * screenMult * weatherMult)
+
+  return {
+    damage: critical ? Math.floor(dmgAfterScreen * 1.5) : dmgAfterScreen,
+    multiplier, stab, dice, critical
+  }
+}
+if (moveInfo?.bodyPress) {
+          const defRankEneForBP = getActiveRank(enePokemon, "def")
+          const { damage, multiplier, critical } = calcBodyPressDamage(myPokemon, enePokemon, defRankEneForBP, currentWeather)
+          if (multiplier === 0) {
+            await log(logsRef, `${enePokemon.name}에게는 효과가 없다…`)
+          } else {
+            enePokemon.hp = Math.max(0, enePokemon.hp - damage)
+            if (enePokemon.hp <= 0 && enePokemon.enduring) { enePokemon.hp = 1; enePokemon.enduring = false }
+            await hitLog(enemySlot, enePokemon)
+            recordDmg(revengeUpdate, enemySlot, damage)
+            if (multiplier > 1) await log(logsRef, "효과가 굉장했다!")
+            if (multiplier < 1) await log(logsRef, "효과가 별로인 듯하다…")
+            if (critical) await log(logsRef, "급소에 맞았다!", "critical")
+            if (enePokemon.hp <= 0) await log(logsRef, `${enePokemon.name}${josa(enePokemon.name, "은는")} 쓰러졌다!`, "faint")
+          }
+          await finishTurn(revengeUpdate)
+          return res.status(200).json({ ok: true })
+        }
+        
         if (moveInfo?.fixedDamage) {
           const defTypes = Array.isArray(enePokemon.type) ? enePokemon.type : [enePokemon.type]
           let mult = 1
