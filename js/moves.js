@@ -157,6 +157,7 @@ export const moves = {
   "파동탄":             { power: 40, type: "격투", accuracy: 100, alwaysHit: true,  effect: null },
   "깨트리기":           { power: 45, type: "격투", accuracy: 100, alwaysHit: false, effect: null, breakBarrier: true },
   "드레인펀치":        { power: 45, type: "격투", accuracy: 100, alwaysHit: false, effect: { drain: 0.15 } },
+  "바디프레스": { power: 50, type: "격투", accuracy: 100, alwaysHit: false, effect: null, bodyPress: true },
 
   // ───── 독 ─────
   "용해액":   { power: 30, type: "독", accuracy: 100, alwaysHit: false, effect: null,
