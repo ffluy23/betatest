@@ -500,6 +500,7 @@ export default async function handler(req, res) {
     const hitLog = (defender, pokemon) => log(logsRef, "", "hit", { defender, hp: pokemon.hp, maxHp: pokemon.maxHp ?? pokemon.hp })
     const hitSelfLog = () => log(logsRef, "", "hit_self", { slot: mySlot, hp: myPokemon.hp, maxHp: myPokemon.maxHp ?? myPokemon.hp })
 
+  
     // 희망사항 회복
     const hpBefore = myPokemon.hp
     const wishMsgs = tickVolatiles(myPokemon)
@@ -717,6 +718,36 @@ export default async function handler(req, res) {
       return res.status(200).json({ ok: true })
     }
 
+if (moveInfo?.curse) {
+  const atkTypes = Array.isArray(myPokemon.type) ? myPokemon.type : [myPokemon.type]
+  const isGhost = atkTypes.includes("고스트")
+
+  if (isGhost) {
+    const selfDmg = Math.max(1, Math.floor((myPokemon.maxHp ?? myPokemon.hp) / 3))
+    myPokemon.hp = Math.max(0, myPokemon.hp - selfDmg)
+    await hitSelfLog()
+    if (enePokemon.cursed) {
+      await log(logsRef, `${enePokemon.name}${josa(enePokemon.name, "은는")} 이미 저주 상태다!`)
+    } else {
+      enePokemon.cursed = true
+      await log(logsRef, `${myPokemon.name}${josa(myPokemon.name, "은는")} 저주를 걸었다!`)
+      await log(logsRef, `${enePokemon.name}${josa(enePokemon.name, "은는")} 저주에 걸렸다!`)
+    }
+    if (myPokemon.hp <= 0) {
+      await log(logsRef, `${myPokemon.name}${josa(myPokemon.name, "은는")} 쓰러졌다!`, "faint")
+    }
+  } else {
+    const rankMsgs = applyRankChanges(
+      { spd: -1, atk: 1, def: 1, turns: 2 },
+      myPokemon, enePokemon, moveData.name
+    )
+    for (const msg of rankMsgs) await log(logsRef, msg)
+  }
+
+  await finishTurn({})
+  return res.status(200).json({ ok: true })
+}
+
     if (moveInfo?.roar) {
       const candidates = enemyEntry.map((p, i) => ({ p, i })).filter(({ p, i }) => i !== eneActiveIdx && p.hp > 0)
       if (candidates.length === 0) {
@@ -864,7 +895,7 @@ export default async function handler(req, res) {
         myPokemon.outrageState = null
         if (outrageInfo.confusion && (myPokemon.confusion ?? 0) <= 0) {
           myPokemon.confusion = Math.floor(Math.random() * 3) + 1
-          await log(logsRef, `${myPokemon.name}${josa(myPokemon.name, "은는")} 난동을 부린 뒤 혼란에 빠졌다!`)
+          await log(logsRef, `${myPokemon.name}${josa(myPokemon.name, "은는")} 혼란에 빠졌다!`)
         }
       } else {
         myPokemon.outrageState = { active: true, turn: currentTurn + 1, maxTurn, moveName: moveData.name }
@@ -1289,41 +1320,6 @@ export default async function handler(req, res) {
         if (moveInfo?.gyroBall) powerOverride = calcGyroBallPower(myPokemon, enePokemon)
         if (moveInfo?.assistPower) powerOverride = calcAssistPower(myPokemon)
 
-          function calcBodyPressDamage(attacker, defender, defRankBonus = 0, weather = null) {
-  const move = moves["바디프레스"]
-  const dice = rollD10()
-  const defTypes = Array.isArray(defender.type) ? defender.type : [defender.type]
-  let multiplier = 1
-  for (const dt of defTypes) multiplier *= getTypeMultiplier(move.type, dt)
-  if (multiplier === 0) return { damage: 0, multiplier: 0, dice, critical: false }
-
-  const atkTypes = Array.isArray(attacker.type) ? attacker.type : [attacker.type]
-  const stab = atkTypes.includes(move.type)
-
-  // 방어 스탯 + 랭크업 반영
-  const baseDef = attacker.defense ?? 3
-  const defRank = attacker.ranks ?? {}
-  const activeDef = (defRank.defTurns ?? 0) > 0 ? (defRank.def ?? baseDef) : baseDef
-
-  const base = move.power + activeDef * 1.3 + dice
-  const raw = Math.floor(base * multiplier * (stab ? 1.3 : 1))
-  const afterAtk = Math.max(0, raw)
-  const afterDef = Math.max(0, afterAtk - (defender.defense ?? 3) * 5)
-  const finalDmg = Math.max(0, afterDef - defRankBonus * 3)
-
-  const lightScreenActive = (defender.lightScreenTurns ?? 0) > 0
-  const screenMult = lightScreenActive ? 0.75 : 1.0
-  const weatherMult = getWeatherDamageMult(weather, move.type)
-
-  const critRate = Math.min(100, (attacker.attack ?? 3) * 2)
-  const critical = Math.random() * 100 < critRate
-  const dmgAfterScreen = Math.floor(finalDmg * screenMult * weatherMult)
-
-  return {
-    damage: critical ? Math.floor(dmgAfterScreen * 1.5) : dmgAfterScreen,
-    multiplier, stab, dice, critical
-  }
-}
 if (moveInfo?.bodyPress) {
           const defRankEneForBP = getActiveRank(enePokemon, "def")
           const { damage, multiplier, critical } = calcBodyPressDamage(myPokemon, enePokemon, defRankEneForBP, currentWeather)
@@ -1342,7 +1338,7 @@ if (moveInfo?.bodyPress) {
           await finishTurn(revengeUpdate)
           return res.status(200).json({ ok: true })
         }
-        
+
         if (moveInfo?.fixedDamage) {
           const defTypes = Array.isArray(enePokemon.type) ? enePokemon.type : [enePokemon.type]
           let mult = 1

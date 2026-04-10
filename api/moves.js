@@ -242,6 +242,7 @@ export const moves = {
   "놀래키기":   { power: 30, type: "고스트", accuracy: 100, alwaysHit: false,
                   effect: { chance: 0.3, volatile: "풀죽음" } },
   "괴상한바람":   { power: 40, type: "고스트", accuracy: 100, alwaysHit: false, effect: null, rank: { chance: 0.1, spd: 1, def: 1, atk: 1, turns: 3 } },
+  "저주": { power: 0, type: "고스트", accuracy: 100, alwaysHit: true, effect: null, curse: true, targetSelf: true },
 
   // ───── 드래곤 ─────
   "드래곤크루":   { power: 50, type: "드래곤", accuracy: 100, alwaysHit: false, effect: null },
