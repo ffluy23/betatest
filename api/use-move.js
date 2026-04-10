@@ -796,8 +796,9 @@ export default async function handler(req, res) {
 
    // ── 역린 / 꽃잎댄스 / 소란피기
     if (moveInfo?.outrage) {
-      const atkRank = getActiveRank(myPokemon, "atk")      // ★ 추가
+      const atkRank = getActiveRank(myPokemon, "atk")      
       const defRankEne = getActiveRank(enePokemon, "def")
+      const revengeUpdate = {}    
       const wasDefendingOutrage = enePokemon.defending ?? false
       enePokemon.defending = false; enePokemon.defendTurns = 0
 
