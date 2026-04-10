@@ -28,6 +28,9 @@ export const moves = {
                 rank: { spd: 3, turns: 2 } },
   "명상":     { power: 0, type: "에스퍼", accuracy: 100, alwaysHit: true, effect: null,
                 rank: { atk: 1, def: 1, turns: 2 } },
+  "벌크업":     { power: 0, type: "격투", accuracy: 100, alwaysHit: true, effect: null,
+                rank: { atk: 1, def: 1, turns: 2 } },
+
   "용의춤":   { power: 0, type: "드래곤", accuracy: 100, alwaysHit: true, effect: null,
                 rank: { atk: 1, spd: 1, turns: 2 } },
 
@@ -72,7 +75,7 @@ export const moves = {
   "비밀이야기": { power: 0, type: "노말", accuracy: 100, alwaysHit: true, effect: null,
                   rank: { targetAtk: -1, turns: 2 } },
   "뽐내기":     { power: 0, type: "노말", accuracy: 85, alwaysHit: false,
-                  rank: { targetAtk: 2, turns: 3 }, effect: { chance: 1, volatile: "혼란" } },
+                  rank: { targetAtk: 2, turns: 2 }, effect: { chance: 1, volatile: "혼란" } },
   "뱀눈초리":   { power: 0, type: "노말", accuracy: 90, alwaysHit: false, targetSelf: false,
                   effect: { chance: 1, status: "마비" } },
   "누르기":     { power: 50, type: "노말", accuracy: 90, alwaysHit: false, targetSelf: false,
@@ -89,6 +92,7 @@ export const moves = {
 
   // ───── 불 ─────
   "화염바퀴":     { power: 40, type: "불", accuracy: 100, alwaysHit: false, effect: { chance: 0.1, status: "화상" } },
+  "화염방사":     { power: 50, type: "불", accuracy: 100, alwaysHit: false, effect: { chance: 0.1, status: "화상" } },
   "니트로차지":   { power: 40, type: "불", accuracy: 100, alwaysHit: false, effect: null, rank: { spd: 1, turns: 3 } },
   "불꽃세례":     { power: 30, type: "불", accuracy: 100, alwaysHit: false, effect: { chance: 0.1, status: "화상", thawEnemy: true } },
   "도깨비불":     { power: 0,  type: "불", accuracy: 85,  alwaysHit: false, effect: { chance: 1, status: "화상" } },
@@ -287,7 +291,9 @@ export const moves = {
                   effect: { chance: 0.3, volatile: "풀죽음" } },
   "암타":       { power: 40, type: "악", accuracy: 100, alwaysHit: false, effect: null },
   "바크아웃":   { power: 0,  type: "악", accuracy: 95,  alwaysHit: false, effect: null,
-                  rank: { targetAtk: -1, turns: 3 } },
+                  rank: { targetAtk: -1, turns: 2 } },
+  "깨물어부수기":   { power: 50,  type: "악", accuracy: 100,  alwaysHit: false, effect: null,
+                  rank: { chance: 0.2, targetAtk: -1, turns: 2 } },
   "거짓울음":   { power: 0, type: "악", accuracy: 100, alwaysHit: false, effect: null,
                   rank: { targetDef: -2, turns: 2 } },
   "승부굳히기": { power: 40, type: "악", accuracy: 100, alwaysHit: false, effect: null, finisher: true },
