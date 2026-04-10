@@ -89,6 +89,7 @@ export default async function handler(req, res) {
     newPokemon.seeded = false
 
     const myName = mySlot === "p1" ? data.player1_name : data.player2_name
+    const enemyName = enemySlot === "p1" ? data.player1_name : data.player2_name
     const prev = myPokemon.name
     const next = newPokemon.name
     const nextTurnCount = (data.turn_count ?? 1) + 1
@@ -122,7 +123,6 @@ export default async function handler(req, res) {
       await logsRef.add({ text: msg, type: "normal", ts: ts++ })
     }
 
-    // 쓰러졌으면 force_switch 세팅
     const fainted = newPokemon.hp <= 0
     const allFainted = myEntry.every(p => p.hp <= 0)
 
@@ -131,16 +131,17 @@ export default async function handler(req, res) {
       [`${mySlot}_active_idx`]: newIdx,
       current_turn: enemySlot,
       turn_count: nextTurnCount,
+      [`force_switch_${mySlot}`]: false,  // ★ 유턴 강제교체 플래그 리셋
       ...fieldUpdate,
-      ...(fainted && !allFainted ? { [`force_switch_${mySlot}`]: true } : {}),
-      ...(allFainted ? { game_over: true, winner: enemySlot === "p1" ? data.player1_name : data.player2_name, current_turn: null } : {})
+      // 스텔스록으로 새 포켓몬이 쓰러진 경우 다시 강제교체
+      ...(fainted && !allFainted ? { [`force_switch_${mySlot}`]: true, current_turn: mySlot } : {}),
+      ...(allFainted ? { game_over: true, winner: enemyName, current_turn: null } : {})
     }
 
     await roomRef.update(updateData)
 
     if (allFainted) {
-      const winnerName = enemySlot === "p1" ? data.player1_name : data.player2_name
-      await logsRef.add({ text: `${winnerName}의 승리!`, type: "win", ts: ts++ })
+      await logsRef.add({ text: `${enemyName}의 승리!`, type: "win", ts: ts++ })
     }
 
     return res.status(200).json({ ok: true })

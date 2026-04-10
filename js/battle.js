@@ -473,6 +473,17 @@ function listenRoom() {
     if (!isSpectator) {
       const wasMine = myTurn
       myTurn = data.current_turn === mySlot
+
+      // ★ 유턴 강제 교체 — wasMine/myTurn 체크 밖에서 먼저 처리
+      if (data[`force_switch_${mySlot}`] && data.current_turn === mySlot) {
+        if (logQueue.length === 0 && !isProcessing) {
+          updateTurnUI(data); updateMoveButtons(data); updateBenchButtons(data)
+        } else {
+          pendingTurnUpdate = data
+        }
+        return
+      }
+
       if (!wasMine && myTurn) {
         actionDone = false
         const myPokemon = data[`${mySlot}_entry`]?.[data[`${mySlot}_active_idx`]]
@@ -486,7 +497,7 @@ function listenRoom() {
           return
         }
 
-        // ★ 공중날기 2턴째 자동 발동
+        // 공중날기 2턴째 자동 발동
         if (myPokemon?.flyState?.flying) {
           actionDone = true
           fetch(`${API}/api/use-move`, {
@@ -496,7 +507,7 @@ function listenRoom() {
           return
         }
 
-        // ★ 구멍파기 2턴째 자동 발동
+        // 구멍파기 2턴째 자동 발동
         if (myPokemon?.digState?.digging) {
           actionDone = true
           fetch(`${API}/api/use-move`, {
@@ -529,6 +540,7 @@ function listenRoom() {
           return
         }
       }
+
       if (logQueue.length === 0 && !isProcessing) {
         updateTurnUI(data); updateMoveButtons(data); updateBenchButtons(data)
       } else {
@@ -545,16 +557,13 @@ function updateActiveUINoHp(slot, data, prefix) {
   if (!pokemon) return
   const st = pokemon.status ? ` [${statusName(pokemon.status)}]` : ""
   const cf = (pokemon.confusion ?? 0) > 0 ? " [혼란]" : ""
-  // ★ 빛의 장막 표시
   const ls = ""
-  // ★ 공중날기 표시
   const fly = pokemon.flyState?.flying ? " [비행중]" : ""
   const dig = pokemon.digState?.digging ? " [굴착]" : ""
   const nameEl = document.getElementById(`${prefix}-active-name`)
   if (nameEl) nameEl.innerText = data.intro_done ? (pokemon.name + st + cf + ls + fly + dig) : "???"
   if (data.intro_done) updatePortrait(prefix, pokemon)
   updateConfusionEffect(prefix, (pokemon.confusion ?? 0) > 0)
-  // ★ 빛의 장막 시각 효과
   updateLightScreenEffect(prefix, (pokemon.lightScreenTurns ?? 0) > 0)
 }
 
@@ -575,7 +584,6 @@ function updateConfusionEffect(prefix, isConfused) {
   }
 }
 
-// 빛의 장막 시각 효과 없음 (로그로만 표시)
 function updateLightScreenEffect(prefix, isActive) {}
 
 function showGameOver(data) {
@@ -623,7 +631,8 @@ async function leaveGame() {
     intro_ready_p1: false, intro_ready_p2: false,
     hit_event: null, background: null, dice_event: null,
     revenge_ready_p1: false, revenge_ready_p2: false,
-    comeback_ready_p1: false, comeback_ready_p2: false
+    comeback_ready_p1: false, comeback_ready_p2: false,
+    force_switch_p1: false, force_switch_p2: false
   })
   location.href = "../main.html"
 }
@@ -637,10 +646,10 @@ function updateMoveButtons(data) {
   }
   const myPokemon = data[`${mySlot}_entry`]?.[data[`${mySlot}_active_idx`]]
   const fainted = !myPokemon || myPokemon.hp <= 0, movesArr = myPokemon?.moves ?? []
-
-  // ★ 공중날기/구멍파기 중이면 모든 버튼 비활성 (자동 처리됨)
   const isFlying = myPokemon?.flyState?.flying ?? false
   const isDigging = myPokemon?.digState?.digging ?? false
+  // ★ 유턴 강제교체 중에는 기술 버튼 모두 비활성
+  const forceSwitch = !!(data[`force_switch_${mySlot}`] && data.current_turn === mySlot)
 
   for (let i = 0; i < 4; i++) {
     const btn = document.getElementById(`move-btn-${i}`); if (!btn) continue
@@ -662,7 +671,7 @@ function updateMoveButtons(data) {
     const queueBusy = logQueue.length > 0 || isProcessing
     const disabled = isSpectator || fainted || move.pp <= 0 || !myTurn || actionDone
       || !lrUnlocked || lockedByRoll || lockedByChain || lockedByBide || queueBusy
-      || isFlying || isDigging
+      || isFlying || isDigging || forceSwitch
     if (disabled) { btn.disabled = true; btn.onclick = null }
     else { btn.disabled = false; btn.onclick = () => { playSound(SFX_BTN); useMove(i, data) } }
   }
@@ -680,19 +689,24 @@ function checkLastResortUnlocked(pokemon, lrIdx, movesArr) {
 function updateBenchButtons(data) {
   const bench = document.getElementById("bench-container"); bench.innerHTML = ""
   const myEntry = data[`${mySlot}_entry`], activeIdx = data[`${mySlot}_active_idx`]
+  // ★ 유턴 강제교체 여부
+  const forceSwitch = !!(data[`force_switch_${mySlot}`] && data.current_turn === mySlot)
+
   myEntry.forEach((pkmn, idx) => {
     if (idx === activeIdx) return
     const btn = document.createElement("button")
-    if (pkmn.hp <= 0) { btn.innerHTML = `<span class="bench-name">${pkmn.name}</span><span class="bench-hp">기절</span>`; btn.disabled = true }
-    else {
+    if (pkmn.hp <= 0) {
+      btn.innerHTML = `<span class="bench-name">${pkmn.name}</span><span class="bench-hp">기절</span>`
+      btn.disabled = true
+    } else {
       btn.innerHTML = `<span class="bench-name">${pkmn.name}</span><span class="bench-hp">HP: ${pkmn.hp}/${pkmn.maxHp}</span>`
       const queueBusy = logQueue.length > 0 || isProcessing
       const activeFainted = (myEntry[activeIdx]?.hp ?? 0) <= 0
-      // ★ 비행 중에는 교체 불가
       const isFlying = myEntry[activeIdx]?.flyState?.flying ?? false
       const isDigging = myEntry[activeIdx]?.digState?.digging ?? false
-      btn.disabled = isSpectator || !myTurn || actionDone || queueBusy
-        || (!activeFainted && !!(myEntry[activeIdx]?.bideState?.turnsLeft > 0))
+      // ★ forceSwitch면 actionDone 무시하고 교체 허용
+      btn.disabled = isSpectator || !myTurn || (actionDone && !forceSwitch) || queueBusy
+        || (!activeFainted && !forceSwitch && !!(myEntry[activeIdx]?.bideState?.turnsLeft > 0))
         || isFlying || isDigging
       if (!isSpectator) btn.onclick = () => { playSound(SFX_BTN); switchPokemon(idx) }
     }
@@ -708,7 +722,9 @@ function updateTurnUI(data) {
 }
 
 async function switchPokemon(newIdx) {
-  if (isSpectator || !myTurn || actionDone || gameOver) return
+  const snap = await getDoc(roomRef), data = snap.data()
+  const forceSwitch = !!(data[`force_switch_${mySlot}`] && data.current_turn === mySlot)
+  if (isSpectator || !myTurn || (actionDone && !forceSwitch) || gameOver) return
   actionDone = true
   const res = await fetch(`${API}/api/switch-pokemon`, {
     method: "POST", headers: { "Content-Type": "application/json" },
