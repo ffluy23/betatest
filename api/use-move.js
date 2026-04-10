@@ -528,6 +528,7 @@ export default async function handler(req, res) {
     const diceRoll = rollD10()
     await log(logsRef, "", "dice", { slot: mySlot, roll: diceRoll })
 
+
     // ══════════════════════════════════════════════════
     //  finishTurn: 모든 행동 종료 후 공통 처리 (EOT 포함)
     // ══════════════════════════════════════════════════
@@ -917,23 +918,23 @@ export default async function handler(req, res) {
     }
 
     if (moveInfo?.poisonPowder) {
-      const eneTypes = Array.isArray(enePokemon.type) ? enePokemon.type : [enePokemon.type]
-      if (eneTypes.includes("풀")) {
-        await log(logsRef, `${enePokemon.name}${josa(enePokemon.name, "은는")} 독가루에 걸리지 않는다!`)
-      } else if (enePokemon.status) {
-        await log(logsRef, `그러나 ${enePokemon.name}${josa(enePokemon.name, "은는")} 이미 상태이상이다!`)
-      } else {
-        const { hit, hitType } = calcHit(myPokemon, moveInfo, enePokemon)
-        if (!hit) {
-          await log(logsRef, hitType === "evaded" ? `${enePokemon.name}에게는 맞지 않았다!` : `그러나 ${myPokemon.name}의 공격은 빗나갔다!`, hitType === "evaded" ? "evade" : "normal")
-        } else {
-          enePokemon.status = "독"
-          await log(logsRef, `${enePokemon.name}${josa(enePokemon.name, "은는")} 독 상태가 됐다!`)
-        }
-      }
-      await finishTurn({})
-      return res.status(200).json({ ok: true })
+  const eneTypes = Array.isArray(enePokemon.type) ? enePokemon.type : [enePokemon.type]
+  if (eneTypes.includes("풀")) {
+    await log(logsRef, `${enePokemon.name}${josa(enePokemon.name, "은는")} ${moveData.name}에 걸리지 않는다!`)
+  } else if (enePokemon.status) {
+    await log(logsRef, `그러나 ${enePokemon.name}${josa(enePokemon.name, "은는")} 이미 상태이상이다!`)
+  } else {
+    const { hit, hitType } = calcHit(myPokemon, moveInfo, enePokemon)
+    if (!hit) {
+      await log(logsRef, hitType === "evaded" ? `${enePokemon.name}에게는 맞지 않았다!` : `그러나 ${myPokemon.name}의 공격은 빗나갔다!`, hitType === "evaded" ? "evade" : "normal")
+    } else {
+      const statusMsgs = applyStatus(enePokemon, moveInfo.effect.status, currentWeather)
+for (const msg of statusMsgs) await log(logsRef, msg)
     }
+  }
+  await finishTurn({})
+  return res.status(200).json({ ok: true })
+}
 
     if (!moveInfo?.power) {
       const r = moveInfo?.rank
@@ -1282,6 +1283,10 @@ if (moveInfo?.field) {
         return res.status(200).json({ ok: true })
       }
     }
+
+    if (moveInfo?.hyperBeam) {
+  myPokemon.hyperBeamState = true
+}
 
    await finishTurn(revengeUpdate)
     return res.status(200).json({ ok: true })

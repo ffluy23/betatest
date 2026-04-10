@@ -80,6 +80,8 @@ export const moves = {
   "소닉붐":     { power: 1, type: "노말", accuracy: 90, alwaysHit: false,
                     effect: null, fixedDamage: 40 },
   "튀어오르기": { power: 0, type: "노말", accuracy: 100, alwaysHit: true, effect: null, splash: true, targetSelf: true },
+  "파괴광선": { power: 70, type: "노말", accuracy: 90, alwaysHit: false,
+              effect: null, hyperBeam: true },
 
   // ───── 불 ─────
   "화염바퀴":     { power: 40, type: "불", accuracy: 100, alwaysHit: false, effect: { chance: 0.1, status: "화상" } },
@@ -132,6 +134,8 @@ export const moves = {
   "흡수":       { power: 30, type: "풀", accuracy: 100, alwaysHit: false, effect: { drain: 0.15 } },
   "메가드레인": { power: 30, type: "풀", accuracy: 100, alwaysHit: false, effect: { drain: 0.15 } },
   "기가드레인": { power: 45, type: "풀", accuracy: 100, alwaysHit: false, effect: { drain: 0.15 } },
+  "저리가루": { power: 0, type: "풀", accuracy: 75, alwaysHit: false, targetSelf: false,
+              effect: { chance: 1, status: "마비" }, poisonPowder: true },
 
   // ───── 얼음 ─────
   "눈보라":         { power: 40, type: "얼음", accuracy: 70,  alwaysHit: false, effect: { chance: 0.1, status: "얼음" } },
@@ -148,7 +152,7 @@ export const moves = {
                           rank: { def: -1, turns: 2 } },
   "파동탄":             { power: 40, type: "격투", accuracy: 100, alwaysHit: true,  effect: null },
   "깨트리기":           { power: 45, type: "격투", accuracy: 100, alwaysHit: false, effect: null, breakBarrier: true },
-  "발뒤꿈치떨어뜨리기": { power: 40, type: "격투", accuracy: 100, alwaysHit: false, effect: null },
+  "드레인펀치":        { power: 45, type: "격투", accuracy: 100, alwaysHit: false, effect: { drain: 0.15 } },
 
   // ───── 독 ─────
   "용해액":   { power: 30, type: "독", accuracy: 100, alwaysHit: false, effect: null,

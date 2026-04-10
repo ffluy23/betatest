@@ -106,6 +106,15 @@ export function checkPreActionStatus(pokemon) {
     msgs.push(`${pokemon.name}${josa(pokemon.name, "은는")} 풀이 죽어서 움직일 수 없다!`)
     return { blocked: true, msgs, statusCleared: false }
   }
+
+  // ★ 파괴광선 휴식
+  if (pokemon.hyperBeamState) {
+    pokemon.hyperBeamState = false
+    msgs.push(`${pokemon.name}${josa(pokemon.name, "은는")} 반동으로 움직일 수 없다!`)
+    return { blocked: true, msgs, statusCleared: false }
+  }
+
+
   if (pokemon.status === "마비") {
     if (Math.random() < 0.25) {
       msgs.push(`${pokemon.name}${josa(pokemon.name, "은는")} 몸이 저려서 움직일 수 없다!`)
