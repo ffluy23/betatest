@@ -1056,7 +1056,6 @@ if (moveInfo?.field) {
 
     if (moveInfo?.multiHit) {
       const { min, max, fixedDamage } = moveInfo.multiHit
-      // ★ 번개 날씨 패치 적용
       const patchedMI = patchMoveForWeather(currentWeather, moveData.name, moveInfo)
       const { hit, hitType } = calcHit(myPokemon, patchedMI, enePokemon)
       if (!hit) {
@@ -1147,7 +1146,6 @@ if (moveInfo?.field) {
         await log(logsRef, `${myPokemon.name}${josa(myPokemon.name, "은는")} 반동으로 ${selfDmg} 데미지를 입었다!`)
       }
     } else {
-      // ★ 번개 날씨 패치 적용
       const patchedMoveInfo = patchMoveForWeather(currentWeather, moveData.name, moveInfo)
       const { hit, hitType } = calcHit(myPokemon, patchedMoveInfo, enePokemon)
       if (!hit) {
@@ -1205,7 +1203,6 @@ if (moveInfo?.field) {
           return res.status(200).json({ ok: true })
         }
 
-        // ★ calcDamage에 currentWeather 전달
         const { damage: rawDmg, multiplier, critical } = calcDamage(myPokemon, moveData.name, enePokemon, atkRank, defRankEne, powerOverride, atkStatOverride, currentWeather)
         const tricksterMult = moveInfo?.trickster ? 0.7 : 1.0
         const damage = counterDamage ?? Math.floor(rawDmg * comebackMult * sickMult * gutsMult * revivedMult * tricksterMult * finisherMult)
@@ -1232,20 +1229,17 @@ if (moveInfo?.field) {
             await log(logsRef, `${enePokemon.name}${josa(enePokemon.name, "의")} 빛의 장막이 깨졌다!`)
           }
           if (moveInfo?.rapidSpin && myPokemon.seeded) {
-  myPokemon.seeded = false
-  await log(logsRef, `${myPokemon.name}${josa(myPokemon.name, "은는")} 씨뿌리기가 풀렸다!`)
-}
-// ★ 추가: 필드 제거
-const { msgs: spinMsgs, fieldUpdate: spinFieldUpdate } = applyRapidSpin(mySlot, freshData)
-for (const msg of spinMsgs) await log(logsRef, msg)
-if (Object.keys(spinFieldUpdate).length > 0) {
-  Object.assign(revengeUpdate, spinFieldUpdate)
-}
+            myPokemon.seeded = false
+            await log(logsRef, `${myPokemon.name}${josa(myPokemon.name, "은는")} 씨뿌리기가 풀렸다!`)
+          }
+          const { msgs: spinMsgs, fieldUpdate: spinFieldUpdate } = applyRapidSpin(mySlot, freshData)
+          for (const msg of spinMsgs) await log(logsRef, msg)
+          if (Object.keys(spinFieldUpdate).length > 0) Object.assign(revengeUpdate, spinFieldUpdate)
+
           if (moveInfo?.clearSmog) {
             enePokemon.ranks = defaultRanks()
             await log(logsRef, `${enePokemon.name}${josa(enePokemon.name, "의")} 능력 변화가 원래대로 돌아왔다!`)
           }
-          // ★ applyMoveEffect에 currentWeather 전달
           const effectMsgs = applyMoveEffect(moveInfo?.effect ?? null, myPokemon, enePokemon, damage, currentWeather)
           for (const msg of effectMsgs) await log(logsRef, msg)
           if (moveInfo?.effect?.drain && damage > 0 && myPokemon.hp > (freshData[`${mySlot}_entry`][myActiveIdx].hp)) {
@@ -1272,7 +1266,24 @@ if (Object.keys(spinFieldUpdate).length > 0) {
     else revengeUpdate[`comeback_ready_${enemySlot}`] = false
     revengeUpdate[`comeback_ready_${mySlot}`] = false
 
-    await finishTurn(revengeUpdate)
+    // ★ 유턴: 데미지 후 강제 교체
+    if (moveInfo?.uTurn && enePokemon.hp > 0) {
+      const canSwitch = myEntry.filter((p, i) => i !== myActiveIdx && p.hp > 0).length > 0
+      if (canSwitch) {
+        sanitizeEntries()
+        await safeUpdate(roomRef, {
+          [`${mySlot}_entry`]: myEntry,
+          [`${enemySlot}_entry`]: enemyEntry,
+          current_turn: mySlot,
+          turn_count: nextTurnCount,
+          [`force_switch_${mySlot}`]: true,
+          ...revengeUpdate
+        })
+        return res.status(200).json({ ok: true })
+      }
+    }
+
+   await finishTurn(revengeUpdate)
     return res.status(200).json({ ok: true })
 
   } catch (e) {
