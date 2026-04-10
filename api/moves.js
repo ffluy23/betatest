@@ -211,6 +211,8 @@ export const moves = {
   // 빛의 장막: lightScreen 플래그
   "빛의장막":       { power: 0, type: "에스퍼", accuracy: 100, alwaysHit: true, effect: null,
                       lightScreen: true, targetSelf: true },
+  "리플렉터":       { power: 0, type: "에스퍼", accuracy: 100, alwaysHit: true, effect: null,
+                      lightScreen: true, targetSelf: true },
   // 어시스트파워: assistPower 플래그
   "어시스트파워":   { power: 30, type: "에스퍼", accuracy: 100, alwaysHit: false, effect: null, assistPower: true },
 

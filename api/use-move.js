@@ -935,7 +935,7 @@ if (moveInfo?.curse) {
     }
 
     if (moveInfo?.healPulse) {
-      const heal = Math.max(1, Math.floor((enePokemon.maxHp ?? enePokemon.hp) * 0.12))
+      const heal = Math.max(1, Math.floor((enePokemon.maxHp ?? enePokemon.hp) * 0.22))
       enePokemon.hp = Math.min(enePokemon.maxHp ?? enePokemon.hp, enePokemon.hp + heal)
       await log(logsRef, "", "hit", { defender: enemySlot, hp: enePokemon.hp, maxHp: enePokemon.maxHp ?? enePokemon.hp })
       await log(logsRef, `${enePokemon.name}${josa(enePokemon.name, "은는")} HP를 회복했다! (+${heal})`)
