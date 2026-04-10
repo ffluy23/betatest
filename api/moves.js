@@ -212,6 +212,8 @@ export const moves = {
                   rank: { targetSpd: -2, turns: 3 } },
   "벌레먹음":   { power: 40, type: "벌레", accuracy: 100, alwaysHit: false, effect: null },
   "흡혈":       { power: 50, type: "벌레", accuracy: 100, alwaysHit: false, effect: { drain: 0.15 } },
+  "유턴": { power: 40, type: "벌레", accuracy: 100, alwaysHit: false,
+          effect: null, uTurn: true },
   // 고속스핀: rapidSpin 플래그
   "고속스핀":   { power: 40, type: "노말", accuracy: 100, alwaysHit: false, effect: null,
                   rapidSpin: true, rank: { spd: 1, turns: 3 } },
