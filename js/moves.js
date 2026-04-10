@@ -89,9 +89,13 @@ export const moves = {
               outrage: { confusion: false, minTurn: 2, maxTurn: 5, powers: [50, 45, 40, 40, 40] } },
   "째려보기":   { power: 0, type: "노말", accuracy: 100, alwaysHit: true, targetSelf: true, effect: null,
                   rank: { def: 1, turns: 2 } },
+   // 고속스핀: rapidSpin 플래그
+  "고속스핀":   { power: 40, type: "노말", accuracy: 100, alwaysHit: false, effect: null,
+                  rapidSpin: true, rank: { spd: 1, turns: 3 } },
 
   // ───── 불 ─────
   "화염바퀴":     { power: 40, type: "불", accuracy: 100, alwaysHit: false, effect: { chance: 0.1, status: "화상" } },
+  "불꽃튀기기":     { power: 40, type: "불", accuracy: 100, alwaysHit: false, effect: null },
   "화염방사":     { power: 50, type: "불", accuracy: 100, alwaysHit: false, effect: { chance: 0.1, status: "화상" } },
   "니트로차지":   { power: 40, type: "불", accuracy: 100, alwaysHit: false, effect: null, rank: { spd: 1, turns: 3 } },
   "불꽃세례":     { power: 30, type: "불", accuracy: 100, alwaysHit: false, effect: { chance: 0.1, status: "화상", thawEnemy: true } },
@@ -119,6 +123,7 @@ export const moves = {
   // ───── 전기 ─────
   "번개펀치":     { power: 45, type: "전기", accuracy: 100, alwaysHit: false, effect: { chance: 0.1, status: "마비" } },
   "10만볼트":     { power: 50, type: "전기", accuracy: 100, alwaysHit: false, effect: { chance: 0.3, status: "마비" } },
+  "잠재댄스":     { power: 50, type: "전기", accuracy: 100, alwaysHit: false, effect: null },
   "방전":         { power: 50, type: "전기", accuracy: 100, alwaysHit: false, effect: { chance: 0.3, status: "마비" } },
   "번개":         { power: 60, type: "전기", accuracy: 70,  alwaysHit: false, effect: { chance: 0.3, status: "마비" } },
   "전기쇼크":     { power: 30, type: "전기", accuracy: 100, alwaysHit: false, effect: { chance: 0.1, status: "마비" } },
@@ -137,6 +142,7 @@ export const moves = {
   "에너지볼":   { power: 40, type: "풀", accuracy: 100, alwaysHit: false, effect: null,
                   rank: { chance: 0.1, targetDef: -1, turns: 2 } },
   "솔라빔":     { power: 40, type: "풀", accuracy: 100, alwaysHit: false, effect: null },
+  "매지컬리프":     { power: 40, type: "풀", accuracy: 100, alwaysHit: true, effect: null },
   "나뭇잎":     { power: 30, type: "풀", accuracy: 100, alwaysHit: false, effect: null },
   "잎날가르기":     { power: 40, type: "풀", accuracy: 95, alwaysHit: false, effect: null, highCrit: true },
   "씨폭탄":     { power: 50, type: "풀", accuracy: 100, alwaysHit: false, effect: null },
@@ -177,6 +183,7 @@ export const moves = {
                 rank: { chance: 0.1, targetDef: -1, turns: 2 } },
   "독침":     { power: 30, type: "독", accuracy: 100, alwaysHit: false, effect: { chance: 0.3, status: "독" } },
   "오물폭탄":     { power: 50, type: "독", accuracy: 100, alwaysHit: false, effect: { chance: 0.3, status: "독" } },
+  "오물웨이브":     { power: 50, type: "독", accuracy: 100, alwaysHit: false, effect: { chance: 0.1, status: "독" } },
   "독찌르기": { power: 50, type: "독", accuracy: 100, alwaysHit: false, effect: { chance: 0.3, status: "독" } },
   "독가루":   { power: 0,  type: "독", accuracy: 75,  alwaysHit: false, targetSelf: false,
                 effect: { chance: 1, status: "독" }, poisonPowder: true },
@@ -212,6 +219,7 @@ export const moves = {
   "날개치기":   { power: 40, type: "비행", accuracy: 100, alwaysHit: false, effect: null },
   "회전부리":   { power: 50, type: "비행", accuracy: 100, alwaysHit: false, effect: null },
   "제비반환":   { power: 45, type: "비행", accuracy: 100, alwaysHit: true, effect: null },
+  "에어커터":   { power: 40, type: "비행", accuracy: 95, alwaysHit: false, effect: null, highCrit: true },
   // 공중날기: flyState로 2턴 처리
   "공중날기":   { power: 50, type: "비행", accuracy: 95, alwaysHit: false, effect: null, fly: true },
 
@@ -243,11 +251,10 @@ export const moves = {
   "흡혈":       { power: 50, type: "벌레", accuracy: 100, alwaysHit: false, effect: { drain: 0.15 } },
   "유턴": { power: 40, type: "벌레", accuracy: 100, alwaysHit: false,
           effect: null, uTurn: true },
-  // 고속스핀: rapidSpin 플래그
-  "고속스핀":   { power: 40, type: "노말", accuracy: 100, alwaysHit: false, effect: null,
-                  rapidSpin: true, rank: { spd: 1, turns: 3 } },
-  "시그널빔":   { power: 45,  type: "고스트", accuracy: 100, alwaysHit: false,
+  "시그널빔":   { power: 45,  type: "벌레", accuracy: 100, alwaysHit: false,
                   effect: { chance: 0.1, volatile: "혼란" } },
+  "하드롤러":     { power: 40, type: "벌레", accuracy: 100, alwaysHit: false,
+                  effect: { chance: 0.3, volatile: "풀죽음" } },
 
   // ───── 고스트 ─────
   "섀도볼":     { power: 50, type: "고스트", accuracy: 100, alwaysHit: false, effect: null,
@@ -272,6 +279,7 @@ export const moves = {
                     effect: { chance: 0.2, volatile: "풀죽음" } },
   "용의숨결": { power: 40, type: "드래곤", accuracy: 75,  alwaysHit: false,
                     effect: { chance: 0.3, status: "마비" } },
+  "용의파동": { power: 50, type: "드래곤", accuracy: 100,  alwaysHit: false, effect: null },
   // 용의분노: fixedDamage 40
   "용의분노":     { power: 1, type: "드래곤", accuracy: 100, alwaysHit: false,
                     effect: null, fixedDamage: 40 },
@@ -289,7 +297,7 @@ export const moves = {
   "속여때리기": { power: 40, type: "악", accuracy: 100, alwaysHit: true,  effect: null },
   "물기":       { power: 40, type: "악", accuracy: 100, alwaysHit: false,
                   effect: { chance: 0.3, volatile: "풀죽음" } },
-  "암타":       { power: 40, type: "악", accuracy: 100, alwaysHit: false, effect: null },
+  "사죄의찌르기":       { power: 50, type: "악", accuracy: 100, alwaysHit: true, effect: null },
   "바크아웃":   { power: 0,  type: "악", accuracy: 95,  alwaysHit: false, effect: null,
                   rank: { targetAtk: -1, turns: 2 } },
   "깨물어부수기":   { power: 50,  type: "악", accuracy: 100,  alwaysHit: false, effect: null,
@@ -367,6 +375,7 @@ export const moves = {
                       effect: { removeFlying: true }, targetSelf: true },
   "이판사판태클":   { power: 70, type: "노말",  accuracy: 100, alwaysHit: false, effect: { recoil: 0.33 } },
   "브레이브버드":   { power: 70, type: "비행",  accuracy: 100, alwaysHit: false, effect: { recoil: 0.33 } },
+  "플레어드라이브":   { power: 70, type: "불꽃",  accuracy: 100, alwaysHit: false, effect: { recoil: 0.33, chance: 0.1, status: "화상" } },
   "돌진":           { power: 50, type: "노말",  accuracy: 85,  alwaysHit: false, effect: { recoil: 0.25 } },
   "보복":           { power: 50, type: "악",    accuracy: 100, alwaysHit: false, effect: null, comeback: true },
   "마구찌르기":     { power: 1,  type: "노말",  accuracy: 85,  alwaysHit: false, effect: null,
