@@ -835,7 +835,6 @@ export default async function handler(req, res) {
       } else {
         myPokemon.outrageState = { active: true, turn: currentTurn + 1, maxTurn, moveName: moveData.name }
         if (outrageInfo.confusion) {
-          await log(logsRef, `${myPokemon.name}의 ${moveData.name}!`)
         } else {
           await log(logsRef, `${myPokemon.name}${josa(myPokemon.name, "은는")} 소란을 피우고 있다!`)
         }
