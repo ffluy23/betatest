@@ -748,7 +748,7 @@ export default async function handler(req, res) {
       return res.status(200).json({ ok: true })
     }
 
-    // ── 구르기
+      // ── 구르기
     if (moveInfo?.rollout) {
       const rollState = myPokemon.rollState ?? { active: false, turn: 0 }
       const rollTurn = rollState.active ? rollState.turn + 1 : 1
@@ -791,6 +791,64 @@ export default async function handler(req, res) {
       } else {
         await safeUpdate(roomRef, { [`${mySlot}_entry`]: myEntry, [`${enemySlot}_entry`]: enemyEntry, current_turn: enemySlot, turn_count: nextTurnCount })
       }
+      return res.status(200).json({ ok: true })
+    }
+
+   // ── 역린 / 꽃잎댄스 / 소란피기
+    if (moveInfo?.outrage) {
+      const wasDefendingOutrage = enePokemon.defending ?? false
+      enePokemon.defending = false; enePokemon.defendTurns = 0
+
+      const outrageInfo = moveInfo.outrage
+      const state = myPokemon.outrageState
+      const isFirst = !state?.active
+
+      const maxTurn = isFirst
+        ? Math.floor(Math.random() * (outrageInfo.maxTurn - outrageInfo.minTurn + 1)) + outrageInfo.minTurn
+        : state.maxTurn
+      const currentTurn = isFirst ? 1 : state.turn
+      const power = outrageInfo.powers[Math.min(currentTurn - 1, outrageInfo.powers.length - 1)]
+      const isLastTurn = currentTurn >= maxTurn
+
+      await log(logsRef, "", "attack", { attacker: mySlot })
+      const { hit, hitType } = calcHit(myPokemon, moveInfo, enePokemon)
+      if (!hit) {
+        if (hitType === "evaded") await log(logsRef, `${enePokemon.name}에게는 맞지 않았다!`, "evade")
+        else await log(logsRef, `그러나 ${myPokemon.name}의 공격은 빗나갔다!`)
+      } else if (wasDefendingOutrage) {
+        await log(logsRef, `${enePokemon.name}${josa(enePokemon.name, "은는")} 방어했다!`)
+      } else {
+        const { damage, multiplier, critical } = calcDamage(myPokemon, moveData.name, enePokemon, atkRank, defRankEne, power, null, currentWeather)
+        if (multiplier === 0) {
+          await log(logsRef, `${enePokemon.name}에게는 효과가 없다…`)
+        } else {
+          enePokemon.hp = Math.max(0, enePokemon.hp - damage)
+          if (enePokemon.hp <= 0 && enePokemon.enduring) { enePokemon.hp = 1; enePokemon.enduring = false }
+          await hitLog(enemySlot, enePokemon)
+          recordDmg(enemySlot, damage)
+          if (multiplier > 1) await log(logsRef, "효과가 굉장했다!")
+          if (multiplier < 1) await log(logsRef, "효과가 별로인 듯하다…")
+          if (critical) await log(logsRef, "급소에 맞았다!", "critical")
+          if (enePokemon.hp <= 0) await log(logsRef, `${enePokemon.name}${josa(enePokemon.name, "은는")} 쓰러졌다!`, "faint")
+        }
+      }
+
+      if (isLastTurn) {
+        myPokemon.outrageState = null
+        if (outrageInfo.confusion && (myPokemon.confusion ?? 0) <= 0) {
+          myPokemon.confusion = Math.floor(Math.random() * 3) + 1
+          await log(logsRef, `${myPokemon.name}${josa(myPokemon.name, "은는")} 난동을 부린 뒤 혼란에 빠졌다!`)
+        }
+      } else {
+        myPokemon.outrageState = { active: true, turn: currentTurn + 1, maxTurn, moveName: moveData.name }
+        if (outrageInfo.confusion) {
+          await log(logsRef, `${myPokemon.name}의 ${moveData.name}!`)
+        } else {
+          await log(logsRef, `${myPokemon.name}${josa(myPokemon.name, "은는")} 소란을 피우고 있다!`)
+        }
+      }
+
+      await finishTurn(revengeUpdate)
       return res.status(200).json({ ok: true })
     }
 
@@ -967,6 +1025,24 @@ if (moveInfo?.field) {
   await finishTurn({})
   return res.status(200).json({ ok: true })
 }
+
+  // ── 달빛
+      if (moveInfo?.effect?.moonlight) {
+        const enemyActive = enemyEntry[eneActiveIdx]
+        const isUproar = enemyActive?.outrageState?.active &&
+                         moves[enemyActive.outrageState.moveName]?.outrage?.confusion === false
+        const healRate = currentWeather === "쾌청" ? 0.25
+                       : (currentWeather === "비" || currentWeather === "모래바람" ||
+                          currentWeather === "싸라기눈" || isUproar) ? 0.18
+                       : 0.22
+        const heal = Math.max(1, Math.floor((myPokemon.maxHp ?? myPokemon.hp) * healRate))
+        myPokemon.hp = Math.min(myPokemon.maxHp ?? myPokemon.hp, myPokemon.hp + heal)
+        await log(logsRef, "", "heal_self", { slot: mySlot, hp: myPokemon.hp, maxHp: myPokemon.maxHp ?? myPokemon.hp })
+        await log(logsRef, `${myPokemon.name}${josa(myPokemon.name, "은는")} HP를 회복했다! (+${heal})`)
+        await finishTurn({})
+        return res.status(200).json({ ok: true })
+      }
+      
       if (moveInfo?.effect?.weather) {
         const allPokemon = [...myEntry, ...enemyEntry]
         const prevWeather = currentWeather

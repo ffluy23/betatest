@@ -82,6 +82,8 @@ export const moves = {
   "튀어오르기": { power: 0, type: "노말", accuracy: 100, alwaysHit: true, effect: null, splash: true, targetSelf: true },
   "파괴광선": { power: 70, type: "노말", accuracy: 90, alwaysHit: false,
               effect: null, hyperBeam: true },
+  "소란피기": { power: 50, type: "노말",  accuracy: 100, alwaysHit: false, effect: null,
+              outrage: { confusion: false, minTurn: 2, maxTurn: 5, powers: [50, 45, 40, 40, 40] } },
 
   // ───── 불 ─────
   "화염바퀴":     { power: 40, type: "불", accuracy: 100, alwaysHit: false, effect: { chance: 0.1, status: "화상" } },
@@ -136,6 +138,8 @@ export const moves = {
   "기가드레인": { power: 45, type: "풀", accuracy: 100, alwaysHit: false, effect: { drain: 0.15 } },
   "저리가루": { power: 0, type: "풀", accuracy: 75, alwaysHit: false, targetSelf: false,
               effect: { chance: 1, status: "마비" }, poisonPowder: true },
+  "꽃잎댄스": { power: 60, type: "풀",    accuracy: 100, alwaysHit: false, effect: null,
+              outrage: { confusion: true, minTurn: 2, maxTurn: 3, powers: [60, 45, 30] } },
 
   // ───── 얼음 ─────
   "눈보라":         { power: 40, type: "얼음", accuracy: 70,  alwaysHit: false, effect: { chance: 0.1, status: "얼음" } },
@@ -252,6 +256,9 @@ export const moves = {
   "회오리":     { power: 30, type: "드래곤", accuracy: 100, alwaysHit: false,
                   effect: { chance: 0.2, volatile: "풀죽음" }, twister: true },
 
+  "역린":     { power: 60, type: "드래곤", accuracy: 100, alwaysHit: false, effect: null,
+              outrage: { confusion: true, minTurn: 2, maxTurn: 3, powers: [60, 45, 30] } },
+
   // ───── 악 ─────
   "악의파동":   { power: 50, type: "악", accuracy: 100, alwaysHit: false,
                   effect: { chance: 0.2, volatile: "풀죽음" } },
@@ -298,10 +305,12 @@ export const moves = {
                     rank: { targetAtk: -1, turns: 2 } },
   "초롱초롱눈동자":   { power: 0,  type: "페어리", accuracy: 100, alwaysHit: true, targetSelf: false, effect: null,
                     rank: { targetAtk: -1, turns: 2 } },
+  "달빛":     { power: 0,  type: "페어리", accuracy: 100, alwaysHit: true,
+              effect: { moonlight: true }, targetSelf: true },
 
 
   // ───── 날씨 ─────
-  "맑게개다": { power: 0, type: "불",   accuracy: 100, alwaysHit: true, effect: { weather: "쾌청", weatherTurns: 5 } },
+  "쾌청": { power: 0, type: "불",   accuracy: 100, alwaysHit: true, effect: { weather: "쾌청", weatherTurns: 5 } },
 "비바라기": { power: 0, type: "물",   accuracy: 100, alwaysHit: true, effect: { weather: "비", weatherTurns: 5 } },
 "모래바람": { power: 0, type: "바위", accuracy: 100, alwaysHit: true, effect: { weather: "모래바람", weatherTurns: 5 } },
 "싸라기눈": { power: 0, type: "얼음", accuracy: 100, alwaysHit: true, effect: { weather: "싸라기눈", weatherTurns: 5 } },

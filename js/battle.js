@@ -664,6 +664,7 @@ function updateMoveButtons(data) {
     const chainBound = myPokemon?.chainBound
     const lockedByChain = !!(chainBound && chainBound.turnsLeft > 0 && chainBound.moveName === move.name)
     const lockedByBide = !!(myPokemon?.bideState && myPokemon.bideState.turnsLeft > 0)
+    const lockedByOutrage = !!(myPokemon?.outrageState?.active)
     btn.innerHTML = `<span style="display:block;font-size:13px;font-weight:bold;">${move.name}</span><span style="display:block;font-size:10px;opacity:0.85;">PP: ${move.pp} | ${accText}</span>`
     const color = typeColors[moveInfo?.type] ?? "#a0a0a0"
     btn.style.setProperty("--btn-color", color); btn.style.background = color
