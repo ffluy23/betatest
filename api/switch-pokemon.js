@@ -1,4 +1,5 @@
 import { db } from "./_firebase.js"
+import { applyFieldEffects } from "./field.js"
 
 function josa(word, type) {
   if (!word) return type === "은는" ? "은" : type === "이가" ? "이" : type === "을를" ? "을" : type === "과와" ? "과" : "으로"
@@ -17,6 +18,18 @@ function josa(word, type) {
 
 function defaultRanks() {
   return { atk: 0, atkTurns: 0, def: 0, defTurns: 0, spd: 0, spdTurns: 0 }
+}
+
+function sanitizeForFirestore(obj) {
+  if (Array.isArray(obj)) return obj.map(sanitizeForFirestore)
+  if (obj !== null && typeof obj === "object") {
+    const result = {}
+    for (const [k, v] of Object.entries(obj)) {
+      result[k] = v === undefined ? null : sanitizeForFirestore(v)
+    }
+    return result
+  }
+  return obj
 }
 
 export default async function handler(req, res) {
@@ -66,13 +79,13 @@ export default async function handler(req, res) {
     // 참기 취소
     myPokemon.bideState = null
 
-    // ★ FIX (버그2): 교체 시 풀죽음 해제 — 벤치로 들어가면 flinch 사라짐
+    // 풀죽음 해제
     myPokemon.flinch = false
 
-    // 씨뿌리기: 교체 나간 포켓몬의 seeded 해제
+    // 씨뿌리기: 교체 나간 포켓몬 seeded 해제
     myPokemon.seeded = false
 
-    // 새로 나온 포켓몬은 씨뿌리기 없음
+    // 새로 나온 포켓몬 seeded 해제
     newPokemon.seeded = false
 
     const myName = mySlot === "p1" ? data.player1_name : data.player2_name
@@ -91,12 +104,45 @@ export default async function handler(req, res) {
       ts: ts++
     })
 
-    await roomRef.update({
-      [`${mySlot}_entry`]: myEntry,
+    // ── 필드 효과 (스텔스록 / 독압정)
+    const { msgs: fieldMsgs, hitLogs, statusMsgs, fieldUpdate } =
+      applyFieldEffects(newPokemon, mySlot, data)
+
+    for (const msg of fieldMsgs) {
+      await logsRef.add({ text: msg, type: "normal", ts: ts++ })
+    }
+    for (const hl of hitLogs) {
+      await logsRef.add({
+        text: "", type: "hit",
+        defender: hl.slot, hp: hl.hp, maxHp: hl.maxHp,
+        ts: ts++
+      })
+    }
+    for (const msg of statusMsgs) {
+      await logsRef.add({ text: msg, type: "normal", ts: ts++ })
+    }
+
+    // 쓰러졌으면 force_switch 세팅
+    const fainted = newPokemon.hp <= 0
+    const allFainted = myEntry.every(p => p.hp <= 0)
+
+    const updateData = {
+      [`${mySlot}_entry`]: sanitizeForFirestore(myEntry),
       [`${mySlot}_active_idx`]: newIdx,
       current_turn: enemySlot,
-      turn_count: nextTurnCount
-    })
+      turn_count: nextTurnCount,
+      ...fieldUpdate,
+      ...(fainted && !allFainted ? { [`force_switch_${mySlot}`]: true } : {}),
+      ...(allFainted ? { game_over: true, winner: enemySlot === "p1" ? data.player1_name : data.player2_name, current_turn: null } : {})
+    }
+
+    await roomRef.update(updateData)
+
+    if (allFainted) {
+      const winnerName = enemySlot === "p1" ? data.player1_name : data.player2_name
+      await logsRef.add({ text: `${winnerName}의 승리!`, type: "win", ts: ts++ })
+    }
+
     return res.status(200).json({ ok: true })
 
   } catch (e) {

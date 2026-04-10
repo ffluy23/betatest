@@ -299,6 +299,13 @@ export const moves = {
 "비바라기": { power: 0, type: "물",   accuracy: 100, alwaysHit: true, effect: { weather: "비", weatherTurns: 5 } },
 "모래바람": { power: 0, type: "바위", accuracy: 100, alwaysHit: true, effect: { weather: "모래바람", weatherTurns: 5 } },
 "싸라기눈": { power: 0, type: "얼음", accuracy: 100, alwaysHit: true, effect: { weather: "싸라기눈", weatherTurns: 5 } },
+
+  // ───── 장판 ─────
+"스텔스록": { power: 0, type: "바위", accuracy: 100, alwaysHit: true,
+              effect: null, field: "stealth_rock", targetSelf: false },
+"독압정":   { power: 0, type: "독",   accuracy: 100, alwaysHit: true,
+              effect: null, field: "toxic_spikes", targetSelf: false },
+
   // ───── 특수 기술 ─────
   "무릎차기":   { power: 70, type: "격투", accuracy: 90,  alwaysHit: false, effect: null, jumpKick: true },
   "방어":       { power: 0,  type: "노말", accuracy: 100, alwaysHit: true,  effect: null, defend: true, targetSelf: true },

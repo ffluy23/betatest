@@ -1,5 +1,6 @@
 import { db } from "./_firebase.js"
 import { moves } from "./moves.js"
+import { applyRapidSpin } from "./field.js"
 import { getTypeMultiplier } from "./typeChart.js"
 import {
   josa,
@@ -952,6 +953,19 @@ export default async function handler(req, res) {
         }
       }
       // ★ 날씨 기술 처리 (applyWeatherEffect 대체)
+      // ── 필드 기술 (스텔스록 / 독압정)
+if (moveInfo?.field) {
+  const fieldKey = `${moveInfo.field}_${enemySlot}`  // 상대 진영에 설치
+ if (freshData[fieldKey]) {
+  await log(logsRef, `이미 ${moveData.name}${josa(moveData.name, "이가")} 설치되어 있다!`)
+} else {
+  await log(logsRef, `상대방 발밑에 ${moveData.name}${josa(moveData.name, "을를")} 뿌렸다!`)
+    await finishTurn({ [fieldKey]: true })
+    return res.status(200).json({ ok: true })
+  }
+  await finishTurn({})
+  return res.status(200).json({ ok: true })
+}
       if (moveInfo?.effect?.weather) {
         const allPokemon = [...myEntry, ...enemyEntry]
         const prevWeather = currentWeather
@@ -1218,9 +1232,15 @@ export default async function handler(req, res) {
             await log(logsRef, `${enePokemon.name}${josa(enePokemon.name, "의")} 빛의 장막이 깨졌다!`)
           }
           if (moveInfo?.rapidSpin && myPokemon.seeded) {
-            myPokemon.seeded = false
-            await log(logsRef, `${myPokemon.name}${josa(myPokemon.name, "은는")} 씨뿌리기가 풀렸다!`)
-          }
+  myPokemon.seeded = false
+  await log(logsRef, `${myPokemon.name}${josa(myPokemon.name, "은는")} 씨뿌리기가 풀렸다!`)
+}
+// ★ 추가: 필드 제거
+const { msgs: spinMsgs, fieldUpdate: spinFieldUpdate } = applyRapidSpin(mySlot, freshData)
+for (const msg of spinMsgs) await log(logsRef, msg)
+if (Object.keys(spinFieldUpdate).length > 0) {
+  Object.assign(revengeUpdate, spinFieldUpdate)
+}
           if (moveInfo?.clearSmog) {
             enePokemon.ranks = defaultRanks()
             await log(logsRef, `${enePokemon.name}${josa(enePokemon.name, "의")} 능력 변화가 원래대로 돌아왔다!`)
