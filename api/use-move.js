@@ -556,27 +556,32 @@ if (myPokemon.ghostDiveState?.diving) {
 tickVolatiles(enePokemon)
 
 // 미래예지 발동
-if (enePokemon.futureSight?.ready) {
-  const fs = enePokemon.futureSight
-  enePokemon.futureSight = null
+tickVolatiles(myPokemon)  // 기존 코드 유지
+
+if (myPokemon.futureSight?.ready) {
+  const fs = myPokemon.futureSight
+  myPokemon.futureSight = null
   await log(logsRef, `${fs.attackerName}의 미래예지!`)
-  await log(logsRef, "", "attack", { attacker: enemySlot })
-  const atkRankFS = getActiveRank(enePokemon, "atk")
-  const defRankMyFS = getActiveRank(myPokemon, "def")
-  myPokemon.defending = false; myPokemon.defendTurns = 0
-  const { damage, multiplier, critical } = calcDamage(enePokemon, "미래예지", myPokemon, atkRankFS, defRankMyFS, null, null, currentWeather)
+  await log(logsRef, "", "attack", { attacker: mySlot })
+  // 내가 맞는 게 아니라 상대가 맞아야 하므로
+  const atkRankFS = getActiveRank(myPokemon, "atk")
+  const defRankEneFS = getActiveRank(enePokemon, "def")
+  enePokemon.defending = false; enePokemon.defendTurns = 0
+  const { damage, multiplier, critical } = calcDamage(myPokemon, "미래예지", enePokemon, atkRankFS, defRankEneFS, null, null, currentWeather)
   if (multiplier === 0) {
-    await log(logsRef, `${myPokemon.name}에게는 효과가 없다…`)
+    await log(logsRef, `${enePokemon.name}에게는 효과가 없다…`)
   } else {
-    myPokemon.hp = Math.max(0, myPokemon.hp - damage)
-    if (myPokemon.hp <= 0 && myPokemon.enduring) { myPokemon.hp = 1; myPokemon.enduring = false }
-    await log(logsRef, "", "hit_self", { slot: mySlot, hp: myPokemon.hp, maxHp: myPokemon.maxHp ?? myPokemon.hp })
+    enePokemon.hp = Math.max(0, enePokemon.hp - damage)
+    if (enePokemon.hp <= 0 && enePokemon.enduring) { enePokemon.hp = 1; enePokemon.enduring = false }
+    await log(logsRef, "", "hit", { defender: enemySlot, hp: enePokemon.hp, maxHp: enePokemon.maxHp ?? enePokemon.hp })
     if (multiplier > 1) await log(logsRef, "효과가 굉장했다!")
     if (multiplier < 1) await log(logsRef, "효과가 별로인 듯하다…")
     if (critical) await log(logsRef, "급소에 맞았다!", "critical")
-    if (myPokemon.hp <= 0) await log(logsRef, `${myPokemon.name}${josa(myPokemon.name, "은는")} 쓰러졌다!`, "faint")
+    if (enePokemon.hp <= 0) await log(logsRef, `${enePokemon.name}${josa(enePokemon.name, "은는")} 쓰러졌다!`, "faint")
   }
 }
+
+// tickVolatiles(enePokemon) ← 이건 제거
     // 빛의 장막 턴 감소
     if ((myPokemon.lightScreenTurns ?? 0) > 0) {
       myPokemon.lightScreenTurns--
@@ -1159,10 +1164,10 @@ if (enePokemon.digState?.digging && moves[moveData.name]?.type === "땅") {
 }
 
 if (moveInfo?.futureSight) {
-  if (enePokemon.futureSight) {
+  if (myPokemon.futureSight) {
     await log(logsRef, `이미 미래예지가 걸려있다!`)
   } else {
-    enePokemon.futureSight = { turnsLeft: 2, attackerName: myPokemon.name, power: 70 }
+    myPokemon.futureSight = { turnsLeft: 2, attackerName: myPokemon.name, power: 70 }
     await log(logsRef, `${myPokemon.name}${josa(myPokemon.name, "은는")} 미래를 예지했다!`)
   }
   await finishTurn({})
