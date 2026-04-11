@@ -308,7 +308,7 @@ export const moves = {
   "물기":       { power: 40, type: "악", accuracy: 100, alwaysHit: false,
                   effect: { chance: 0.3, volatile: "풀죽음" } },
   "사죄의찌르기":       { power: 50, type: "악", accuracy: 100, alwaysHit: true, effect: null },
-  "바크아웃":   { power: 0,  type: "악", accuracy: 95,  alwaysHit: false, effect: null,
+  "바크아웃":   { power: 40,  type: "악", accuracy: 95,  alwaysHit: false, effect: null,
                   rank: { targetAtk: -1, turns: 2 } },
   "깨물어부수기":   { power: 50,  type: "악", accuracy: 100,  alwaysHit: false, effect: null,
                   rank: { chance: 0.2, targetAtk: -1, turns: 2 } },
