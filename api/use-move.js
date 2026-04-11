@@ -1609,10 +1609,11 @@ if (enePokemon.digState?.digging && moves[moveData.name]?.type === "땅") {
             myPokemon.seeded = false
             await log(logsRef, `${myPokemon.name}${josa(myPokemon.name, "은는")} 씨뿌리기가 풀렸다!`)
           }
-          const { msgs: spinMsgs, fieldUpdate: spinFieldUpdate } = applyRapidSpin(mySlot, freshData)
-          for (const msg of spinMsgs) await log(logsRef, msg)
-          if (Object.keys(spinFieldUpdate).length > 0) Object.assign(revengeUpdate, spinFieldUpdate)
-
+          if (moveInfo?.rapidSpin) {
+  const { msgs: spinMsgs, fieldUpdate: spinFieldUpdate } = applyRapidSpin(mySlot, freshData)
+  for (const msg of spinMsgs) await log(logsRef, msg)
+  if (Object.keys(spinFieldUpdate).length > 0) Object.assign(revengeUpdate, spinFieldUpdate)
+}
           if (moveInfo?.clearSmog) {
             enePokemon.ranks = defaultRanks()
             await log(logsRef, `${enePokemon.name}${josa(enePokemon.name, "의")} 능력 변화가 원래대로 돌아왔다!`)
