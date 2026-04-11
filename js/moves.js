@@ -124,6 +124,7 @@ export const moves = {
 
   // ───── 전기 ─────
   "번개펀치":     { power: 45, type: "전기", accuracy: 100, alwaysHit: false, effect: { chance: 0.1, status: "마비" } },
+   "번개엄니":     { power: 40, type: "전기", accuracy: 95, alwaysHit: false, effect: { chance: 0.1, status: "마비" } },
   "10만볼트":     { power: 50, type: "전기", accuracy: 100, alwaysHit: false, effect: { chance: 0.3, status: "마비" } },
   "잠재댄스":     { power: 50, type: "전기", accuracy: 100, alwaysHit: false, effect: null },
   "방전":         { power: 50, type: "전기", accuracy: 100, alwaysHit: false, effect: { chance: 0.3, status: "마비" } },
