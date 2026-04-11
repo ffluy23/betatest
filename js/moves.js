@@ -252,6 +252,7 @@ export const moves = {
   "실뿜기":     { power: 0,  type: "벌레", accuracy: 95,  alwaysHit: false,
                   rank: { targetSpd: -2, turns: 3 } },
   "벌레먹음":   { power: 40, type: "벌레", accuracy: 100, alwaysHit: false, effect: null },
+  "꽃가루경단":   { power: 50, type: "벌레", accuracy: 100, alwaysHit: false, effect: null },
   "흡혈":       { power: 50, type: "벌레", accuracy: 100, alwaysHit: false, effect: { drain: 0.15 } },
   "유턴": { power: 40, type: "벌레", accuracy: 100, alwaysHit: false,
           effect: null, uTurn: true },
