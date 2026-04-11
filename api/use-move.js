@@ -552,16 +552,17 @@ if (myPokemon.ghostDiveState?.diving) {
       await log(logsRef, "", "heal_self", { slot: mySlot, hp: myPokemon.hp, maxHp: myPokemon.maxHp ?? myPokemon.hp })
     }
 
-    // 미래예지 발동
-if (myPokemon.futureSight?.ready) {
-  const fs = myPokemon.futureSight
-  myPokemon.futureSight = null
+   // 상대 volatile 틱 (미래예지 카운트다운)
+tickVolatiles(enePokemon)
+
+// 미래예지 발동
+if (enePokemon.futureSight?.ready) {
+  const fs = enePokemon.futureSight
+  enePokemon.futureSight = null
   await log(logsRef, `${fs.attackerName}의 미래예지!`)
   await log(logsRef, "", "attack", { attacker: enemySlot })
   const atkRankFS = getActiveRank(enePokemon, "atk")
   const defRankMyFS = getActiveRank(myPokemon, "def")
-  // 방어 무시
-  const wasDefendingFS = myPokemon.defending ?? false
   myPokemon.defending = false; myPokemon.defendTurns = 0
   const { damage, multiplier, critical } = calcDamage(enePokemon, "미래예지", myPokemon, atkRankFS, defRankMyFS, null, null, currentWeather)
   if (multiplier === 0) {
@@ -576,7 +577,6 @@ if (myPokemon.futureSight?.ready) {
     if (myPokemon.hp <= 0) await log(logsRef, `${myPokemon.name}${josa(myPokemon.name, "은는")} 쓰러졌다!`, "faint")
   }
 }
-
     // 빛의 장막 턴 감소
     if ((myPokemon.lightScreenTurns ?? 0) > 0) {
       myPokemon.lightScreenTurns--
