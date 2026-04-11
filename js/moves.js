@@ -317,7 +317,7 @@ export const moves = {
   "승부굳히기": { power: 40, type: "악", accuracy: 100, alwaysHit: false, effect: null, finisher: true },
   "지옥찌르기": { power: 50, type: "악", accuracy: 100, alwaysHit: false, effect: null, throatChop: true },
   "트집": { power: 0, type: "악", accuracy: 100, alwaysHit: false, effect: null, torment: true, targetSelf: false },
-  "추억의선물": { power: 0, type: "악", accuracy: 100, alwaysHit: false, effect: null, memento: true, targetSelf: false },
+  "추억의선물": { power: 0, type: "악", accuracy: 100, alwaysHit: true, effect: null, memento: true },
 
   // ───── 강철 ─────
   "아이언테일": { power: 50, type: "강철", accuracy: 75,  alwaysHit: false, effect: null,
