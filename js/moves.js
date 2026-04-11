@@ -389,7 +389,7 @@ export const moves = {
                       effect: { removeFlying: true }, targetSelf: true },
   "이판사판태클":   { power: 70, type: "노말",  accuracy: 100, alwaysHit: false, effect: { recoil: 0.33 } },
   "브레이브버드":   { power: 70, type: "비행",  accuracy: 100, alwaysHit: false, effect: { recoil: 0.33 } },
-  "플레어드라이브":   { power: 70, type: "불꽃",  accuracy: 100, alwaysHit: false, effect: { recoil: 0.33, chance: 0.1, status: "화상" } },
+  "플레어드라이브":   { power: 70, type: "불",  accuracy: 100, alwaysHit: false, effect: { recoil: 0.33, chance: 0.1, status: "화상" } },
   "돌진":           { power: 50, type: "노말",  accuracy: 85,  alwaysHit: false, effect: { recoil: 0.25 } },
   "보복":           { power: 50, type: "악",    accuracy: 100, alwaysHit: false, effect: null, comeback: true },
   "마구찌르기":     { power: 1,  type: "노말",  accuracy: 85,  alwaysHit: false, effect: null,
