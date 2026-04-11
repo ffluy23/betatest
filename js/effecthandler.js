@@ -190,6 +190,15 @@ export function tickVolatiles(pokemon) {
     }
   }
 }
+
+// 미래예지 EOT
+if ((pokemon.futureSight?.turnsLeft ?? 0) > 0) {
+  pokemon.futureSight.turnsLeft--
+  if (pokemon.futureSight.turnsLeft <= 0) {
+    // 터지는 건 handler.js에서 처리
+    pokemon.futureSight.ready = true
+  }
+}
   return msgs
 }
 

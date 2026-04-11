@@ -246,6 +246,7 @@ export const moves = {
   // 어시스트파워: assistPower 플래그
   "어시스트파워":   { power: 30, type: "에스퍼", accuracy: 100, alwaysHit: false, effect: null, assistPower: true },
   "회복봉인": { power: 0, type: "에스퍼", accuracy: 100, alwaysHit: true, effect: null, healBlock: true, targetSelf: false },
+  "미래예지": { power: 70, type: "에스퍼", accuracy: 100, alwaysHit: true, effect: null, futureSight: true },
 
   // ───── 벌레 ─────
   "달려들기":   { power: 40, type: "벌레", accuracy: 100, alwaysHit: false,

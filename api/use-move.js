@@ -552,6 +552,31 @@ if (myPokemon.ghostDiveState?.diving) {
       await log(logsRef, "", "heal_self", { slot: mySlot, hp: myPokemon.hp, maxHp: myPokemon.maxHp ?? myPokemon.hp })
     }
 
+    // 미래예지 발동
+if (myPokemon.futureSight?.ready) {
+  const fs = myPokemon.futureSight
+  myPokemon.futureSight = null
+  await log(logsRef, `${fs.attackerName}의 미래예지!`)
+  await log(logsRef, "", "attack", { attacker: enemySlot })
+  const atkRankFS = getActiveRank(enePokemon, "atk")
+  const defRankMyFS = getActiveRank(myPokemon, "def")
+  // 방어 무시
+  const wasDefendingFS = myPokemon.defending ?? false
+  myPokemon.defending = false; myPokemon.defendTurns = 0
+  const { damage, multiplier, critical } = calcDamage(enePokemon, "미래예지", myPokemon, atkRankFS, defRankMyFS, null, null, currentWeather)
+  if (multiplier === 0) {
+    await log(logsRef, `${myPokemon.name}에게는 효과가 없다…`)
+  } else {
+    myPokemon.hp = Math.max(0, myPokemon.hp - damage)
+    if (myPokemon.hp <= 0 && myPokemon.enduring) { myPokemon.hp = 1; myPokemon.enduring = false }
+    await log(logsRef, "", "hit_self", { slot: mySlot, hp: myPokemon.hp, maxHp: myPokemon.maxHp ?? myPokemon.hp })
+    if (multiplier > 1) await log(logsRef, "효과가 굉장했다!")
+    if (multiplier < 1) await log(logsRef, "효과가 별로인 듯하다…")
+    if (critical) await log(logsRef, "급소에 맞았다!", "critical")
+    if (myPokemon.hp <= 0) await log(logsRef, `${myPokemon.name}${josa(myPokemon.name, "은는")} 쓰러졌다!`, "faint")
+  }
+}
+
     // 빛의 장막 턴 감소
     if ((myPokemon.lightScreenTurns ?? 0) > 0) {
       myPokemon.lightScreenTurns--
@@ -1129,6 +1154,17 @@ if (enePokemon.digState?.digging && moves[moveData.name]?.type === "땅") {
   myPokemon.ghostDiveState = { diving: true }
   myPokemon.ghostDiveMoveName = moveData.name
   await log(logsRef, `${myPokemon.name}${josa(myPokemon.name, "은는")} 어디론가 사라졌다!`)
+  await finishTurn({})
+  return res.status(200).json({ ok: true })
+}
+
+if (moveInfo?.futureSight) {
+  if (enePokemon.futureSight) {
+    await log(logsRef, `이미 미래예지가 걸려있다!`)
+  } else {
+    enePokemon.futureSight = { turnsLeft: 2, attackerName: myPokemon.name, power: 70 }
+    await log(logsRef, `${myPokemon.name}${josa(myPokemon.name, "은는")} 미래를 예지했다!`)
+  }
   await finishTurn({})
   return res.status(200).json({ ok: true })
 }
