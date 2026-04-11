@@ -464,6 +464,49 @@ export default async function handler(req, res) {
       return res.status(200).json({ ok: true })
     }
 
+// ── 고스트다이브 2턴째 자동 처리
+if (myPokemon.ghostDiveState?.diving) {
+  myPokemon.ghostDiveState = null
+  await log(logsRef, `${myPokemon.name}${josa(myPokemon.name, "은는")} 나타났다!`)
+  await log(logsRef, "", "attack", { attacker: mySlot })
+  const atkRankGD = getActiveRank(myPokemon, "atk")
+  const defRankEneGD = getActiveRank(enePokemon, "def")
+  // 방어 무시 — 방어 중이어도 방어 해제 후 공격, 빛의장막도 무시
+  const wasDefendingGD = enePokemon.defending ?? false
+  enePokemon.defending = false; enePokemon.defendTurns = 0
+  if (wasDefendingGD) {
+    await log(logsRef, `${enePokemon.name}${josa(enePokemon.name, "의")} 방어가 뚫렸다!`)
+  }
+  const { hit, hitType } = calcHit(myPokemon, { accuracy: 100, type: "고스트", alwaysHit: false }, enePokemon)
+  if (!hit) {
+    await log(logsRef, hitType === "evaded" ? `${enePokemon.name}에게는 맞지 않았다!` : `그러나 ${myPokemon.name}의 공격은 빗나갔다!`, hitType === "evaded" ? "evade" : "normal")
+  } else {
+    const gdMoveName = myPokemon.ghostDiveMoveName ?? "고스트다이브"
+    const { damage, multiplier, critical } = calcDamage(myPokemon, gdMoveName, enePokemon, atkRankGD, defRankEneGD, null, null, currentWeather)
+    if (multiplier === 0) {
+      await log(logsRef, `${enePokemon.name}에게는 효과가 없다…`)
+    } else {
+      enePokemon.hp = Math.max(0, enePokemon.hp - damage)
+      if (enePokemon.hp <= 0 && enePokemon.enduring) { enePokemon.hp = 1; enePokemon.enduring = false }
+      await log(logsRef, "", "hit", { defender: enemySlot, hp: enePokemon.hp, maxHp: enePokemon.maxHp ?? enePokemon.hp })
+      if (multiplier > 1) await log(logsRef, "효과가 굉장했다!")
+      if (multiplier < 1) await log(logsRef, "효과가 별로인 듯하다…")
+      if (critical) await log(logsRef, "급소에 맞았다!", "critical")
+      if (enePokemon.hp <= 0) await log(logsRef, `${enePokemon.name}${josa(enePokemon.name, "은는")} 쓰러졌다!`, "faint")
+    }
+  }
+  myPokemon.ghostDiveMoveName = null
+  const expMsgsGD = tickMyRanks(myPokemon); clearRankStack(myPokemon)
+  for (const msg of expMsgsGD) await log(logsRef, msg)
+  if (isAllFainted(enemyEntry)) {
+    await safeUpdate(roomRef, { [`${mySlot}_entry`]: myEntry, [`${enemySlot}_entry`]: enemyEntry, turn_count: nextTurnCount, game_over: true, winner: myName, current_turn: null })
+    await log(logsRef, `${myName}의 승리!`, "win")
+  } else {
+    await safeUpdate(roomRef, { [`${mySlot}_entry`]: myEntry, [`${enemySlot}_entry`]: enemyEntry, current_turn: enemySlot, turn_count: nextTurnCount })
+  }
+  return res.status(200).json({ ok: true })
+}
+
     // ── 참기 중이면 자동으로 턴 스킵
     if (myPokemon.bideState && (!moveInfo || !moveInfo?.bide)) {
       myPokemon.bideState.turnsLeft--
@@ -554,6 +597,13 @@ export default async function handler(req, res) {
       return res.status(200).json({ ok: true })
     }
 
+    // 트집 체크
+if (myPokemon.tormented && moveData.name === myPokemon.lastUsedMove) {
+  await log(logsRef, `${myPokemon.name}${josa(myPokemon.name, "은는")} 트집 때문에 같은 기술을 연속으로 쓸 수 없다!`)
+  await safeUpdate(roomRef, { [`${mySlot}_entry`]: myEntry, current_turn: enemySlot, turn_count: nextTurnCount })
+  return res.status(200).json({ ok: true })
+}
+
     myPokemon.moves[moveIdx] = { ...moveData, pp: moveData.pp - 1 }
     myPokemon.lastUsedMove = moveData.name
     await log(logsRef, `${myPokemon.name}의 ${moveData.name}!`)
@@ -587,6 +637,34 @@ export default async function handler(req, res) {
           }
         }
 
+        // 지옥찌르기 턴 감소
+if (enePokemon.throatChopped > 0) {
+  enePokemon.throatChopped--
+  if (enePokemon.throatChopped <= 0) {
+    await log(logsRef, `${enePokemon.name}${josa(enePokemon.name, "은는")} 다시 소리를 낼 수 있게 됐다!`)
+  }
+}
+if (myPokemon.throatChopped > 0) {
+  myPokemon.throatChopped--
+  if (myPokemon.throatChopped <= 0) {
+    await log(logsRef, `${myPokemon.name}${josa(myPokemon.name, "은는")} 다시 소리를 낼 수 있게 됐다!`)
+  }
+} 
+
+// 회복봉인 턴 감소
+if (enePokemon.healBlocked > 0) {
+  enePokemon.healBlocked--
+  if (enePokemon.healBlocked <= 0) {
+    await log(logsRef, `${enePokemon.name}${josa(enePokemon.name, "의")} 회복봉인이 풀렸다!`)
+  }
+}
+if (myPokemon.healBlocked > 0) {
+  myPokemon.healBlocked--
+  if (myPokemon.healBlocked <= 0) {
+    await log(logsRef, `${myPokemon.name}${josa(myPokemon.name, "의")} 회복봉인이 풀렸다!`)
+  }
+}
+
         // 씨뿌리기 EOT
         if (enePokemon.seeded) {
           const lastTick = enePokemon.seededLastTick ?? (enePokemon.seededSince ?? nextTurn)
@@ -609,6 +687,21 @@ export default async function handler(req, res) {
             myPokemon.seededLastTick = nextTurn
           }
         }
+
+        // 아쿠아링 EOT
+        if (myPokemon.aquaRing && myPokemon.hp > 0 && !(myPokemon.healBlocked > 0)) {
+  const heal = Math.max(1, Math.floor((myPokemon.maxHp ?? myPokemon.hp) / 16))
+  myPokemon.hp = Math.min(myPokemon.maxHp ?? myPokemon.hp, myPokemon.hp + heal)
+  await log(logsRef, `${myPokemon.name}${josa(myPokemon.name, "은는")} 아쿠아링으로 HP를 회복했다! (+${heal})`)
+  await log(logsRef, "", "heal_self", { slot: mySlot, hp: myPokemon.hp, maxHp: myPokemon.maxHp ?? myPokemon.hp })
+}
+if (enePokemon.aquaRing && enePokemon.hp > 0 && !(enePokemon.healBlocked > 0)) {
+  const heal = Math.max(1, Math.floor((enePokemon.maxHp ?? enePokemon.hp) / 16))
+  enePokemon.hp = Math.min(enePokemon.maxHp ?? enePokemon.hp, enePokemon.hp + heal)
+  await log(logsRef, `${enePokemon.name}${josa(enePokemon.name, "은는")} 아쿠아링으로 HP를 회복했다! (+${heal})`)
+  await log(logsRef, "", "heal", { slot: enemySlot, hp: enePokemon.hp, maxHp: enePokemon.maxHp ?? enePokemon.hp })
+}
+
 
         // 독/화상 EOT
         const eotHpBefore = { my: myPokemon.hp, ene: enePokemon.hp }
@@ -778,6 +871,57 @@ if (moveInfo?.curse) {
       return res.status(200).json({ ok: true })
     }
 
+    if (moveInfo?.aquaRing) {
+  myPokemon.aquaRing = true
+  await log(logsRef, `${myPokemon.name}${josa(myPokemon.name, "은는")} 물의 베일로 몸을 감쌌다!`)
+  await finishTurn({})
+  return res.status(200).json({ ok: true })
+}
+
+if (moveInfo?.healBlock) {
+  if (enePokemon.healBlocked > 0) {
+    await log(logsRef, `${enePokemon.name}${josa(enePokemon.name, "은는")} 이미 회복봉인 상태다!`)
+  } else {
+    enePokemon.healBlocked = 3
+    await log(logsRef, `${enePokemon.name}${josa(enePokemon.name, "의")} HP 회복이 봉인됐다!`)
+  }
+  await finishTurn({})
+  return res.status(200).json({ ok: true })
+}
+
+if (moveInfo?.torment) {
+  const { hit, hitType } = calcHit(myPokemon, moveInfo, enePokemon)
+  if (!hit) {
+    await log(logsRef, hitType === "evaded" ? `${enePokemon.name}에게는 맞지 않았다!` : `그러나 ${myPokemon.name}의 공격은 빗나갔다!`, hitType === "evaded" ? "evade" : "normal")
+  } else if (enePokemon.tormented) {
+    await log(logsRef, `${enePokemon.name}${josa(enePokemon.name, "은는")} 이미 트집 상태다!`)
+  } else {
+    enePokemon.tormented = true
+    await log(logsRef, `${enePokemon.name}${josa(enePokemon.name, "은는")} 트집을 잡혔다!`)
+  }
+  await finishTurn({})
+  return res.status(200).json({ ok: true })
+}
+
+if (moveInfo?.memento) {
+  const { hit, hitType } = calcHit(myPokemon, moveInfo, enePokemon)
+  if (!hit) {
+    await log(logsRef, hitType === "evaded" ? `${enePokemon.name}에게는 맞지 않았다!` : `그러나 ${myPokemon.name}의 공격은 빗나갔다!`, hitType === "evaded" ? "evade" : "normal")
+    await finishTurn({})
+    return res.status(200).json({ ok: true })
+  }
+  // 자신 기절
+  myPokemon.hp = 0
+  await log(logsRef, `${myPokemon.name}${josa(myPokemon.name, "은는")} 모든 것을 바쳤다!`)
+  await log(logsRef, "", "hit_self", { slot: mySlot, hp: 0, maxHp: myPokemon.maxHp ?? myPokemon.hp })
+  await log(logsRef, `${myPokemon.name}${josa(myPokemon.name, "은는")} 쓰러졌다!`, "faint")
+  // 상대 공격 -2
+  const rankMsgs = applyRankChanges({ targetAtk: -2, turns: 2 }, myPokemon, enePokemon, null)
+  for (const msg of rankMsgs) await log(logsRef, msg)
+  await finishTurn({})
+  return res.status(200).json({ ok: true })
+}
+
     if (moveInfo?.lightScreen) {
       myPokemon.lightScreenTurns = 5
       await log(logsRef, `${myPokemon.name}${josa(myPokemon.name, "은는")} 빛의 장막을 쳤다!`)
@@ -883,6 +1027,16 @@ if (moveInfo?.curse) {
           enePokemon.hp = Math.max(0, enePokemon.hp - damage)
           if (enePokemon.hp <= 0 && enePokemon.enduring) { enePokemon.hp = 1; enePokemon.enduring = false }
           await hitLog(enemySlot, enePokemon)
+          // 공중날기 중 전기 맞으면 강제 착지
+if (enePokemon.flyState?.flying && moves[moveData.name]?.type === "전기") {
+  enePokemon.flyState = null; enePokemon.flyMoveName = null
+  await log(logsRef, `${enePokemon.name}${josa(enePokemon.name, "은는")} 번개에 맞아 땅으로 떨어졌다!`)
+}
+// 구멍파기 중 땅 맞으면 강제 지상
+if (enePokemon.digState?.digging && moves[moveData.name]?.type === "땅") {
+  enePokemon.digState = null; enePokemon.digMoveName = null
+  await log(logsRef, `${enePokemon.name}${josa(enePokemon.name, "은는")} 지진에 맞아 땅 위로 튀어나왔다!`)
+}
           recordDmg(outrageUpdate, enemySlot, damage)  // ★ obj 명시
           if (multiplier > 1) await log(logsRef, "효과가 굉장했다!")
           if (multiplier < 1) await log(logsRef, "효과가 별로인 듯하다…")
@@ -935,13 +1089,18 @@ if (moveInfo?.curse) {
     }
 
     if (moveInfo?.healPulse) {
-      const heal = Math.max(1, Math.floor((enePokemon.maxHp ?? enePokemon.hp) * 0.22))
-      enePokemon.hp = Math.min(enePokemon.maxHp ?? enePokemon.hp, enePokemon.hp + heal)
-      await log(logsRef, "", "hit", { defender: enemySlot, hp: enePokemon.hp, maxHp: enePokemon.maxHp ?? enePokemon.hp })
-      await log(logsRef, `${enePokemon.name}${josa(enePokemon.name, "은는")} HP를 회복했다! (+${heal})`)
-      await finishTurn({})
-      return res.status(200).json({ ok: true })
-    }
+  if ((enePokemon.healBlocked ?? 0) > 0) {
+    await log(logsRef, `${enePokemon.name}${josa(enePokemon.name, "은는")} 회복봉인 상태라 회복할 수 없다!`)
+    await finishTurn({})
+    return res.status(200).json({ ok: true })
+  }
+  const heal = Math.max(1, Math.floor((enePokemon.maxHp ?? enePokemon.hp) * 0.22))
+  enePokemon.hp = Math.min(enePokemon.maxHp ?? enePokemon.hp, enePokemon.hp + heal)
+  await log(logsRef, "", "hit", { defender: enemySlot, hp: enePokemon.hp, maxHp: enePokemon.maxHp ?? enePokemon.hp })
+  await log(logsRef, `${enePokemon.name}${josa(enePokemon.name, "은는")} HP를 회복했다! (+${heal})`)
+  await finishTurn({})
+  return res.status(200).json({ ok: true })
+}
 
     if (moveInfo?.bide) {
       myPokemon.bideState = { turnsLeft: 2, damage: 0 }
@@ -965,6 +1124,14 @@ if (moveInfo?.curse) {
       await finishTurn({})
       return res.status(200).json({ ok: true })
     }
+
+    if (moveInfo?.ghostDive && !myPokemon.ghostDiveState?.diving) {
+  myPokemon.ghostDiveState = { diving: true }
+  myPokemon.ghostDiveMoveName = moveData.name
+  await log(logsRef, `${myPokemon.name}${josa(myPokemon.name, "은는")} 어디론가 사라졌다!`)
+  await finishTurn({})
+  return res.status(200).json({ ok: true })
+}
 
     if (moveInfo?.fakeOut) {
       const { hit, hitType } = calcHit(myPokemon, moveInfo, enePokemon)
@@ -1084,6 +1251,11 @@ if (moveInfo?.curse) {
 
       // ── 달빛
       if (moveInfo?.effect?.moonlight) {
+        if ((myPokemon.healBlocked ?? 0) > 0) {
+  await log(logsRef, `${myPokemon.name}${josa(myPokemon.name, "은는")} 회복봉인 상태라 회복할 수 없다!`)
+  await finishTurn({})
+  return res.status(200).json({ ok: true })
+}
         const enemyActive = enemyEntry[eneActiveIdx]
         const isUproar = enemyActive?.outrageState?.active &&
                          moves[enemyActive.outrageState.moveName]?.outrage?.confusion === false
@@ -1142,6 +1314,11 @@ if (moveInfo?.curse) {
       const rankMsgs = applyRankChanges(rankToApply, myPokemon, enePokemon, moveData.name)
       for (const msg of rankMsgs) await log(logsRef, msg)
       if (moveInfo?.effect?.heal) {
+      if ((myPokemon.healBlocked ?? 0) > 0) {
+  await log(logsRef, `${myPokemon.name}${josa(myPokemon.name, "은는")} 회복봉인 상태라 회복할 수 없다!`)
+  await finishTurn({})
+  return res.status(200).json({ ok: true })
+}
         const healRate = moveInfo.effect.heal
         const heal = Math.max(1, Math.floor((myPokemon.maxHp ?? myPokemon.hp) * healRate))
         myPokemon.hp = Math.min(myPokemon.maxHp ?? myPokemon.hp, myPokemon.hp + heal)
@@ -1217,6 +1394,16 @@ if (moveInfo?.curse) {
           enePokemon.hp = Math.max(0, enePokemon.hp - dmg)
           totalDmg += dmg
           await hitLog(enemySlot, enePokemon)
+          // 공중날기 중 전기 맞으면 강제 착지
+if (enePokemon.flyState?.flying && moves[moveData.name]?.type === "전기") {
+  enePokemon.flyState = null; enePokemon.flyMoveName = null
+  await log(logsRef, `${enePokemon.name}${josa(enePokemon.name, "은는")} 번개에 맞아 땅으로 떨어졌다!`)
+}
+// 구멍파기 중 땅 맞으면 강제 지상
+if (enePokemon.digState?.digging && moves[moveData.name]?.type === "땅") {
+  enePokemon.digState = null; enePokemon.digMoveName = null
+  await log(logsRef, `${enePokemon.name}${josa(enePokemon.name, "은는")} 지진에 맞아 땅 위로 튀어나왔다!`)
+}
           if (critical) await log(logsRef, "급소에 맞았다!", "critical")
           if (enePokemon.hp <= 0) break
         }
@@ -1300,6 +1487,7 @@ if (moveInfo?.curse) {
         const comebackReady = freshData[`comeback_ready_${mySlot}`] ?? false
         const comebackMult = (moveInfo?.comeback && comebackReady) ? 1.2 : 1.0
         const sickMult = (moveInfo?.sickPower && enePokemon.status) ? 1.2 : 1.0
+        const venomShockMult = (moveInfo?.venomShock && enePokemon.status === "독") ? 1.2 : 1.0
         const gutsMult = (moveInfo?.guts && myPokemon.status) ? 1.2 : 1.0
         const finisherMult = (moveInfo?.finisher && enePokemon.hp <= (enePokemon.maxHp ?? enePokemon.hp) * 0.5) ? 1.2 : 1.0
 
@@ -1320,6 +1508,15 @@ if (moveInfo?.curse) {
         if (moveInfo?.gyroBall) powerOverride = calcGyroBallPower(myPokemon, enePokemon)
         if (moveInfo?.assistPower) powerOverride = calcAssistPower(myPokemon)
 
+          if (moveInfo?.waterspout) {
+  const hpRatio = myPokemon.hp / (myPokemon.maxHp ?? myPokemon.hp)
+  if (hpRatio <= 0.2) powerOverride = 30
+  else if (hpRatio <= 0.5) powerOverride = 40
+  else if (hpRatio <= 0.7) powerOverride = 50
+  else if (hpRatio <= 0.9) powerOverride = 60
+  else powerOverride = 70
+}
+
 if (moveInfo?.bodyPress) {
           const defRankEneForBP = getActiveRank(enePokemon, "def")
           const { damage, multiplier, critical } = calcBodyPressDamage(myPokemon, enePokemon, defRankEneForBP, currentWeather)
@@ -1329,6 +1526,16 @@ if (moveInfo?.bodyPress) {
             enePokemon.hp = Math.max(0, enePokemon.hp - damage)
             if (enePokemon.hp <= 0 && enePokemon.enduring) { enePokemon.hp = 1; enePokemon.enduring = false }
             await hitLog(enemySlot, enePokemon)
+            // 공중날기 중 전기 맞으면 강제 착지
+if (enePokemon.flyState?.flying && moves[moveData.name]?.type === "전기") {
+  enePokemon.flyState = null; enePokemon.flyMoveName = null
+  await log(logsRef, `${enePokemon.name}${josa(enePokemon.name, "은는")} 번개에 맞아 땅으로 떨어졌다!`)
+}
+// 구멍파기 중 땅 맞으면 강제 지상
+if (enePokemon.digState?.digging && moves[moveData.name]?.type === "땅") {
+  enePokemon.digState = null; enePokemon.digMoveName = null
+  await log(logsRef, `${enePokemon.name}${josa(enePokemon.name, "은는")} 지진에 맞아 땅 위로 튀어나왔다!`)
+}
             recordDmg(revengeUpdate, enemySlot, damage)
             if (multiplier > 1) await log(logsRef, "효과가 굉장했다!")
             if (multiplier < 1) await log(logsRef, "효과가 별로인 듯하다…")
@@ -1360,7 +1567,7 @@ if (moveInfo?.bodyPress) {
 
         const { damage: rawDmg, multiplier, critical } = calcDamage(myPokemon, moveData.name, enePokemon, atkRank, defRankEne, powerOverride, atkStatOverride, currentWeather)
         const tricksterMult = moveInfo?.trickster ? 0.7 : 1.0
-        const damage = counterDamage ?? Math.floor(rawDmg * comebackMult * sickMult * gutsMult * revivedMult * tricksterMult * finisherMult)
+        const damage = counterDamage ?? Math.floor(rawDmg * comebackMult * sickMult * gutsMult * revivedMult * tricksterMult * finisherMult * venomShockMult)
 
         if (multiplier === 0) {
           await log(logsRef, `${enePokemon.name}에게는 효과가 없다…`)
@@ -1371,6 +1578,16 @@ if (moveInfo?.bodyPress) {
             enePokemon.enduring = false
           }
           await hitLog(enemySlot, enePokemon)
+          // 공중날기 중 전기 맞으면 강제 착지
+if (enePokemon.flyState?.flying && moves[moveData.name]?.type === "전기") {
+  enePokemon.flyState = null; enePokemon.flyMoveName = null
+  await log(logsRef, `${enePokemon.name}${josa(enePokemon.name, "은는")} 번개에 맞아 땅으로 떨어졌다!`)
+}
+// 구멍파기 중 땅 맞으면 강제 지상
+if (enePokemon.digState?.digging && moves[moveData.name]?.type === "땅") {
+  enePokemon.digState = null; enePokemon.digMoveName = null
+  await log(logsRef, `${enePokemon.name}${josa(enePokemon.name, "은는")} 지진에 맞아 땅 위로 튀어나왔다!`)
+}
           recordDmg(revengeUpdate, enemySlot, damage)  // ★ obj 명시
           if (enePokemon.bideState) {
             enePokemon.bideState.damage = (enePokemon.bideState.damage ?? 0) + damage
@@ -1397,6 +1614,24 @@ if (moveInfo?.bodyPress) {
           }
           const effectMsgs = applyMoveEffect(moveInfo?.effect ?? null, myPokemon, enePokemon, damage, currentWeather)
           for (const msg of effectMsgs) await log(logsRef, msg)
+            if (moveInfo?.throatChop && enePokemon.hp > 0) {
+  enePokemon.throatChopped = 2
+  await log(logsRef, `${enePokemon.name}${josa(enePokemon.name, "은는")} 목을 눌려 소리를 낼 수 없게 됐다!`)
+}
+
+if (moveInfo?.enchantedVoice && enePokemon.hp > 0) {
+  const eneRanks = enePokemon.ranks ?? {}
+  const eneBase = { atk: enePokemon.attack ?? 3, def: enePokemon.defense ?? 3, spd: enePokemon.speed ?? 3 }
+  const hasBuff =
+    ((eneRanks.atkTurns ?? 0) > 0 && (eneRanks.atk ?? eneBase.atk) > eneBase.atk) ||
+    ((eneRanks.defTurns ?? 0) > 0 && (eneRanks.def ?? eneBase.def) > eneBase.def) ||
+    ((eneRanks.spdTurns ?? 0) > 0 && (eneRanks.spd ?? eneBase.spd) > eneBase.spd)
+  if (hasBuff && (enePokemon.confusion ?? 0) <= 0) {
+    enePokemon.confusion = Math.floor(Math.random() * 3) + 1
+    await log(logsRef, `${enePokemon.name}${josa(enePokemon.name, "은는")} 혼란에 빠졌다!`)
+  }
+}
+
           if (moveInfo?.effect?.drain && damage > 0 && myPokemon.hp > (freshData[`${mySlot}_entry`][myActiveIdx].hp)) {
             await log(logsRef, "", "heal_self", { slot: mySlot, hp: myPokemon.hp, maxHp: myPokemon.maxHp ?? myPokemon.hp })
           }

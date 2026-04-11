@@ -119,6 +119,8 @@ export const moves = {
   "열탕":         { power: 50, type: "물", accuracy: 100, alwaysHit: false, effect: { chance: 0.3, status: "화상" } },
   "셸블레이드":         { power: 45,  type: "물", accuracy: 95, alwaysHit: false, effect: null,
                     rank: { chance: 0.5, targetDef: -1, turns: 2 } },
+  "아쿠아링": { power: 0, type: "물", accuracy: 100, alwaysHit: true, effect: null, aquaRing: true, targetSelf: true },
+  "해수스파우팅": { power: 70, type: "물", accuracy: 100, alwaysHit: false, effect: null, waterspout: true },
 
   // ───── 전기 ─────
   "번개펀치":     { power: 45, type: "전기", accuracy: 100, alwaysHit: false, effect: { chance: 0.1, status: "마비" } },
@@ -189,6 +191,7 @@ export const moves = {
                 effect: { chance: 1, status: "독" }, poisonPowder: true },
   "똬리틀기": { power: 0, type: "독", accuracy: 100, alwaysHit: true, targetSelf: true, effect: null,
                   rank: { atk: 1, def: 1, spd: 1, turns: 3 } },
+  "베놈쇼크": { power: 40, type: "독", accuracy: 100, alwaysHit: false, effect: null, venomShock: true },
 
   // ───── 땅 ─────
   "지진":       { power: 50, type: "땅", accuracy: 100, alwaysHit: false, effect: null },
@@ -241,6 +244,7 @@ export const moves = {
                       lightScreen: true, targetSelf: true },
   // 어시스트파워: assistPower 플래그
   "어시스트파워":   { power: 30, type: "에스퍼", accuracy: 100, alwaysHit: false, effect: null, assistPower: true },
+  "회복봉인": { power: 0, type: "에스퍼", accuracy: 100, alwaysHit: true, effect: null, healBlock: true, targetSelf: false },
 
   // ───── 벌레 ─────
   "달려들기":   { power: 40, type: "벌레", accuracy: 100, alwaysHit: false,
@@ -272,6 +276,7 @@ export const moves = {
                   effect: { chance: 0.3, volatile: "풀죽음" } },
   "괴상한바람":   { power: 40, type: "고스트", accuracy: 100, alwaysHit: false, effect: null, rank: { chance: 0.1, spd: 1, def: 1, atk: 1, turns: 3 } },
   "저주": { power: 0, type: "고스트", accuracy: 100, alwaysHit: true, effect: null, curse: true, targetSelf: true },
+  "고스트다이브": { power: 50, type: "고스트", accuracy: 100, alwaysHit: false, effect: null, ghostDive: true },
 
   // ───── 드래곤 ─────
   "드래곤크루":   { power: 50, type: "드래곤", accuracy: 100, alwaysHit: false, effect: null },
@@ -290,6 +295,10 @@ export const moves = {
 
   "역린":     { power: 60, type: "드래곤", accuracy: 100, alwaysHit: false, effect: null,
               outrage: { confusion: true, minTurn: 2, maxTurn: 3, powers: [60, 45, 30] } },
+ "용성군":   { power: 60, type: "드래곤", accuracy: 90, alwaysHit: false, effect: null,
+                  rank: { def: -2, turns: 2 } },
+
+
 
   // ───── 악 ─────
   "악의파동":   { power: 50, type: "악", accuracy: 100, alwaysHit: false,
@@ -305,6 +314,8 @@ export const moves = {
   "거짓울음":   { power: 0, type: "악", accuracy: 100, alwaysHit: false, effect: null,
                   rank: { targetDef: -2, turns: 2 } },
   "승부굳히기": { power: 40, type: "악", accuracy: 100, alwaysHit: false, effect: null, finisher: true },
+  "지옥찌르기": { power: 50, type: "악", accuracy: 100, alwaysHit: false, effect: null, throatChop: true },
+  "트집": { power: 0, type: "악", accuracy: 100, alwaysHit: false, effect: null, torment: true, targetSelf: false },
 
   // ───── 강철 ─────
   "아이언테일": { power: 50, type: "강철", accuracy: 75,  alwaysHit: false, effect: null,
@@ -341,6 +352,7 @@ export const moves = {
                     rank: { targetAtk: -1, turns: 2 } },
   "달빛":     { power: 0,  type: "페어리", accuracy: 100, alwaysHit: true,
               effect: { moonlight: true }, targetSelf: true },
+  "매혹의보이스": { power: 50, type: "페어리", accuracy: 100, alwaysHit: false, effect: null, enchantedVoice: true },
 
 
   // ───── 날씨 ─────

@@ -517,6 +517,16 @@ function listenRoom() {
           return
         }
 
+        // 고스트다이브 2턴째 자동 발동
+if (myPokemon?.ghostDiveState?.diving) {
+  actionDone = true
+  fetch(`${API}/api/use-move`, {
+    method: "POST", headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ roomId: ROOM_ID, mySlot, moveIdx: 0 })
+  })
+  return
+}
+
         // 역린/꽃잎댄스/소란피기 자동 발동
 if (myPokemon?.outrageState?.active) {
   const outrageMoveIdx = (myPokemon.moves ?? []).findIndex(m => m.name === myPokemon.outrageState.moveName)
@@ -678,6 +688,9 @@ function updateMoveButtons(data) {
     const lockedByChain = !!(chainBound && chainBound.turnsLeft > 0 && chainBound.moveName === move.name)
     const lockedByBide = !!(myPokemon?.bideState && myPokemon.bideState.turnsLeft > 0)
     const lockedByOutrage = !!(myPokemon?.outrageState?.active)
+    const soundMoves = ["금속음","돌림노래","바크아웃","소란피기","싫은소리","울부짖기","울음소리","차밍보이스","비밀이야기","하이퍼보이스","매혹의보이스"]
+const lockedByThroatChop = !!((myPokemon?.throatChopped ?? 0) > 0 && soundMoves.includes(move.name))
+const lockedByTorment = !!(myPokemon?.tormented && move.name === myPokemon?.lastUsedMove)
     btn.innerHTML = `<span style="display:block;font-size:13px;font-weight:bold;">${move.name}</span><span style="display:block;font-size:10px;opacity:0.85;">PP: ${move.pp} | ${accText}</span>`
     const color = typeColors[moveInfo?.type] ?? "#a0a0a0"
     btn.style.setProperty("--btn-color", color); btn.style.background = color
@@ -685,7 +698,7 @@ function updateMoveButtons(data) {
     const queueBusy = logQueue.length > 0 || isProcessing
     const disabled = isSpectator || fainted || move.pp <= 0 || !myTurn || actionDone
   || !lrUnlocked || lockedByRoll || lockedByChain || lockedByBide || lockedByOutrage || queueBusy
-  || isFlying || isDigging || forceSwitch
+  || isFlying || isDigging || forceSwitch|| lockedByThroatChop|| myPokemon?.ghostDiveState?.diving || lockedByTorment
     if (disabled) { btn.disabled = true; btn.onclick = null }
     else { btn.disabled = false; btn.onclick = () => { playSound(SFX_BTN); useMove(i, data) } }
   }

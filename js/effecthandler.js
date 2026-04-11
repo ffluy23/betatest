@@ -62,6 +62,7 @@ export function applyMoveEffect(moveEffect, attacker, defender, damage = 0, weat
 
   // 흡수
   if (moveEffect.drain) {
+    if ((attacker.healBlocked ?? 0) > 0) return []
     const heal = Math.floor(damage * moveEffect.drain)
     if (heal > 0) {
       attacker.hp = Math.min(attacker.maxHp ?? attacker.hp, attacker.hp + heal)
@@ -178,13 +179,17 @@ export function tickVolatiles(pokemon) {
   }
   // 희망사항 회복
   if ((pokemon.wishTurns ?? 0) > 0) {
-    pokemon.wishTurns--
-    if (!pokemon.wishTurns) {
+  pokemon.wishTurns--
+  if (!pokemon.wishTurns) {
+    if ((pokemon.healBlocked ?? 0) > 0) {
+      msgs.push(`${pokemon.name}${josa(pokemon.name, "은는")} 회복봉인 상태라 희망사항이 실패했다!`)
+    } else {
       const heal = Math.max(1, Math.floor((pokemon.maxHp ?? pokemon.hp) * 0.12))
       pokemon.hp = Math.min(pokemon.maxHp ?? pokemon.hp, pokemon.hp + heal)
       msgs.push(`${pokemon.name}${josa(pokemon.name, "은는")} 희망사항으로 HP를 회복했다! (+${heal})`)
     }
   }
+}
   return msgs
 }
 
@@ -210,11 +215,20 @@ export function applyEndOfTurnDamage(entries) {
   for (const entry of entries) {
     for (const pkmn of entry) {
       if (pkmn.hp <= 0) continue
-      if (pkmn.status !== "독" && pkmn.status !== "화상") continue
-      const dmg = Math.max(1, Math.floor((pkmn.maxHp ?? pkmn.hp) / 16))
-      pkmn.hp = Math.max(0, pkmn.hp - dmg)
-      msgs.push(`${pkmn.name}${josa(pkmn.name, "은는")} ${statusName(pkmn.status)} 때문에 ${dmg} 데미지를 입었다!`)
-      if (pkmn.hp <= 0) { msgs.push(`${pkmn.name}${josa(pkmn.name, "은는")} 쓰러졌다!`); anyFainted = true }
+      // 독/화상
+      if (pkmn.status === "독" || pkmn.status === "화상") {
+        const dmg = Math.max(1, Math.floor((pkmn.maxHp ?? pkmn.hp) / 16))
+        pkmn.hp = Math.max(0, pkmn.hp - dmg)
+        msgs.push(`${pkmn.name}${josa(pkmn.name, "은는")} ${statusName(pkmn.status)} 때문에 ${dmg} 데미지를 입었다!`)
+        if (pkmn.hp <= 0) { msgs.push(`${pkmn.name}${josa(pkmn.name, "은는")} 쓰러졌다!`); anyFainted = true }
+      }
+      // 저주
+      if (pkmn.cursed) {
+        const dmg = Math.max(1, Math.floor((pkmn.maxHp ?? pkmn.hp) / 8))
+        pkmn.hp = Math.max(0, pkmn.hp - dmg)
+        msgs.push(`${pkmn.name}${josa(pkmn.name, "은는")} 저주 때문에 ${dmg} 데미지를 입었다!`)
+        if (pkmn.hp <= 0) { msgs.push(`${pkmn.name}${josa(pkmn.name, "은는")} 쓰러졌다!`); anyFainted = true }
+      }
     }
   }
   return { msgs, anyFainted }
