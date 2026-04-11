@@ -277,6 +277,7 @@ export const moves = {
   "괴상한바람":   { power: 40, type: "고스트", accuracy: 100, alwaysHit: false, effect: null, rank: { chance: 0.1, spd: 1, def: 1, atk: 1, turns: 3 } },
   "저주": { power: 0, type: "고스트", accuracy: 100, alwaysHit: true, effect: null, curse: true, targetSelf: true },
   "고스트다이브": { power: 50, type: "고스트", accuracy: 100, alwaysHit: false, effect: null, ghostDive: true },
+  "추억의선물": { power: 0, type: "악", accuracy: 100, alwaysHit: false, effect: null, memento: true, targetSelf: false },
 
   // ───── 드래곤 ─────
   "드래곤크루":   { power: 50, type: "드래곤", accuracy: 100, alwaysHit: false, effect: null },
