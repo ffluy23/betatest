@@ -1335,6 +1335,11 @@ if (enePokemon.digState?.digging && moves[moveData.name]?.type === "땅") {
       return res.status(200).json({ ok: true })
     }
 
+    if (enePokemon.hp <= 0) {
+  await finishTurn(revengeUpdate ?? {})
+  return res.status(200).json({ ok: true })
+}
+
     // ── power > 0 공격 기술
     resetRankStack(myPokemon)
     myPokemon.lastDefendMove = null; myPokemon.defendStack = 0
