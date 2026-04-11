@@ -655,7 +655,10 @@ async function leaveGame() {
     hit_event: null, background: null, dice_event: null,
     revenge_ready_p1: false, revenge_ready_p2: false,
     comeback_ready_p1: false, comeback_ready_p2: false,
-    force_switch_p1: false, force_switch_p2: false
+    force_switch_p1: false, force_switch_p2: false,
+      stealth_rock_p1: false, stealth_rock_p2: false,
+  toxic_spikes_p1: false, toxic_spikes_p2: false,
+    
   })
   location.href = "../main.html"
 }
