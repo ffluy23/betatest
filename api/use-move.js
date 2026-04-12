@@ -1323,7 +1323,7 @@ else if (critical) await log(logsRef, "급소에 맞았다!", "critical")
     myPokemon.lastDefendMove = null; myPokemon.defendStack = 0
 
     const atkRank = getActiveRank(myPokemon, "atk")
-    const defRankEne = getActiveRank(enePokemon, "def")
+    const defRankEne = moveInfo?.ignoreDefRank ? 0 : getActiveRank(enePokemon, "def")
     const wasDefending = enePokemon.defending ?? false
     enePokemon.defending = false; enePokemon.defendTurns = 0
 
