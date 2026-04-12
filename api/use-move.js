@@ -28,23 +28,13 @@ function sanitizeForFirestore(obj) {
   return obj
 }
 function isAllFainted(entry) { return entry.every(p => p.hp <= 0) }
-function defaultRanks(pokemon) {
-  if (!pokemon) return { atk: 0, atkTurns: 0, def: 0, defTurns: 0, spd: 0, spdTurns: 0 }
-  return {
-    atk: pokemon.attack ?? 3, atkTurns: 0,
-    def: pokemon.defense ?? 3, defTurns: 0,
-    spd: pokemon.speed ?? 3, spdTurns: 0
-  }
+function defaultRanks() {
+  return { atk: 0, atkTurns: 0, def: 0, defTurns: 0, spd: 0, spdTurns: 0 }
 }
 
 function getActiveRank(pokemon, key) {
   const r = pokemon.ranks ?? {}
-  const statKey = key === "atk" ? "attack" : key === "def" ? "defense" : "speed"
-  const base = pokemon[statKey] ?? 3
-  if ((r[`${key}Turns`] ?? 0) > 0) {
-    return (r[key] ?? base) - base
-  }
-  return 0
+  return (r[`${key}Turns`] ?? 0) > 0 ? (r[key] ?? 0) : 0
 }
 
 function resetRankStack(pokemon) {
@@ -75,18 +65,16 @@ function applyRankChanges(r, self, target, moveName) {
   const roll = r.chance !== undefined ? Math.random() < r.chance : true
   if (!roll) return []
 
-  const getStat = (p, key) => p[key === "atk" ? "attack" : key === "def" ? "defense" : "speed"] ?? 3
-  const getR = (p, key) => {
-    const rr = p.ranks ?? {}
-    return (rr[`${key}Turns`] ?? 0) > 0 ? (rr[key] ?? getStat(p, key)) : getStat(p, key)
-  }
-
-  const selfR   = { atk: getR(self, "atk"),   atkTurns: (self.ranks ?? {}).atkTurns ?? 0,
-                    def: getR(self, "def"),   defTurns: (self.ranks ?? {}).defTurns ?? 0,
-                    spd: getR(self, "spd"),   spdTurns: (self.ranks ?? {}).spdTurns ?? 0 }
-  const targetR = { atk: getR(target, "atk"), atkTurns: (target.ranks ?? {}).atkTurns ?? 0,
-                    def: getR(target, "def"), defTurns: (target.ranks ?? {}).defTurns ?? 0,
-                    spd: getR(target, "spd"), spdTurns: (target.ranks ?? {}).spdTurns ?? 0 }
+ const selfR = {
+  atk: (self.ranks?.atkTurns ?? 0) > 0 ? (self.ranks?.atk ?? 0) : 0, atkTurns: self.ranks?.atkTurns ?? 0,
+  def: (self.ranks?.defTurns ?? 0) > 0 ? (self.ranks?.def ?? 0) : 0, defTurns: self.ranks?.defTurns ?? 0,
+  spd: (self.ranks?.spdTurns ?? 0) > 0 ? (self.ranks?.spd ?? 0) : 0, spdTurns: self.ranks?.spdTurns ?? 0,
+}
+const targetR = {
+  atk: (target.ranks?.atkTurns ?? 0) > 0 ? (target.ranks?.atk ?? 0) : 0, atkTurns: target.ranks?.atkTurns ?? 0,
+  def: (target.ranks?.defTurns ?? 0) > 0 ? (target.ranks?.def ?? 0) : 0, defTurns: target.ranks?.defTurns ?? 0,
+  spd: (target.ranks?.spdTurns ?? 0) > 0 ? (target.ranks?.spd ?? 0) : 0, spdTurns: target.ranks?.spdTurns ?? 0,
+}
 
   const isSameMove = moveName && self.lastRankMove === moveName
   const stack = self.rankStack ?? 0
