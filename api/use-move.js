@@ -776,8 +776,8 @@ if (enePokemon.aquaRing && enePokemon.hp > 0 && !(enePokemon.healBlocked > 0)) {
       } else {
         sanitizeEntries()
       }
-
-      for (const msg of expiredMsgs) await log(logsRef, msg)
+console.log("expiredMsgs:", expiredMsgs)
+for (const msg of expiredMsgs) await log(logsRef, msg)
 
   
 
