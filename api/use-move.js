@@ -142,7 +142,7 @@ function calcHit(attacker, moveInfo, defender) {
   return { hit: false, hitType: "evaded" }
 if (defender.digState?.digging && moveInfo._name !== "지진")
   return { hit: false, hitType: "evaded" }
-if (def.ghostDiveState?.diving)
+if (defender.ghostDiveState?.diving)
   return { hit: false, hitType: "evaded" }
   if (moveInfo.alwaysHit || moveInfo.skipEvasion) return { hit: true, hitType: "hit" }
   const as = Math.max(1, (attacker.speed ?? 3) - getStatusSpdPenalty(attacker))
