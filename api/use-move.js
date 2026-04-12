@@ -582,26 +582,30 @@ if (myPokemon.futureSight?.ready) {
     // 행동 불능 체크
     const preAction = checkPreActionStatus(myPokemon)
     for (const msg of preAction.msgs) await log(logsRef, msg)
-    if (preAction.blocked) {
-      resetRankStack(myPokemon)
-      myPokemon.rollState = { active: false, turn: 0 }
-      myPokemon.flyState = null
-      myPokemon.digState = null
-      if ((myPokemon.defendTurns ?? 0) > 0) { myPokemon.defendTurns--; if (!myPokemon.defendTurns) myPokemon.defending = false }
-      await safeUpdate(roomRef, { [`${mySlot}_entry`]: myEntry, current_turn: enemySlot, turn_count: nextTurnCount })
-      return res.status(200).json({ ok: true })
-    }
+   if (preAction.blocked) {
+  resetRankStack(myPokemon)
+  myPokemon.rollState = { active: false, turn: 0 }
+  myPokemon.flyState = null
+  myPokemon.digState = null
+  if ((myPokemon.defendTurns ?? 0) > 0) { myPokemon.defendTurns--; if (!myPokemon.defendTurns) myPokemon.defending = false }
+  const blockedExpiredMsgs = tickMyRanks(myPokemon)
+  for (const msg of blockedExpiredMsgs) await log(logsRef, msg)
+  await safeUpdate(roomRef, { [`${mySlot}_entry`]: myEntry, current_turn: enemySlot, turn_count: nextTurnCount })
+  return res.status(200).json({ ok: true })
+}
 
     // 혼란 체크
     const confResult = checkConfusion(myPokemon)
     for (const msg of confResult.msgs) await log(logsRef, msg)
-    if (confResult.selfHit) {
-      resetRankStack(myPokemon)
-      myPokemon.rollState = { active: false, turn: 0 }
-      myPokemon.flyState = null
-      myPokemon.digState = null
-      await hitSelfLog()
-      if (isAllFainted(myEntry)) {
+if (confResult.selfHit) {
+  resetRankStack(myPokemon)
+  myPokemon.rollState = { active: false, turn: 0 }
+  myPokemon.flyState = null
+  myPokemon.digState = null
+  const confExpiredMsgs = tickMyRanks(myPokemon)
+  for (const msg of confExpiredMsgs) await log(logsRef, msg)
+  await hitSelfLog()
+  if (isAllFainted(myEntry)) {
         await safeUpdate(roomRef, { [`${mySlot}_entry`]: myEntry, turn_count: nextTurnCount, game_over: true, winner: enemyName, current_turn: null })
         await log(logsRef, `${enemyName}의 승리!`, "win")
       } else {
@@ -628,8 +632,9 @@ if (myPokemon.tormented && moveData.name === myPokemon.lastUsedMove) {
     //  finishTurn
     // ══════════════════════════════════════════════════
     async function finishTurn(revengeUpdate = {}) {
-      const expiredMsgs = tickMyRanks(myPokemon)
-      clearRankStack(myPokemon)
+  const expiredMsgs = tickMyRanks(myPokemon)
+  clearRankStack(myPokemon)
+  for (const msg of expiredMsgs) await log(logsRef, msg)  // ← 여기로 올려
 
       const nextTurn = nextTurnCount
 
@@ -776,8 +781,7 @@ if (enePokemon.aquaRing && enePokemon.hp > 0 && !(enePokemon.healBlocked > 0)) {
       } else {
         sanitizeEntries()
       }
-console.log("expiredMsgs:", expiredMsgs)
-for (const msg of expiredMsgs) await log(logsRef, msg)
+
 
   
 
