@@ -134,6 +134,8 @@ function applyRankChanges(r, self, target, moveName) {
     if (r.targetSpd < 0) { if (targetR.spd <= MIN_SPD) msgs.push(`${target.name}의 스피드는 더 이상 내려가지 않는다!`); else { const p = targetR.spd; targetR.spd = Math.max(MIN_SPD, targetR.spd + r.targetSpd); targetR.spdTurns = r.turns ?? 2; msgs.push(`${target.name}의 스피드가 ${p - targetR.spd} 하락했다!`) } }
     else if (r.targetSpd > 0) { const p = targetR.spd; targetR.spd = Math.min(base + MAX_SPD_BONUS, targetR.spd + r.targetSpd); targetR.spdTurns = r.turns ?? 2; msgs.push(`${target.name}의 스피드가 ${targetR.spd - p} 상승했다!`) }
   }
+    self.ranks = selfR; target.ranks = targetR  // ← 이것도 없었음, 추가
+  return msgs  
 }
 
 function calcHit(attacker, moveInfo, defender) {

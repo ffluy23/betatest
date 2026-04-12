@@ -719,6 +719,7 @@ function checkLastResortUnlocked(pokemon, lrIdx, movesArr) {
 function updateBenchButtons(data) {
   const bench = document.getElementById("bench-container"); bench.innerHTML = ""
   const myEntry = data[`${mySlot}_entry`], activeIdx = data[`${mySlot}_active_idx`]
+  if (!myEntry) return
   const forceSwitch = !!(data[`force_switch_${mySlot}`] && data.current_turn === mySlot)
 
   myEntry.forEach((pkmn, idx) => {
