@@ -1515,26 +1515,26 @@ else if (critical) await log(logsRef, "급소에 맞았다!", "critical")
         }
 
         if (moveInfo?.bodyPress) {
-          const defRankEneForBP = getActiveRank(enePokemon, "def")
-          const { damage, multiplier, critical } = calcBodyPressDamage(myPokemon, enePokemon, defRankEneForBP, currentWeather)
-          if (multiplier === 0) {
-            await log(logsRef, `${enePokemon.name}에게는 효과가 없다…`)
-          } else {
-            enePokemon.hp = Math.max(0, enePokemon.hp - damage)
-            if (enePokemon.hp <= 0 && enePokemon.enduring) { enePokemon.hp = 1; enePokemon.enduring = false }
-            await hitLog(enemySlot, enePokemon)
-            if (enePokemon.flyState?.flying && moves[moveData.name]?.type === "번개") { enePokemon.flyState = null; enePokemon.flyMoveName = null; await log(logsRef, `${enePokemon.name}${josa(enePokemon.name, "은는")} 번개에 맞아 땅으로 떨어졌다!`) }
-            if (enePokemon.digState?.digging && moves[moveData.name]?.type === "지진") { enePokemon.digState = null; enePokemon.digMoveName = null; await log(logsRef, `${enePokemon.name}${josa(enePokemon.name, "은는")} 지진에 맞아 땅 위로 튀어나왔다!`) }
-            recordDmg(revengeUpdate, enemySlot, damage)
-          if (multiplier > 1) await log(logsRef, "효과가 굉장했다!")
-if (multiplier < 1) await log(logsRef, "효과가 별로인 듯하다…")
-if (minRoll) await log(logsRef, `${minDice}! (최소 피해 보장)`)
-else if (critical) await log(logsRef, "급소에 맞았다!", "critical")
-            if (enePokemon.hp <= 0) await log(logsRef, `${enePokemon.name}${josa(enePokemon.name, "은는")} 쓰러졌다!`, "faint")
-          }
-          await finishTurn(revengeUpdate)
-          return res.status(200).json({ ok: true })
-        }
+  const defRankEneForBP = getActiveRank(enePokemon, "def")
+  const { damage, multiplier, critical } = calcBodyPressDamage(myPokemon, enePokemon, defRankEneForBP, currentWeather)
+  if (multiplier === 0) {
+    await log(logsRef, `${enePokemon.name}에게는 효과가 없다…`)
+  } else {
+    enePokemon.hp = Math.max(0, enePokemon.hp - damage)
+    if (enePokemon.hp <= 0 && enePokemon.enduring) { enePokemon.hp = 1; enePokemon.enduring = false }
+    await hitLog(enemySlot, enePokemon)
+    if (enePokemon.flyState?.flying && moves[moveData.name]?.type === "번개") { enePokemon.flyState = null; enePokemon.flyMoveName = null; await log(logsRef, `${enePokemon.name}${josa(enePokemon.name, "은는")} 번개에 맞아 땅으로 떨어졌다!`) }
+    if (enePokemon.digState?.digging && moves[moveData.name]?.type === "지진") { enePokemon.digState = null; enePokemon.digMoveName = null; await log(logsRef, `${enePokemon.name}${josa(enePokemon.name, "은는")} 지진에 맞아 땅 위로 튀어나왔다!`) }
+    recordDmg(revengeUpdate, enemySlot, damage)
+    if (multiplier > 1) await log(logsRef, "효과가 굉장했다!")
+    if (multiplier < 1) await log(logsRef, "효과가 별로인 듯하다…")
+    if (critical) await log(logsRef, "급소에 맞았다!", "critical")
+    if (enePokemon.hp <= 0) await log(logsRef, `${enePokemon.name}${josa(enePokemon.name, "은는")} 쓰러졌다!`, "faint")
+  }
+  // ← 여기로 빠져나와야 함 (if/else 블록 바깥)
+  await finishTurn(revengeUpdate)
+  return res.status(200).json({ ok: true })
+}
 
         if (moveInfo?.fixedDamage) {
           const defTypes = Array.isArray(enePokemon.type) ? enePokemon.type : [enePokemon.type]
