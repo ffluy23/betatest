@@ -664,6 +664,7 @@ async function leaveGame() {
 }
 
 function updateMoveButtons(data) {
+  if (!mySlot) return
   const typeColors = {
     "노말": "#949495", "불": "#e56c3e", "물": "#5185c5", "전기": "#fbb917", "풀": "#66a945",
     "얼음": "#6dc8eb", "격투": "#e09c40", "독": "#735198", "땅": "#9c7743", "바위": "#bfb889",
@@ -718,6 +719,7 @@ function checkLastResortUnlocked(pokemon, lrIdx, movesArr) {
 
 function updateBenchButtons(data) {
   const bench = document.getElementById("bench-container"); bench.innerHTML = ""
+   if (!mySlot) return
   const myEntry = data[`${mySlot}_entry`], activeIdx = data[`${mySlot}_active_idx`]
   if (!myEntry) return
   const forceSwitch = !!(data[`force_switch_${mySlot}`] && data.current_turn === mySlot)

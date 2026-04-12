@@ -803,6 +803,11 @@ if (enePokemon.aquaRing && enePokemon.hp > 0 && !(enePokemon.healBlocked > 0)) {
 
       for (const msg of expiredMsgs) await log(logsRef, msg)
 
+        if (!isSecondToAct) {
+  const expiredEneMsgs = tickMyRanks(enePokemon)
+  for (const msg of expiredEneMsgs) await log(logsRef, msg)
+}
+
       const myFainted = myPokemon.hp <= 0
       const eneFainted = enePokemon.hp <= 0
       if (myFainted) { myPokemon.bideState = null; myPokemon.rollState = { active: false, turn: 0 }; myPokemon.flyState = null; myPokemon.digState = null }
