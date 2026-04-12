@@ -109,7 +109,6 @@ export const moves = {
 
   // ───── 물 ─────
   "거품광선":     { power: 40, type: "물", accuracy: 100, alwaysHit: false, effect: null },
-  "집게해머":     { power: 50, type: "물", accuracy: 95, alwaysHit: false, effect: null, highCrit: true },
   "껍질에숨기":   { power: 0,  type: "물", accuracy: 100, alwaysHit: true, targetSelf: true, effect: null,
                     rank: { def: 1, turns: 2 } },
   "거품":         { power: 40, type: "물", accuracy: 100, alwaysHit: false, effect: null },
@@ -260,7 +259,6 @@ export const moves = {
   "실뿜기":     { power: 0,  type: "벌레", accuracy: 95,  alwaysHit: false,
                   rank: { targetSpd: -2, turns: 3 } },
   "벌레먹음":   { power: 40, type: "벌레", accuracy: 100, alwaysHit: false, effect: null },
-  "시저크로스":   { power: 50, type: "벌레", accuracy: 100, alwaysHit: false, effect: null },
   "꽃가루경단":   { power: 50, type: "벌레", accuracy: 100, alwaysHit: false, effect: null },
   "흡혈":       { power: 50, type: "벌레", accuracy: 100, alwaysHit: false, effect: { drain: 0.15 } },
   "유턴": { power: 40, type: "벌레", accuracy: 100, alwaysHit: false,
@@ -269,6 +267,8 @@ export const moves = {
                   effect: { chance: 0.1, volatile: "혼란" } },
   "하드롤러":     { power: 40, type: "벌레", accuracy: 100, alwaysHit: false,
                   effect: { chance: 0.3, volatile: "풀죽음" } },
+  "나비춤":   { power: 0, type: "벌레", accuracy: 100, alwaysHit: true, effect: null, rank: { atk: 1, def: 1, spd: 1, turns: 3 } },
+  "벌레의야단법석":   { power: 50, type: "벌레", accuracy: 100, alwaysHit: false, effect: null, targetSelf:false, rank: { chance: 0.1, targetDef: 1, turns: 2 } },
 
   // ───── 고스트 ─────
   "섀도볼":     { power: 50, type: "고스트", accuracy: 100, alwaysHit: false, effect: null,
