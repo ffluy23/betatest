@@ -646,6 +646,19 @@ export default async function handler(req, res) {
           if (myPokemon.healBlocked <= 0) await log(logsRef, `${myPokemon.name}${josa(myPokemon.name, "의")} 회복봉인이 풀렸다!`)
         }
 
+        if ((enePokemon.taunted ?? 0) > 0) {
+  enePokemon.taunted--
+  if (enePokemon.taunted <= 0) {
+    await log(logsRef, `${enePokemon.name}${josa(enePokemon.name, "의")} 도발이 풀렸다!`)
+  }
+}
+if ((myPokemon.taunted ?? 0) > 0) {
+  myPokemon.taunted--
+  if (myPokemon.taunted <= 0) {
+    await log(logsRef, `${myPokemon.name}${josa(myPokemon.name, "의")} 도발이 풀렸다!`)
+  }
+}
+
         if (enePokemon.seeded) {
           const lastTick = enePokemon.seededLastTick ?? (enePokemon.seededSince ?? nextTurn)
           if (nextTurn - lastTick >= 2) {
@@ -823,6 +836,16 @@ export default async function handler(req, res) {
       return res.status(200).json({ ok: true })
     }
 
+    if (moveInfo?.charge) {
+  myPokemon.charged = true
+  const rankMsgs = applyRankChanges({ def: 1, turns: 2 }, myPokemon, enePokemon, moveData.name)
+  for (const msg of rankMsgs) await log(logsRef, msg)
+  await log(logsRef, `${myPokemon.name}${josa(myPokemon.name, "은는")} 전기를 충전했다!`)
+  await finishTurn({})
+  return res.status(200).json({ ok: true })
+}
+
+
     if (moveInfo?.wish) {
       myPokemon.wishTurns = 2
       await log(logsRef, `${myPokemon.name}${josa(myPokemon.name, "은는")} 희망사항을 빌었다!`)
@@ -861,6 +884,23 @@ export default async function handler(req, res) {
       await finishTurn({})
       return res.status(200).json({ ok: true })
     }
+
+    if (moveInfo?.taunt) {
+    const { hit, hitType } = calcHit(myPokemon, moveInfo, enePokemon)
+    if (!hit) {
+      await log(logsRef, hitType === "evaded"
+        ? `${enePokemon.name}에게는 맞지 않았다!`
+        : `그러나 ${myPokemon.name}의 공격은 빗나갔다!`,
+        hitType === "evaded" ? "evade" : "normal")
+    } else if ((enePokemon.taunted ?? 0) > 0) {
+      await log(logsRef, `${enePokemon.name}${josa(enePokemon.name, "은는")} 이미 도발 상태다!`)
+    } else {
+      enePokemon.taunted = 3
+      await log(logsRef, `${enePokemon.name}${josa(enePokemon.name, "은는")} 도발에 걸렸다!`)
+    }
+    await finishTurn({})
+    return res.status(200).json({ ok: true })
+  }
 
     if (moveInfo?.memento) {
       const { hit, hitType } = calcHit(myPokemon, moveInfo, enePokemon)
@@ -1277,6 +1317,9 @@ export default async function handler(req, res) {
     const wasDefending = enePokemon.defending ?? false
     enePokemon.defending = false; enePokemon.defendTurns = 0
 
+    const chargedMult = (myPokemon.charged && moves[moveData.name]?.type === "전기") ? 1.2 : 1.0
+myPokemon.charged = false
+
     await log(logsRef, "", "attack", { attacker: mySlot })
 
     const revengeUpdate = {}
@@ -1483,7 +1526,7 @@ export default async function handler(req, res) {
 
         const { damage: rawDmg, multiplier, critical } = calcDamage(myPokemon, moveData.name, enePokemon, atkRank, defRankEne, powerOverride, atkStatOverride, currentWeather)
         const tricksterMult = moveInfo?.trickster ? 0.7 : 1.0
-        const damage = counterDamage ?? Math.floor(rawDmg * comebackMult * sickMult * gutsMult * revivedMult * tricksterMult * finisherMult * venomShockMult)
+        const damage = counterDamage ?? Math.floor(rawDmg * comebackMult * sickMult * gutsMult * revivedMult * tricksterMult * finisherMult * venomShockMult * chargedMult)
 
         if (multiplier === 0) {
           await log(logsRef, `${enePokemon.name}에게는 효과가 없다…`)

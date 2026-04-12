@@ -691,6 +691,7 @@ function updateMoveButtons(data) {
     const soundMoves = ["금속음","돌림노래","바크아웃","소란피기","싫은소리","울부짖기","울음소리","차밍보이스","비밀이야기","하이퍼보이스","매혹의보이스", "벌레의야단법석"]
 const lockedByThroatChop = !!((myPokemon?.throatChopped ?? 0) > 0 && soundMoves.includes(move.name))
 const lockedByTorment = !!(myPokemon?.tormented && move.name === myPokemon?.lastUsedMove)
+const lockedByTaunt = !!((myPokemon?.taunted ?? 0) > 0 && !(moveInfo?.power > 0))
     btn.innerHTML = `<span style="display:block;font-size:13px;font-weight:bold;">${move.name}</span><span style="display:block;font-size:10px;opacity:0.85;">PP: ${move.pp} | ${accText}</span>`
     const color = typeColors[moveInfo?.type] ?? "#a0a0a0"
     btn.style.setProperty("--btn-color", color); btn.style.background = color
@@ -698,7 +699,7 @@ const lockedByTorment = !!(myPokemon?.tormented && move.name === myPokemon?.last
     const queueBusy = logQueue.length > 0 || isProcessing
     const disabled = isSpectator || fainted || move.pp <= 0 || !myTurn || actionDone
   || !lrUnlocked || lockedByRoll || lockedByChain || lockedByBide || lockedByOutrage || queueBusy
-  || isFlying || isDigging || forceSwitch|| lockedByThroatChop|| myPokemon?.ghostDiveState?.diving || lockedByTorment
+  || isFlying || isDigging || forceSwitch|| lockedByThroatChop|| myPokemon?.ghostDiveState?.diving || lockedByTorment || lockedByTaunt
     if (disabled) { btn.disabled = true; btn.onclick = null }
     else { btn.disabled = false; btn.onclick = () => { playSound(SFX_BTN); useMove(i, data) } }
   }

@@ -143,6 +143,9 @@ export const moves = {
                     rank: { atk: 2, def: 1, turns: 2 } },
   "일렉트릭네트":   { power: 40, type: "전기", accuracy: 95,  alwaysHit: false, targetSelf: false, effect: null,
                       rank: { targetSpd: -1, turns: 3 } },
+  "충전": {
+  type: "전기", accuracy: 100, alwaysHit: true, power: 0, charge: true,  // 충전 플래그
+rank: { def: 1, turns: 2 }},
 
   // ───── 풀 ─────
   "에너지볼":   { power: 40, type: "풀", accuracy: 100, alwaysHit: false, effect: null,
@@ -328,6 +331,10 @@ export const moves = {
   "지옥찌르기": { power: 50, type: "악", accuracy: 100, alwaysHit: false, effect: null, throatChop: true },
   "트집": { power: 0, type: "악", accuracy: 100, alwaysHit: false, effect: null, torment: true, targetSelf: false },
   "추억의선물": { power: 0, type: "악", accuracy: 100, alwaysHit: true, effect: null, memento: true },
+  "도발": {
+  type: "악", accuracy: 100, power: 0,
+  taunt: true,   // 도발 플래그
+},
 
   // ───── 강철 ─────
   "아이언테일": { power: 50, type: "강철", accuracy: 75,  alwaysHit: false, effect: null,
