@@ -267,6 +267,8 @@ export const moves = {
                   effect: { chance: 0.1, volatile: "혼란" } },
   "하드롤러":     { power: 40, type: "벌레", accuracy: 100, alwaysHit: false,
                   effect: { chance: 0.3, volatile: "풀죽음" } },
+  "나비춤":   { power: 0, type: "벌레", accuracy: 100, alwaysHit: true, effect: null, rank: { atk: 1, def: 1, spd: 1, turns: 3 } },
+  "벌레의야단법석":   { power: 50, type: "벌레", accuracy: 100, alwaysHit: false, effect: null, targetSelf:false, rank: { chance: 0.1, targetDef: 1, turns: 2 } },
 
   // ───── 고스트 ─────
   "섀도볼":     { power: 50, type: "고스트", accuracy: 100, alwaysHit: false, effect: null,

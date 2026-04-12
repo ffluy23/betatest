@@ -688,7 +688,7 @@ function updateMoveButtons(data) {
     const lockedByChain = !!(chainBound && chainBound.turnsLeft > 0 && chainBound.moveName === move.name)
     const lockedByBide = !!(myPokemon?.bideState && myPokemon.bideState.turnsLeft > 0)
     const lockedByOutrage = !!(myPokemon?.outrageState?.active)
-    const soundMoves = ["금속음","돌림노래","바크아웃","소란피기","싫은소리","울부짖기","울음소리","차밍보이스","비밀이야기","하이퍼보이스","매혹의보이스"]
+    const soundMoves = ["금속음","돌림노래","바크아웃","소란피기","싫은소리","울부짖기","울음소리","차밍보이스","비밀이야기","하이퍼보이스","매혹의보이스", "벌레의야단법석"]
 const lockedByThroatChop = !!((myPokemon?.throatChopped ?? 0) > 0 && soundMoves.includes(move.name))
 const lockedByTorment = !!(myPokemon?.tormented && move.name === myPokemon?.lastUsedMove)
     btn.innerHTML = `<span style="display:block;font-size:13px;font-weight:bold;">${move.name}</span><span style="display:block;font-size:10px;opacity:0.85;">PP: ${move.pp} | ${accText}</span>`
