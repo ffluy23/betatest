@@ -280,10 +280,13 @@ export default async function handler(req, res) {
 
     const myEntry = freshData[`${mySlot}_entry`].map(p => {
   const r = p.ranks ?? {}
-  return { ...p, moves: (p.moves ?? []).map(m => ({ ...m })), ranks: {
-    atk: r.atkTurns > 0 ? r.atk : 0, atkTurns: r.atkTurns ?? 0,
-    def: r.defTurns > 0 ? r.def : 0, defTurns: r.defTurns ?? 0,
-    spd: r.spdTurns > 0 ? r.spd : 0, spdTurns: r.spdTurns ?? 0,
+  const atkTurns = r.atkTurns > 0 ? r.atkTurns - 1 : 0
+  const defTurns = r.defTurns > 0 ? r.defTurns - 1 : 0
+  const spdTurns = r.spdTurns > 0 ? r.spdTurns - 1 : 0
+  return { ...p, ranks: {
+    atk: atkTurns > 0 ? r.atk : 0, atkTurns,
+    def: defTurns > 0 ? r.def : 0, defTurns,
+    spd: spdTurns > 0 ? r.spd : 0, spdTurns,
   }}
 })
     const enemyEntry = freshData[`${enemySlot}_entry`].map(p => {
@@ -631,10 +634,15 @@ if (myPokemon.tormented && moveData.name === myPokemon.lastUsedMove) {
     // ══════════════════════════════════════════════════
     //  finishTurn
     // ══════════════════════════════════════════════════
-    async function finishTurn(revengeUpdate = {}) {
-  const expiredMsgs = tickMyRanks(myPokemon)
+ async function finishTurn(revengeUpdate = {}) {
   clearRankStack(myPokemon)
-  for (const msg of expiredMsgs) await log(logsRef, msg)  // ← 여기로 올려
+  const prevRanks = freshData[`${mySlot}_entry`][myActiveIdx].ranks ?? {}
+  if (!myPokemon.ranks?.atkTurns && (prevRanks.atkTurns ?? 0) > 0)
+    await log(logsRef, `${myPokemon.name}의 공격이 원래대로 돌아왔다!`)
+  if (!myPokemon.ranks?.defTurns && (prevRanks.defTurns ?? 0) > 0)
+    await log(logsRef, `${myPokemon.name}의 방어가 원래대로 돌아왔다!`)
+  if (!myPokemon.ranks?.spdTurns && (prevRanks.spdTurns ?? 0) > 0)
+    await log(logsRef, `${myPokemon.name}의 스피드가 원래대로 돌아왔다!`)
 
       const nextTurn = nextTurnCount
 
