@@ -176,9 +176,14 @@ export function getSunnyGrowthBonus(weather) {
 //  calcHit 직전에 moveInfo를 패치하는 용도
 // ────────────────────────────────────────────
 export function patchMoveForWeather(weather, moveName, moveInfo) {
-  if (!moveInfo || moveName !== "번개") return moveInfo
-  if (weather === "비") return { ...moveInfo, alwaysHit: true, accuracy: 100 }
-  if (weather === "쾌청") return { ...moveInfo, alwaysHit: false, accuracy: 50 }
+  if (!moveInfo) return moveInfo
+  if (moveName === "번개") {
+    if (weather === "비") return { ...moveInfo, alwaysHit: true, accuracy: 100 }
+    if (weather === "쾌청") return { ...moveInfo, alwaysHit: false, accuracy: 50 }
+  }
+  if (moveName === "눈보라") {
+    if (weather === "싸라기눈") return { ...moveInfo, alwaysHit: true, accuracy: 100 }
+  }
   return moveInfo
 }
 

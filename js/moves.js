@@ -179,6 +179,7 @@ rank: { def: 1, turns: 2 }},
   "얼음엄니":       { power: 40, type: "얼음", accuracy: 100, alwaysHit: false, effect: { chance: 0.1, status: "얼음" } },
   "눈싸라기":       { power: 30, type: "얼음", accuracy: 100, alwaysHit: false, effect: { chance: 0.1, status: "얼음" } },
   "흑안개":     { power: 0,  type: "얼음", accuracy: 100, alwaysHit: true, effect: null, haze: true, targetSelf: true },
+  "눈보라": { type: "얼음", power: 60, accuracy: 70, effect: { status: "얼음", chance: 0.1 } },
  
   // ───── 격투 ─────
   "인파이트":           { power: 60, type: "격투", accuracy: 100, alwaysHit: false, targetSelf: true, effect: null,
