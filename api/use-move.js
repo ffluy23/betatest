@@ -1330,7 +1330,8 @@ if (moveInfo?.futureSight) {
       }
 
       if (moveInfo?.clearSmog) {
-        enePokemon.ranks = defaultRanks()
+        // 이렇게 고쳐야 해
+enePokemon.ranks = defaultRanks(enePokemon)
         await log(logsRef, `${enePokemon.name}${josa(enePokemon.name, "의")} 능력 변화가 원래대로 돌아왔다!`)
       }
 
@@ -1663,7 +1664,8 @@ if (enePokemon.digState?.digging && moves[moveData.name]?.type === "지진") {
   if (Object.keys(spinFieldUpdate).length > 0) Object.assign(revengeUpdate, spinFieldUpdate)
 }
           if (moveInfo?.clearSmog) {
-            enePokemon.ranks = defaultRanks()
+           // 이렇게 고쳐야 해
+enePokemon.ranks = defaultRanks(enePokemon)
             await log(logsRef, `${enePokemon.name}${josa(enePokemon.name, "의")} 능력 변화가 원래대로 돌아왔다!`)
           }
           const effectMsgs = applyMoveEffect(moveInfo?.effect ?? null, myPokemon, enePokemon, damage, currentWeather)
