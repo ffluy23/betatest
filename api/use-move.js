@@ -40,9 +40,9 @@ function getActiveRank(pokemon, key) {
 function resetRankStack(pokemon) {
   pokemon.lastRankMove = null; pokemon.rankStack = 0
   if (pokemon.ranks) {
-    pokemon.ranks.atk = pokemon.attack ?? 3; pokemon.ranks.atkTurns = 0
-    pokemon.ranks.def = pokemon.defense ?? 3; pokemon.ranks.defTurns = 0
-    pokemon.ranks.spd = pokemon.speed ?? 3;   pokemon.ranks.spdTurns = 0
+    pokemon.ranks.atk = 0; pokemon.ranks.atkTurns = 0
+    pokemon.ranks.def = 0; pokemon.ranks.defTurns = 0
+    pokemon.ranks.spd = 0; pokemon.ranks.spdTurns = 0
   }
 }
 
@@ -53,9 +53,9 @@ function clearRankStack(pokemon) {
 function tickMyRanks(pokemon) {
   if (!pokemon.ranks) return []
   const r = pokemon.ranks, msgs = []
-  if (r.atkTurns > 0) { r.atkTurns--; if (!r.atkTurns) { r.atk = pokemon.attack ?? 3; msgs.push(`${pokemon.name}의 공격이 원래대로 돌아왔다!`) } }
-  if (r.defTurns > 0) { r.defTurns--; if (!r.defTurns) { r.def = pokemon.defense ?? 3; msgs.push(`${pokemon.name}의 방어가 원래대로 돌아왔다!`) } }
-  if (r.spdTurns > 0) { r.spdTurns--; if (!r.spdTurns) { r.spd = pokemon.speed ?? 3;   msgs.push(`${pokemon.name}의 스피드가 원래대로 돌아왔다!`) } }
+  if (r.atkTurns > 0) { r.atkTurns--; if (!r.atkTurns) { r.atk = 0; msgs.push(`${pokemon.name}의 공격이 원래대로 돌아왔다!`) } }
+  if (r.defTurns > 0) { r.defTurns--; if (!r.defTurns) { r.def = 0; msgs.push(`${pokemon.name}의 방어가 원래대로 돌아왔다!`) } }
+  if (r.spdTurns > 0) { r.spdTurns--; if (!r.spdTurns) { r.spd = 0; msgs.push(`${pokemon.name}의 스피드가 원래대로 돌아왔다!`) } }
   return msgs
 }
 
@@ -89,7 +89,7 @@ const targetR = {
     else { self.rankStack = stack + 1 }
   }
 
-  const MIN_ATK = 0, MIN_DEF = 0, MIN_SPD = 0
+  const MIN_ATK = -4, MIN_DEF = -3, MIN_SPD = -5
   const MAX_ATK_BONUS = 4, MAX_DEF_BONUS = 3, MAX_SPD_BONUS = 5
 
  if (r.atk !== undefined) {
@@ -288,14 +288,13 @@ export default async function handler(req, res) {
     const isSecondToAct = mySlot !== firstSlot
 
     const myEntry = freshData[`${mySlot}_entry`].map(p => {
-      const base = defaultRanks(p)
-      const r = p.ranks ?? {}
-      return { ...p, moves: (p.moves ?? []).map(m => ({ ...m })), ranks: {
-        atk: r.atkTurns > 0 ? r.atk : base.atk, atkTurns: r.atkTurns ?? 0,
-        def: r.defTurns > 0 ? r.def : base.def, defTurns: r.defTurns ?? 0,
-        spd: r.spdTurns > 0 ? r.spd : base.spd, spdTurns: r.spdTurns ?? 0,
-      }}
-    })
+  const r = p.ranks ?? {}
+  return { ...p, moves: (p.moves ?? []).map(m => ({ ...m })), ranks: {
+    atk: r.atkTurns > 0 ? r.atk : 0, atkTurns: r.atkTurns ?? 0,
+    def: r.defTurns > 0 ? r.def : 0, defTurns: r.defTurns ?? 0,
+    spd: r.spdTurns > 0 ? r.spd : 0, spdTurns: r.spdTurns ?? 0,
+  }}
+})
     const enemyEntry = freshData[`${enemySlot}_entry`].map(p => {
       const base = defaultRanks(p)
       const r = p.ranks ?? {}
@@ -1221,9 +1220,9 @@ if (moveInfo?.futureSight) {
     if (moveInfo?.haze) {
       const resetR = (p) => {
         if (p.ranks) {
-          p.ranks.atk = p.attack ?? 3; p.ranks.atkTurns = 0
-          p.ranks.def = p.defense ?? 3; p.ranks.defTurns = 0
-          p.ranks.spd = p.speed ?? 3;   p.ranks.spdTurns = 0
+          p.ranks.atk = 0; p.ranks.atkTurns = 0
+p.ranks.def = 0; p.ranks.defTurns = 0
+p.ranks.spd = 0; p.ranks.spdTurns = 0
         }
         p.lastRankMove = null; p.rankStack = 0
         p.weatherDefBoost = false
@@ -1326,7 +1325,7 @@ if (moveInfo?.futureSight) {
 
       if (moveInfo?.clearSmog) {
         // 이렇게 고쳐야 해
-enePokemon.ranks = defaultRanks(enePokemon)
+enePokemon.ranks = defaultRanks()
         await log(logsRef, `${enePokemon.name}${josa(enePokemon.name, "의")} 능력 변화가 원래대로 돌아왔다!`)
       }
 
@@ -1660,7 +1659,7 @@ if (enePokemon.digState?.digging && moves[moveData.name]?.type === "지진") {
 }
           if (moveInfo?.clearSmog) {
            // 이렇게 고쳐야 해
-enePokemon.ranks = defaultRanks(enePokemon)
+enePokemon.ranks = defaultRanks()
             await log(logsRef, `${enePokemon.name}${josa(enePokemon.name, "의")} 능력 변화가 원래대로 돌아왔다!`)
           }
           const effectMsgs = applyMoveEffect(moveInfo?.effect ?? null, myPokemon, enePokemon, damage, currentWeather)
