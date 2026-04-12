@@ -104,7 +104,7 @@ function applyRankChanges(r, self, target, moveName) {
   const MIN_ATK = 1, MIN_DEF = 1, MIN_SPD = 1
   const MAX_ATK_BONUS = 4, MAX_DEF_BONUS = 3, MAX_SPD_BONUS = 5
 
-  if (r.atk !== undefined) {
+ if (r.atk !== undefined) {
     const base = getStat(self, "atk")
     if (r.atk > 0) { const p = selfR.atk; selfR.atk = Math.min(base + MAX_ATK_BONUS, selfR.atk + r.atk); selfR.atkTurns = r.turns ?? 2; msgs.push(`${self.name}의 공격이 ${selfR.atk - p} 상승했다!`) }
     else if (r.atk < 0) { if (selfR.atk <= MIN_ATK) msgs.push(`${self.name}의 공격은 더 이상 내려가지 않는다!`); else { const p = selfR.atk; selfR.atk = Math.max(MIN_ATK, selfR.atk + r.atk); selfR.atkTurns = r.turns ?? 2; msgs.push(`${self.name}의 공격이 ${p - selfR.atk} 하락했다!`) } }
@@ -134,14 +134,16 @@ function applyRankChanges(r, self, target, moveName) {
     if (r.targetSpd < 0) { if (targetR.spd <= MIN_SPD) msgs.push(`${target.name}의 스피드는 더 이상 내려가지 않는다!`); else { const p = targetR.spd; targetR.spd = Math.max(MIN_SPD, targetR.spd + r.targetSpd); targetR.spdTurns = r.turns ?? 2; msgs.push(`${target.name}의 스피드가 ${p - targetR.spd} 하락했다!`) } }
     else if (r.targetSpd > 0) { const p = targetR.spd; targetR.spd = Math.min(base + MAX_SPD_BONUS, targetR.spd + r.targetSpd); targetR.spdTurns = r.turns ?? 2; msgs.push(`${target.name}의 스피드가 ${targetR.spd - p} 상승했다!`) }
   }
-  self.ranks = selfR; target.ranks = targetR
-  return msgs
 }
 
 function calcHit(attacker, moveInfo, defender) {
   if (Math.random() * 100 >= (moveInfo.accuracy ?? 100)) return { hit: false, hitType: "missed" }
-  if (defender.flyState?.flying && moveInfo.type !== "전기" && !moveInfo.twister) return { hit: false, hitType: "evaded" }
-  if (defender.digState?.digging && moveInfo.type !== "땅") return { hit: false, hitType: "evaded" }
+  if (defender.flyState?.flying && !moveInfo.twister && moveInfo._name !== "번개")
+  return { hit: false, hitType: "evaded" }
+if (defender.digState?.digging && moveInfo._name !== "지진")
+  return { hit: false, hitType: "evaded" }
+if (def.ghostDiveState?.diving)
+  return { hit: false, hitType: "evaded" }
   if (moveInfo.alwaysHit || moveInfo.skipEvasion) return { hit: true, hitType: "hit" }
   const as = Math.max(1, (attacker.speed ?? 3) - getStatusSpdPenalty(attacker))
   const ds = Math.max(1, (defender.speed ?? 3) - getStatusSpdPenalty(defender))
@@ -198,9 +200,9 @@ function calcDamage(attacker, moveName, defender, atkRankBonus = 0, defRankBonus
   const lightScreenActive = (defender.lightScreenTurns ?? 0) > 0
   const breakBarrier = move.breakBarrier ?? false
   const screenMult = (lightScreenActive && !breakBarrier) ? 0.75 : 1.0
-  const flyLightningMult = (defender.flyState?.flying && move.type === "전기") ? 1.2 : 1.0
+  const flyLightningMult = (defender.flyState?.flying && move.type === "번개") ? 1.2 : 1.0
   const twisterFlyMult = (move.twister && defender.flyState?.flying) ? 1.2 : 1.0
-  const digEarthquakeMult = (defender.digState?.digging && move.type === "땅") ? 1.2 : 1.0
+  const digEarthquakeMult = (defender.digState?.digging && move.type === "지진") ? 1.2 : 1.0
   const weatherMult = getWeatherDamageMult(weather, move.type)
   const critRate = Math.min(100, atkStat * 2 + (move.highCrit ? 3 : 0))
   const critical = Math.random() * 100 < critRate
@@ -320,6 +322,8 @@ export default async function handler(req, res) {
       myEntry.forEach((p, i) => { myEntry[i] = sanitizeForFirestore(p) })
       enemyEntry.forEach((p, i) => { enemyEntry[i] = sanitizeForFirestore(p) })
     }
+
+    
 
     const myName = mySlot === "p1" ? freshData.player1_name : freshData.player2_name
     const enemyName = enemySlot === "p1" ? freshData.player1_name : freshData.player2_name
@@ -651,6 +655,9 @@ if (myPokemon.tormented && moveData.name === myPokemon.lastUsedMove) {
       const nextTurn = nextTurnCount
 
       if (isSecondToAct) {
+          const expiredEneMsgs = tickMyRanks(enePokemon)
+    for (const msg of expiredEneMsgs) await log(logsRef, msg)
+
         // 사슬묶기 턴 감소
         if (enePokemon.chainBound) {
           enePokemon.chainBound.turnsLeft--
@@ -1058,12 +1065,12 @@ if (moveInfo?.memento) {
           if (enePokemon.hp <= 0 && enePokemon.enduring) { enePokemon.hp = 1; enePokemon.enduring = false }
           await hitLog(enemySlot, enePokemon)
           // 공중날기 중 전기 맞으면 강제 착지
-if (enePokemon.flyState?.flying && moves[moveData.name]?.type === "전기") {
+if (enePokemon.flyState?.flying && moves[moveData.name]?.type === "번개") {
   enePokemon.flyState = null; enePokemon.flyMoveName = null
   await log(logsRef, `${enePokemon.name}${josa(enePokemon.name, "은는")} 번개에 맞아 땅으로 떨어졌다!`)
 }
 // 구멍파기 중 땅 맞으면 강제 지상
-if (enePokemon.digState?.digging && moves[moveData.name]?.type === "땅") {
+if (enePokemon.digState?.digging && moves[moveData.name]?.type === "지진") {
   enePokemon.digState = null; enePokemon.digMoveName = null
   await log(logsRef, `${enePokemon.name}${josa(enePokemon.name, "은는")} 지진에 맞아 땅 위로 튀어나왔다!`)
 }
@@ -1441,12 +1448,12 @@ if (moveInfo?.futureSight) {
           totalDmg += dmg
           await hitLog(enemySlot, enePokemon)
           // 공중날기 중 전기 맞으면 강제 착지
-if (enePokemon.flyState?.flying && moves[moveData.name]?.type === "전기") {
+if (enePokemon.flyState?.flying && moves[moveData.name]?.type === "번개") {
   enePokemon.flyState = null; enePokemon.flyMoveName = null
   await log(logsRef, `${enePokemon.name}${josa(enePokemon.name, "은는")} 번개에 맞아 땅으로 떨어졌다!`)
 }
 // 구멍파기 중 땅 맞으면 강제 지상
-if (enePokemon.digState?.digging && moves[moveData.name]?.type === "땅") {
+if (enePokemon.digState?.digging && moves[moveData.name]?.type === "지진") {
   enePokemon.digState = null; enePokemon.digMoveName = null
   await log(logsRef, `${enePokemon.name}${josa(enePokemon.name, "은는")} 지진에 맞아 땅 위로 튀어나왔다!`)
 }
@@ -1573,12 +1580,12 @@ if (moveInfo?.bodyPress) {
             if (enePokemon.hp <= 0 && enePokemon.enduring) { enePokemon.hp = 1; enePokemon.enduring = false }
             await hitLog(enemySlot, enePokemon)
             // 공중날기 중 전기 맞으면 강제 착지
-if (enePokemon.flyState?.flying && moves[moveData.name]?.type === "전기") {
+if (enePokemon.flyState?.flying && moves[moveData.name]?.type === "번개") {
   enePokemon.flyState = null; enePokemon.flyMoveName = null
   await log(logsRef, `${enePokemon.name}${josa(enePokemon.name, "은는")} 번개에 맞아 땅으로 떨어졌다!`)
 }
 // 구멍파기 중 땅 맞으면 강제 지상
-if (enePokemon.digState?.digging && moves[moveData.name]?.type === "땅") {
+if (enePokemon.digState?.digging && moves[moveData.name]?.type === "지진") {
   enePokemon.digState = null; enePokemon.digMoveName = null
   await log(logsRef, `${enePokemon.name}${josa(enePokemon.name, "은는")} 지진에 맞아 땅 위로 튀어나왔다!`)
 }
@@ -1625,12 +1632,12 @@ if (enePokemon.digState?.digging && moves[moveData.name]?.type === "땅") {
           }
           await hitLog(enemySlot, enePokemon)
           // 공중날기 중 전기 맞으면 강제 착지
-if (enePokemon.flyState?.flying && moves[moveData.name]?.type === "전기") {
+if (enePokemon.flyState?.flying && moves[moveData.name]?.type === "번개") {
   enePokemon.flyState = null; enePokemon.flyMoveName = null
   await log(logsRef, `${enePokemon.name}${josa(enePokemon.name, "은는")} 번개에 맞아 땅으로 떨어졌다!`)
 }
 // 구멍파기 중 땅 맞으면 강제 지상
-if (enePokemon.digState?.digging && moves[moveData.name]?.type === "땅") {
+if (enePokemon.digState?.digging && moves[moveData.name]?.type === "지진") {
   enePokemon.digState = null; enePokemon.digMoveName = null
   await log(logsRef, `${enePokemon.name}${josa(enePokemon.name, "은는")} 지진에 맞아 땅 위로 튀어나왔다!`)
 }

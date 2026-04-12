@@ -720,7 +720,7 @@ function updateBenchButtons(data) {
   const bench = document.getElementById("bench-container"); bench.innerHTML = ""
   const myEntry = data[`${mySlot}_entry`], activeIdx = data[`${mySlot}_active_idx`]
   // ★ 유턴 강제교체 여부
-  const forceSwitch = !!(data[`force_switch_${mySlot}`] && data.current_turn === mySlot)
+  (data[`force_switch_${mySlot}`] && data.current_turn === mySlot)
 
   myEntry.forEach((pkmn, idx) => {
     if (idx === activeIdx) return
@@ -753,7 +753,7 @@ function updateTurnUI(data) {
 
 async function switchPokemon(newIdx) {
   const snap = await getDoc(roomRef), data = snap.data()
-  const forceSwitch = !!(data[`force_switch_${mySlot}`] && data.current_turn === mySlot)
+  const forceSwitch = !!(data[`force_switch_${mySlot}`])
   if (isSpectator || !myTurn || (actionDone && !forceSwitch) || gameOver) return
   actionDone = true
   const res = await fetch(`${API}/api/switch-pokemon`, {

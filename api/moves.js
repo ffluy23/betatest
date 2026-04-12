@@ -139,7 +139,7 @@ export const moves = {
   "충전":         { power: 0,  type: "전기", accuracy: 100, alwaysHit: true, targetSelf: true, effect: null,
                     rank: { atk: 2, def: 1, turns: 2 } },
   "일렉트릭네트":   { power: 40, type: "전기", accuracy: 95,  alwaysHit: false, targetSelf: false, effect: null,
-                      rank: { targetSpd: -1, turn: 3 } },
+                      rank: { targetSpd: -1, turns: 3 } },
 
   // ───── 풀 ─────
   "에너지볼":   { power: 40, type: "풀", accuracy: 100, alwaysHit: false, effect: null,
@@ -168,7 +168,7 @@ export const moves = {
   "얼음뭉치":       { power: 35, type: "얼음", accuracy: 100, alwaysHit: true,  effect: null },
   "냉동빔":         { power: 50, type: "얼음", accuracy: 100, alwaysHit: false, effect: { chance: 0.1, status: "얼음" } },
   "얼어붙은바람":   { power: 40, type: "얼음", accuracy: 95,  alwaysHit: false, targetSelf: false, effect: null,
-                      rank: { targetSpd: -1, turn: 3 } },
+                      rank: { targetSpd: -1, turns: 3 } },
   "아이스펀치":     { power: 40, type: "얼음", accuracy: 100, alwaysHit: false, effect: { chance: 0.1, status: "얼음" } },
   "얼음엄니":       { power: 40, type: "얼음", accuracy: 100, alwaysHit: false, effect: { chance: 0.1, status: "얼음" } },
   "눈싸라기":       { power: 30, type: "얼음", accuracy: 100, alwaysHit: false, effect: { chance: 0.1, status: "얼음" } },
