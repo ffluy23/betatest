@@ -31,7 +31,7 @@ function josa(word, type) {
 const POPPIN_COLOR = {
   perfect: '#FFD700', sweet: '#FF8FB1', spicy: '#FF4500',
   dry: '#6B9FFF', bitter: '#4CAF50', sour: '#FFE44A',
-  mild: '#F5C842', burnt: '#888888', bad: '#AAAAAA'
+  mild: '#F5C842', burnt: '#888888', bad: '#AAAAAA', poppin: '#FFB6C1'
 }
 
 // ══════════════════════════════════════════════════════

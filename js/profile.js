@@ -134,10 +134,13 @@ window.apSwitch = function(type) {
 //  관리자: 아이템 셀렉트 변경
 // ══════════════════════════════════════════════════════
 window.apItemChange = function() {
-  const val = document.getElementById("ap-item-type").value
-  const el  = document.getElementById("ap-custom")
-  el.style.display = (val === "custom_ingredient" || val === "custom_etc") ? "" : "none"
-  if (el.style.display === "none") el.value = ""
+  const val    = document.getElementById("ap-item-type").value
+  const custom = document.getElementById("ap-custom")
+  const showInput = ["custom_ingredient", "custom_etc", "custom_poppin"].includes(val)
+  custom.style.display = showInput ? "" : "none"
+  if (!showInput) custom.value = ""
+  // placeholder 구분
+  custom.placeholder = val === "custom_poppin" ? "포핀 이름 입력" : "아이템 이름 입력"
 }
 
 // ══════════════════════════════════════════════════════
@@ -145,10 +148,18 @@ window.apItemChange = function() {
 // ══════════════════════════════════════════════════════
 function buildGItem(now) {
   const val = document.getElementById("ap-item-type").value
+
   if (val === "ingredient_good") return { type: "ingredient", name: "좋은 조미료", at: now }
   if (val === "ingredient_bad")  return { type: "ingredient", name: "이상한 조미료", at: now }
+
   const name = document.getElementById("ap-custom").value.trim()
   if (!name) return null
+
+  if (val === "custom_poppin") {
+    return { type: "poppin", pType: "poppin", name, emoji: "🧁", at: now }
+  }
+
+  // custom_ingredient / custom_etc
   return { type: "ingredient", name, at: now }
 }
 
