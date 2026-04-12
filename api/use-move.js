@@ -89,7 +89,7 @@ function applyRankChanges(r, self, target, moveName) {
     else { self.rankStack = stack + 1 }
   }
 
-  const MIN_ATK = 0, MIN_DEF = -3, MIN_SPD = -5
+  const MIN_ATK = -4, MIN_DEF = -3, MIN_SPD = -5
   const MAX_ATK = 4, MAX_DEF = 3, MAX_SPD = 5
 
   if (r.atk !== undefined) {
@@ -152,9 +152,9 @@ function calcAssistPower(pokemon) {
   const r = pokemon.ranks ?? {}
   const getStat = (key) => pokemon[key === "atk" ? "attack" : key === "def" ? "defense" : "speed"] ?? 3
   const base = { atk: getStat("atk"), def: getStat("def"), spd: getStat("spd") }
-  const atkBonus = (r.atkTurns ?? 0) > 0 ? Math.max(0, r.atk ?? 0) : 0
-  const defBonus = (r.defTurns ?? 0) > 0 ? Math.max(0, r.def ?? 0) : 0
-  const spdBonus = (r.spdTurns ?? 0) > 0 ? Math.max(0, r.spd ?? 0) : 0
+const atkBonus = (r.atkTurns ?? 0) > 0 ? (r.atk ?? 0) : 0
+const defBonus = (r.defTurns ?? 0) > 0 ? (r.def ?? 0) : 0
+const spdBonus = (r.spdTurns ?? 0) > 0 ? (r.spd ?? 0) : 0
   const total = atkBonus + defBonus + spdBonus
   if (total <= 1) return 30
   if (total <= 3) return 40
