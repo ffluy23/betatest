@@ -45,9 +45,41 @@ export default async function handler(req, res) {
       db.collection("users").doc(p1Uid).get(),
       db.collection("users").doc(p2Uid).get()
     ])
-    const p1Entry = (p1Snap.data()?.entry ?? []).map(p => ({ ...p, maxHp: p.hp }))
-    const p2Entry = (p2Snap.data()?.entry ?? []).map(p => ({ ...p, maxHp: p.hp }))
+const resetState = p => ({
+  ...p,
+  maxHp: p.hp,
+  hp: p.hp,
+  status: null,
+  confusion: 0,
+  seeded: false,
+  aquaRing: false,
+  cursed: false,
+  bideState: null,
+  flyState: null,
+  digState: null,
+  ghostDiveState: null,
+  outrageState: null,
+  rollState: { active: false, turn: 0 },
+  ranks: { atk: 0, atkTurns: 0, def: 0, defTurns: 0, spd: 0, spdTurns: 0 },
+  lightScreenTurns: 0,
+  defending: false,
+  defendTurns: 0,
+  defendStack: 0,
+  lastDefendMove: null,
+  flinch: false,
+  healBlocked: 0,
+  throatChopped: 0,
+  tormented: false,
+  chainBound: null,
+  lastUsedMove: null,
+  lastRankMove: null,
+  rankStack: 0,
+  usedMoves: [],
+  moves: (p.moves ?? []).map(m => ({ ...m })),
+})
 
+const p1Entry = (p1Snap.data()?.entry ?? []).map(resetState)
+const p2Entry = (p2Snap.data()?.entry ?? []).map(resetState)
     if (p1Entry.length === 0 || p2Entry.length === 0) {
       return res.status(400).json({ error: "엔트리가 비어있음" })
     }

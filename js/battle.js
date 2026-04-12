@@ -651,10 +651,11 @@ async function leaveGame() {
     revenge_ready_p1: false, revenge_ready_p2: false,
     comeback_ready_p1: false, comeback_ready_p2: false,
     force_switch_p1: false, force_switch_p2: false,
-      stealth_rock_p1: false, stealth_rock_p2: false,
-  toxic_spikes_p1: false, toxic_spikes_p2: false,
-    
-  })
+    stealth_rock_p1: false, stealth_rock_p2: false,
+    toxic_spikes_p1: false, toxic_spikes_p2: false,
+    last_damage_taken_p1: 0, last_damage_taken_p2: 0,  // ← 추가
+    weather: null, weatherTurns: 0,                     // ← 추가
+})
   location.href = "../main.html"
 }
 
