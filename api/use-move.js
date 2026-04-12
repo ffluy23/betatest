@@ -1536,6 +1536,7 @@ export default async function handler(req, res) {
             const rankMsgs = applyRankChanges(moveInfo.rank, myPokemon, enePokemon, null)
             for (const msg of rankMsgs) await log(logsRef, msg)
           }
+        if (moveInfo?.hyperBeam) { myPokemon.hyperBeamState = true }
           if (moveInfo?.effect?.recoil && damage > 0) {
             const recoilDmg = Math.max(1, Math.floor(damage * moveInfo.effect.recoil))
             myPokemon.hp = Math.max(0, myPokemon.hp - recoilDmg)
@@ -1569,7 +1570,7 @@ export default async function handler(req, res) {
       }
     }
 
-    if (moveInfo?.hyperBeam) { myPokemon.hyperBeamState = true }
+  
 
     await finishTurn(revengeUpdate)
     return res.status(200).json({ ok: true })
