@@ -458,4 +458,6 @@ rank: { def: 1, turns: 2 }},
                       bide: true, targetSelf: true },
   "구멍파기":   { power: 50, type: "땅",   accuracy: 100, alwaysHit: false, effect: null, dig: true },
 
+  "치유소원": { type: "에스퍼", accuracy: 100, alwaysHit: true, power: 0, healingWish: true },
+
 }

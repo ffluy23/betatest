@@ -853,6 +853,25 @@ if ((myPokemon.taunted ?? 0) > 0) {
   return res.status(200).json({ ok: true })
 }
 
+if (moveInfo?.healingWish) {
+  myPokemon.hp = 0
+  await log(logsRef, `${myPokemon.name}${josa(myPokemon.name, "은는")} 쓰러졌다!`, "faint")
+  await log(logsRef, "", "hit_self", { slot: mySlot, hp: 0, maxHp: myPokemon.maxHp ?? myPokemon.hp })
+  // 교대로 나올 포켓몬을 위한 플래그 — 벤치 전체에 저장
+  myEntry.forEach((p, i) => {
+    if (i !== myActiveIdx && p.hp > 0) p.healOnSwitchIn = true
+  })
+  sanitizeEntries()
+  await safeUpdate(roomRef, {
+    [`${mySlot}_entry`]: myEntry,
+    [`${enemySlot}_entry`]: enemyEntry,
+    current_turn: mySlot,
+    turn_count: nextTurnCount,
+    [`force_switch_${mySlot}`]: true,
+  })
+  return res.status(200).json({ ok: true })
+}
+
 
     if (moveInfo?.wish) {
       myPokemon.wishTurns = 2

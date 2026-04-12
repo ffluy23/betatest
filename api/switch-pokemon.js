@@ -122,7 +122,16 @@ export default async function handler(req, res) {
     for (const msg of statusMsgs) {
       await logsRef.add({ text: msg, type: "normal", ts: ts++ })
     }
-
+    
+        if (newPokemon.healOnSwitchIn && newPokemon.hp > 0) {
+      const healAmount = Math.max(1, Math.floor((newPokemon.maxHp ?? newPokemon.hp) * 0.22))
+newPokemon.hp = Math.min(newPokemon.maxHp ?? newPokemon.hp, newPokemon.hp + healAmount)
+      newPokemon.status = null
+      newPokemon.healOnSwitchIn = false
+      await logsRef.add({ text: `${newPokemon.name}${josa(newPokemon.name, "은는")} 치유소원으로 HP와 상태이상이 회복됐다!`, type: "normal", ts: ts++ })
+      await logsRef.add({ text: "", type: "heal", slot: mySlot, hp: newPokemon.hp, maxHp: newPokemon.maxHp ?? newPokemon.hp, ts: ts++ })
+    }
+    
     const fainted = newPokemon.hp <= 0
     const allFainted = myEntry.every(p => p.hp <= 0)
 
