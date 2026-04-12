@@ -1450,7 +1450,7 @@ myPokemon.charged = false
       } else {
         const atkStatOverride = moveInfo?.trickster ? (enePokemon.attack ?? 3) : null
         const revengeReady = freshData[`revenge_ready_${mySlot}`] ?? false
-        const powerOverride_revenge = (moveInfo?.revenge && revengeReady) ? 70 : null
+        const powerOverride_revenge = (moveInfo?.revenge && revengeReady) ? 80 : null
         const comebackReady = freshData[`comeback_ready_${mySlot}`] ?? false
         const comebackMult = (moveInfo?.comeback && comebackReady) ? 1.2 : 1.0
         const sickMult = (moveInfo?.sickPower && enePokemon.status) ? 1.2 : 1.0
