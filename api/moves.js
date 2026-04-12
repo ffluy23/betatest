@@ -106,7 +106,6 @@ export const moves = {
   "불대문자":     { power: 40, type: "불", accuracy: 85,  alwaysHit: false, effect: null },
   "매지컬플레임": { power: 45, type: "불", accuracy: 100, alwaysHit: false, effect: null,
                     rank: { targetAtk: -1, turns: 2 } },
-   "열사의대지":  { power: 40, type: "땅", accuracy: 100, alwaysHit: false, effect: { chance: 0.3, status: "화상" } },
    "오버히트":   { power: 70, type: "불", accuracy: 100, alwaysHit: false, effect: null, targetSelf:true, rank: { atk: -1, turns: 3 } },
 
   // ───── 물 ─────
@@ -231,6 +230,7 @@ rank: { def: 1, turns: 2 }},
                   rank: { targetSpd: -1, turns: 3 } },
   "대지의힘":   { power: 50, type: "땅", accuracy: 100, alwaysHit: false, effect: null,
                   rank: { chance: 0.1, targetDef: -1, turns: 2 } },
+  "열사의대지":  { power: 40, type: "땅", accuracy: 100, alwaysHit: false, effect: { chance: 0.3, status: "화상" } },
 
   // ───── 바위 ─────
   "스톤에지":   { power: 50, type: "바위", accuracy: 80,  alwaysHit: false, effect: null, highCrit: true  },
