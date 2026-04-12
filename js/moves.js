@@ -105,6 +105,7 @@ export const moves = {
   "매지컬플레임": { power: 45, type: "불", accuracy: 100, alwaysHit: false, effect: null,
                     rank: { targetAtk: -1, turns: 2 } },
    "열사의대지":  { power: 40, type: "불", accuracy: 100, alwaysHit: false, effect: { chance: 0.3, status: "화상" } },
+   "오버히트":   { power: 70, type: "불", accuracy: 100, alwaysHit: false, effect: null, targetSelf:true, rank: { atk: -1, turns: 3 } },
 
   // ───── 물 ─────
   "거품광선":     { power: 40, type: "물", accuracy: 100, alwaysHit: false, effect: null },
