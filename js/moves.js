@@ -121,6 +121,8 @@ export const moves = {
                     rank: { chance: 0.5, targetDef: -1, turns: 2 } },
   "아쿠아링": { power: 0, type: "물", accuracy: 100, alwaysHit: true, effect: null, aquaRing: true, targetSelf: true },
   "해수스파우팅": { power: 70, type: "물", accuracy: 100, alwaysHit: false, effect: null, waterspout: true },
+    "퀵턴": { power: 40, type: "물", accuracy: 100, alwaysHit: false,
+          effect: null, uTurn: true },
 
   // ───── 전기 ─────
   "번개펀치":     { power: 45, type: "전기", accuracy: 100, alwaysHit: false, effect: { chance: 0.1, status: "마비" } },
@@ -207,7 +209,8 @@ export const moves = {
                   rank: { targetSpd: -1, turns: 3 } },
 
   // ───── 바위 ─────
-  "스톤에지":   { power: 40, type: "바위", accuracy: 80,  alwaysHit: false, effect: null },
+  "스톤에지":   { power: 50, type: "바위", accuracy: 80,  alwaysHit: false, effect: null, highCrit: true  },
+  "스톤샤워":   { power: 45, type: "바위", accuracy: 90,  alwaysHit: false, effect: { chance: 0.3, volatile: "풀죽음" } },
   "돌떨구기":   { power: 40, type: "바위", accuracy: 90,  alwaysHit: false, effect: null },
   "바위깨기":   { power: 30, type: "바위", accuracy: 80,  alwaysHit: false, effect: null,
                   rank: { targetDef: -1, turns: 3 } },
