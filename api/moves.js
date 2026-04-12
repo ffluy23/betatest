@@ -393,8 +393,8 @@ export const moves = {
   "희망사항":   { power: 0,  type: "노말", accuracy: 100, alwaysHit: true,  effect: null, wish: true, targetSelf: true },
 
   "속임수":         { power: 50, type: "악",    accuracy: 100, alwaysHit: false, effect: null, trickster: true },
-  "날개쉬기":       { power: 0,  type: "비행",  accuracy: 100, alwaysHit: true,
-                      effect: { removeFlying: true }, targetSelf: true },
+ "날개쉬기": { power: 0, type: "비행", accuracy: 100, alwaysHit: true,
+              effect: { removeFlying: true, heal: 0.22 }, targetSelf: true },
   "이판사판태클":   { power: 70, type: "노말",  accuracy: 100, alwaysHit: false, effect: { recoil: 0.33 } },
   "브레이브버드":   { power: 70, type: "비행",  accuracy: 100, alwaysHit: false, effect: { recoil: 0.33 } },
   "플레어드라이브":   { power: 70, type: "불",  accuracy: 100, alwaysHit: false, effect: { recoil: 0.33, chance: 0.1, status: "화상" } },
