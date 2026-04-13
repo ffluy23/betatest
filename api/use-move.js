@@ -159,7 +159,7 @@ function calcDamage(attacker, moveName, defender, atkRankBonus = 0, defRankBonus
   const base = power + atkStat * 4 + dice
   const raw = Math.floor(base * multiplier * (stab ? 1.3 : 1))
   const afterAtk = Math.max(0, raw + atkRankBonus)
-  const afterDef = afterAtk - (defender.defense ?? 3) * 5
+  const afterDef = afterAtk - (defender.defense ?? 3) * 3
   const baseDmg = afterDef - defRankBonus * 3
 
   // ★ 최소 데미지 보장: 타입은 통했는데 방어력이 높아서 0 이하가 된 경우
@@ -212,7 +212,7 @@ function calcBodyPressDamage(attacker, defender, defRankBonus = 0, weather = nul
   const defBonus = (defRank.defTurns ?? 0) > 0 ? (defRank.def ?? 0) : 0
   const base = move.power + (baseDef + defBonus) * 1.3 + dice
   const raw = Math.floor(base * multiplier * (stab ? 1.3 : 1))
-  const afterDef = Math.max(0, raw - (defender.defense ?? 3) * 5)
+  const afterDef = Math.max(0, raw - (defender.defense ?? 3) * 3)
   const finalDmg = Math.max(0, afterDef - defRankBonus * 3)
   const lightScreenActive = (defender.lightScreenTurns ?? 0) > 0
   const screenMult = lightScreenActive ? 0.75 : 1.0
