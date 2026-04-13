@@ -1629,9 +1629,10 @@ else if (critical) await log(logsRef, "급소에 맞았다!", "critical")
     else revengeUpdate[`comeback_ready_${enemySlot}`] = false
     revengeUpdate[`comeback_ready_${mySlot}`] = false
 
-    if (moveInfo?.uTurn && enePokemon.hp > 0) {
-      const canSwitch = myEntry.filter((p, i) => i !== myActiveIdx && p.hp > 0).length > 0
-      if (canSwitch) {
+   if (moveInfo?.uTurn && enePokemon.hp > 0) {
+  const didHit = `last_damage_taken_${enemySlot}` in revengeUpdate
+  const canSwitch = myEntry.filter((p, i) => i !== myActiveIdx && p.hp > 0).length > 0
+  if (canSwitch && didHit) {
         sanitizeEntries()
         await safeUpdate(roomRef, {
           [`${mySlot}_entry`]: myEntry,
