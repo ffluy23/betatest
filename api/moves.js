@@ -17,7 +17,7 @@ export const moves = {
   // ───── 노말 ─────
   "전광석화":   { power: 30, type: "노말", accuracy: 100, alwaysHit: true,  effect: null },
   "힘껏치기":   { power: 50, type: "노말", accuracy: 75,  alwaysHit: false, effect: null },
-  "베어가르기": { power: 45, type: "노말", accuracy: 100, alwaysHit: false, effect: null },
+  "베어가르기": { power: 45, type: "노말", accuracy: 100, alwaysHit: false, effect: null, highCrit: true },
   "신속":       { power: 50, type: "노말", accuracy: 100, alwaysHit: true,  effect: null },
   "돌림노래":   { power: 40, type: "노말", accuracy: 100, alwaysHit: false, effect: null },
   "탐내기":     { power: 40, type: "노말", accuracy: 100, alwaysHit: false, effect: null },
@@ -181,7 +181,7 @@ export const moves = {
   "진공파":             { power: 35, type: "격투", accuracy: 100, alwaysHit: true,  effect: null },
    "발경":         { power: 40, type: "격투", accuracy: 100, alwaysHit: false, effect: { chance: 0.3, status: "마비" } },
    "성스러운칼": { power: 50, type: "격투", accuracy: 100, alwaysHit: false, skipEvasion: true, ignoreDefRank: true, effect: null },
-   "리벤지": { power: 40, type: "격투", accuracy: 100, revenge: true },
+   "리벤지": { power: 40, type: "격투", accuracy: 100, comeback: true },
 
   // ───── 독 ─────
   "용해액":   { power: 30, type: "독", accuracy: 100, alwaysHit: false, effect: null,
