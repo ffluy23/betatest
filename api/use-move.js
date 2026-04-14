@@ -1218,7 +1218,7 @@ else if (critical) await log(logsRef, "급소에 맞았다!", "critical")
         if (!hit) {
           await log(logsRef, hitType === "evaded" ? `${enePokemon.name}에게는 맞지 않았다!` : `그러나 ${myPokemon.name}의 공격은 빗나갔다!`, hitType === "evaded" ? "evade" : "normal")
         } else {
-          const statusMsgs = applyStatus(enePokemon, moveInfo.effect.status, currentWeather)
+         const statusMsgs = applyStatus(enePokemon, moveInfo.effect?.status ?? "독", currentWeather)
           for (const msg of statusMsgs) await log(logsRef, msg)
         }
       }
