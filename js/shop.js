@@ -335,10 +335,14 @@ window.buyNote = async function() {
   const ok = await spendCoins(300)
   if (!ok) return
 
-  const noteItem = { type: "note", text, at: Date.now(), read: false,
-     senderUid: myUid,         
+  const noteItem = {
+    type: "note",
+    text,
+    at: Date.now(),
+    read: false,
+    senderUid: myUid,
     senderNickname: myData.nickname ?? "익명",
-   }
+  }
   await setDoc(doc(db, "users", foundUserUid), { inbox: arrayUnion(noteItem) }, { merge: true })
 
   showToast(`📨 ${foundUserNickname}에게 쪽지${josa("쪽지", "을를")} 보냈어!`)
@@ -389,6 +393,20 @@ async function renderInventory() {
         ? ` <span style="color:#aaa;font-size:12px;">(수락 대기 중)</span>`
         : ""
       div.innerHTML = `💍 우정반지 — <strong>${item.withNickname}</strong>${josa(item.withNickname, "과와")}${statusText} · ${date}`
+
+    } else if (item.type === "title_ticket") {
+      // ── 칭호 선택권[진짜 자유] ── 선물 불가, 클릭 시 안내만
+      div.className = "inv-item-special"
+      div.innerHTML = `
+        <div style="display:flex;align-items:flex-start;gap:8px;">
+          <span style="font-size:20px;line-height:1.3;">📃</span>
+          <div>
+            <div style="font-weight:bold;color:#7c5cfc;">${item.name ?? "칭호 선택권[진짜 자유]"}</div>
+            <div style="font-size:12px;color:#999;margin-top:2px;">원하는 칭호를 하나 선택할 수 있다. 커스텀 칭호도 가능하다. 소넷 선생님께 들고가보자.</div>
+            <div style="font-size:11px;color:#bbb;margin-top:4px;">· ${date} &nbsp;|&nbsp; <span style="color:#e07b00;">선물 불가</span></div>
+          </div>
+        </div>
+      `
 
     } else if (item.type === "ingredient") {
       div.className = "inv-item-giftable"
@@ -451,7 +469,7 @@ async function renderTitle() {
     `
   }
 
-  // 보유 칭호 목록 (알파벳/가나다 정렬은 뽑은 순 유지)
+  // 보유 칭호 목록
   const listHtml = ownedTitles.map(title => {
     const grade      = getTitleGrade(title)
     const gradeColor = GRADE_COLOR[grade]
@@ -496,6 +514,12 @@ window.equipTitle = async function(title) {
 //  선물 모달
 // ══════════════════════════════════════════════════════
 window.openGiftModal = function(item, originalIndex) {
+  // 칭호 선택권은 선물 불가
+  if (item.type === "title_ticket") {
+    showToast("📃 너 이거 남한테 주려는 거냐?!")
+    return
+  }
+
   giftTargetObj     = item
   giftFoundUid      = null
   giftFoundNickname = null

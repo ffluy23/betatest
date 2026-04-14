@@ -139,7 +139,6 @@ window.apItemChange = function() {
   const showInput = ["custom_ingredient", "custom_etc", "custom_poppin"].includes(val)
   custom.style.display = showInput ? "" : "none"
   if (!showInput) custom.value = ""
-  // placeholder 구분
   custom.placeholder = val === "custom_poppin" ? "포핀 이름 입력" : "아이템 이름 입력"
 }
 
@@ -151,6 +150,11 @@ function buildGItem(now) {
 
   if (val === "ingredient_good") return { type: "ingredient", name: "좋은 조미료", at: now }
   if (val === "ingredient_bad")  return { type: "ingredient", name: "이상한 조미료", at: now }
+
+  // 칭호 선택권 — 이름/설명 고정, 커스텀 입력 없음
+  if (val === "title_ticket") {
+    return { type: "title_ticket", name: "칭호 선택권[진짜 자유]", at: now }
+  }
 
   const name = document.getElementById("ap-custom").value.trim()
   if (!name) return null
