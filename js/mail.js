@@ -118,6 +118,8 @@ async function renderMail() {
       } else if (gItem.type === "poppin") {
         const color = POPPIN_COLOR[gItem.pType] ?? "#aaa"
         label = `🧁 <span style="color:${color};">${gItem.name}</span>`
+      } else if (gItem.type === "title_ticket") {
+        label = `📃 ${gItem.name}`
       }
       div.className = `note-item ${item.read ? "read" : "unread"}`
       div.innerHTML =
@@ -224,14 +226,12 @@ function openLetterModal(item, index) {
 
 // ══════════════════════════════════════════════════════
 //  선물 보기 모달
-//  message 필드가 있으면 아이템 아래에 메시지 표시
 // ══════════════════════════════════════════════════════
 function openGiftViewModal(item, index) {
   currentGiftMailItem = item
 
   const gItem = item.item ?? {}
 
-  // ── 발신자 + 아이템 정보
   let infoHtml = `
     <p style="font-size:13px;color:#666;margin-bottom:10px;">
       <strong>${item.fromNickname}</strong>${josa(item.fromNickname, "이가")} 선물을 보냈어!
@@ -252,9 +252,19 @@ function openGiftViewModal(item, index) {
       ${imgHtml}
       <p style="font-size:16px;margin:0 0 8px;font-weight:bold;color:${color};">${gItem.name}</p>
     `
+
+  } else if (gItem.type === "title_ticket") {
+    infoHtml += `
+      <p style="font-size:16px;margin:0 0 8px;">
+        📃 <strong style="color:#7c5cfc;">${gItem.name}</strong>
+      </p>
+      <p style="font-size:12px;color:#999;margin:0;line-height:1.6;">
+        원하는 칭호를 하나 선택할 수 있다. 커스텀 칭호도 가능하다.<br>소넷 선생님께 들고가보자.
+      </p>
+    `
   }
 
-  // ── 메시지 (있을 때만 표시)
+  // 메시지 (있을 때만 표시)
   if (item.message && item.message.trim()) {
     infoHtml += `
       <div style="
@@ -289,14 +299,12 @@ async function markRead(item, type) {
     await updateDoc(doc(db, "users", myUid), { inbox: arrayRemove(item) })
     await updateDoc(doc(db, "users", myUid), { inbox: arrayUnion(updated) })
 
-    // ✅ 로컬 myData 동기화
     const inbox = myData?.inbox ?? []
     const idx = inbox.findIndex(x => x.at === item.at && x.type === item.type)
     if (idx >= 0 && myData.inbox) {
       myData.inbox[idx] = updated
     }
 
-    // ✅ 클로저가 참조하는 원본 객체도 직접 뮤테이션 → 재클릭 시 early return 보장
     item.read = true
 
   } catch(e) {
