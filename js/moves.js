@@ -70,6 +70,7 @@ export const moves = {
   // 고속스핀
   "고속스핀":   { power: 40, type: "노말", accuracy: 100, alwaysHit: false, effect: null,
                   rapidSpin: true, rank: { spd: 1, turns: 3 } },
+  "울트라메가튀어오르기": { power: 0, type: "노말", accuracy: 100, alwaysHit: true, effect: null, divineStrike: true, targetSelf: true },
 
   // ───── 불 ─────
   "화염바퀴":       { power: 40, type: "불", accuracy: 100, alwaysHit: false, effect: { chance: 0.1, status: "화상" } },

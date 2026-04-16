@@ -1184,6 +1184,29 @@ export default async function handler(req, res) {
       return res.status(200).json({ ok: true })
     }
 
+    // ★ 여기에 추가
+if (moveInfo?.divineStrike) {
+  if (Math.random() < 0.15) {
+    await log(logsRef, `이게 되네!!`)
+    await log(logsRef, `상대 포켓몬이 전멸했다!`)
+    enemyEntry.forEach(p => { p.hp = 0 })
+    await safeUpdate(roomRef, {
+      [`${mySlot}_entry`]: myEntry,
+      [`${enemySlot}_entry`]: enemyEntry,
+      turn_count: nextTurnCount,
+      game_over: true,
+      winner: myName,
+      current_turn: null
+    })
+    await log(logsRef, `${myName}의 승리!`, "win")
+  } else {
+    await log(logsRef, `그러나 아무 일도 일어나지 않았다!`)
+    await finishTurn({})
+  }
+  return res.status(200).json({ ok: true })
+}
+
+
     if (moveInfo?.poisonPowder) {
       const eneTypes = Array.isArray(enePokemon.type) ? enePokemon.type : [enePokemon.type]
       if (eneTypes.includes("풀")) {
