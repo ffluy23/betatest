@@ -558,7 +558,7 @@ export default async function handler(req, res) {
       myPokemon.rollState = { active: false, turn: 0 }
       myPokemon.flyState = null
       myPokemon.digState = null
-      if ((myPokemon.defendTurns ?? 0) > 0) { myPokemon.defendTurns--; if (!myPokemon.defendTurns) myPokemon.defending = false }
+  
       const blockedExpiredMsgs = tickMyRanks(myPokemon)
       for (const msg of blockedExpiredMsgs) await log(logsRef, msg)
       await safeUpdate(roomRef, { [`${mySlot}_entry`]: myEntry, current_turn: enemySlot, turn_count: nextTurnCount })
@@ -599,8 +599,8 @@ export default async function handler(req, res) {
 
     // ★ 방어 체크 - 고스트다이브(1턴째 진입)만 예외, 나머지 모든 기술 막힘
     // (2턴째 자동기술들은 위에서 이미 개별 처리됨)
-    const globalWasDefending = enePokemon.defending ?? false
-    if (globalWasDefending && !moveInfo?.ghostDive) {
+   const globalWasDefending = enePokemon.defending ?? false
+if (globalWasDefending && !moveInfo?.ghostDive && !moveInfo?.targetSelf) {
       enePokemon.defending = false; enePokemon.defendTurns = 0
       await log(logsRef, `${enePokemon.name}${josa(enePokemon.name, "은는")} 방어했다!`)
       if (moveInfo?.jumpKick) {
