@@ -413,6 +413,8 @@ onAuthStateChanged(auth, async user => {
   myUid = user.uid
   const roomSnap = await getDoc(roomRef), room = roomSnap.data()
   mySlot = room.player1_uid === myUid ? "p1" : "p2"
+  const userSnap = await getDoc(doc(db, "users", myUid))
+  window.__myDisplayName = userSnap.data()?.nickname ?? myUid.slice(0, 6)
   if (isSpectator) {
     const td = document.getElementById("turn-display")
     if (td) { td.innerText = "관전 중"; td.style.color = "gray" }
