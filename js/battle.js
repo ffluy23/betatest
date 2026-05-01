@@ -739,9 +739,10 @@ function updateBenchButtons(data) {
 const isDigging = myEntry[activeIdx]?.digState?.digging ?? false
 const enemySlotForWrap = mySlot === "p1" ? "p2" : "p1"
 const isWrapped = !activeFainted && !!(myEntry[activeIdx]?.wrapState)
+const isForceUTurn = !!(data[`force_switch_${mySlot}`] && data.current_turn === mySlot)
 btn.disabled = isSpectator || !myTurn || (actionDone && !forceSwitch) || queueBusy
   || (!activeFainted && !forceSwitch && !!(myEntry[activeIdx]?.bideState?.turnsLeft > 0))
-  || isFlying || isDigging || isWrapped
+  || isFlying || isDigging || (isWrapped && !isForceUTurn)
       if (!isSpectator) btn.onclick = () => { playSound(SFX_BTN); switchPokemon(idx) }
     }
     bench.appendChild(btn)

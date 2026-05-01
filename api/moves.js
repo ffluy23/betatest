@@ -161,6 +161,7 @@ export const moves = {
   "우드혼":         { power: 45, type: "풀", accuracy: 100, alwaysHit: false, effect: { drain: 0.15 } },
   "사과산":         { power: 50, type: "풀", accuracy: 100, alwaysHit: false, effect: null,
                       rank: { targetDef: -1, turns: 2 } },
+  "트릭플라워": { power: 40, type: "풀", accuracy: 100, alwaysHit: true, effect: null, alwaysCrit: true },
 
   // ───── 얼음 ─────
   "눈보라":         { power: 40, type: "얼음", accuracy: 70,  alwaysHit: false, effect: { chance: 0.1, status: "얼음" }, aoeEnemy: true },

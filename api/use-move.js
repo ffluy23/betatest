@@ -731,6 +731,33 @@ export default async function handler(req, res) {
           if (myPokemon.hp <= 0) await log(logsRef, `${myPokemon.name}${josa(myPokemon.name, "은는")} 쓰러졌다!`, "faint")
         }
 
+
+        // ★ tickDmg 틱뎀 (김밥말이)
+        if (enePokemon.tickDmgState) {
+          const tickDmg = Math.max(1, Math.floor((enePokemon.maxHp ?? enePokemon.hp) * 0.12))
+          enePokemon.hp = Math.max(0, enePokemon.hp - tickDmg)
+          await log(logsRef, `${enePokemon.name}${josa(enePokemon.name, "은는")} ${enePokemon.tickDmgState.moveName}의 데미지를 받았다! (-${tickDmg})`)
+          await log(logsRef, "", "hit", { defender: enemySlot, hp: enePokemon.hp, maxHp: enePokemon.maxHp ?? enePokemon.hp })
+          enePokemon.tickDmgState.turnsLeft--
+          if (enePokemon.tickDmgState.turnsLeft <= 0) {
+            enePokemon.tickDmgState = null
+            await log(logsRef, `${enePokemon.name}${josa(enePokemon.name, "은는")} 풀려났다!`)
+          }
+          if (enePokemon.hp <= 0) await log(logsRef, `${enePokemon.name}${josa(enePokemon.name, "은는")} 쓰러졌다!`, "faint")
+        }
+        if (myPokemon.tickDmgState) {
+          const tickDmg = Math.max(1, Math.floor((myPokemon.maxHp ?? myPokemon.hp) * 0.12))
+          myPokemon.hp = Math.max(0, myPokemon.hp - tickDmg)
+          await log(logsRef, `${myPokemon.name}${josa(myPokemon.name, "은는")} ${myPokemon.tickDmgState.moveName}의 데미지를 받았다! (-${tickDmg})`)
+          await log(logsRef, "", "hit_self", { slot: mySlot, hp: myPokemon.hp, maxHp: myPokemon.maxHp ?? myPokemon.hp })
+          myPokemon.tickDmgState.turnsLeft--
+          if (myPokemon.tickDmgState.turnsLeft <= 0) {
+            myPokemon.tickDmgState = null
+            await log(logsRef, `${myPokemon.name}${josa(myPokemon.name, "은는")} 풀려났다!`)
+          }
+          if (myPokemon.hp <= 0) await log(logsRef, `${myPokemon.name}${josa(myPokemon.name, "은는")} 쓰러졌다!`, "faint")
+        }
+
         if (myPokemon.aquaRing && myPokemon.hp > 0 && !(myPokemon.healBlocked > 0)) {
           const heal = Math.max(1, Math.floor((myPokemon.maxHp ?? myPokemon.hp) / 16))
           myPokemon.hp = Math.min(myPokemon.maxHp ?? myPokemon.hp, myPokemon.hp + heal)
@@ -799,8 +826,8 @@ export default async function handler(req, res) {
 
       const myFainted = myPokemon.hp <= 0
       const eneFainted = enePokemon.hp <= 0
-      if (myFainted) { myPokemon.bideState = null; myPokemon.rollState = { active: false, turn: 0 }; myPokemon.flyState = null; myPokemon.digState = null; myPokemon.wrapState = null }
-      if (eneFainted) { enePokemon.bideState = null; enePokemon.rollState = { active: false, turn: 0 }; enePokemon.flyState = null; enePokemon.digState = null; enePokemon.wrapState = null }
+      if (myFainted) { myPokemon.bideState = null; myPokemon.rollState = { active: false, turn: 0 }; myPokemon.flyState = null; myPokemon.digState = null; myPokemon.wrapState = null; myPokemon.tickDmgState = null }
+      if (eneFainted) { enePokemon.bideState = null; enePokemon.rollState = { active: false, turn: 0 }; enePokemon.flyState = null; enePokemon.digState = null; enePokemon.wrapState = null; enePokemon.tickDmgState = null }
       if (eneFainted) revengeUpdate[`revenge_ready_${enemySlot}`] = false
       if (myFainted) {
         revengeUpdate[`revenge_ready_${mySlot}`] = true
@@ -1668,9 +1695,11 @@ export default async function handler(req, res) {
           return res.status(200).json({ ok: true })
         }
 
-        const { damage: rawDmg, multiplier, critical, minRoll, minDice } = calcDamage(myPokemon, moveData.name, enePokemon, atkRank, defRankEne, powerOverride, atkStatOverride, currentWeather)
+        const { damage: rawDmg, multiplier, critical: calcCritical, minRoll, minDice } = calcDamage(myPokemon, moveData.name, enePokemon, atkRank, defRankEne, powerOverride, atkStatOverride, currentWeather)
+        const critical = moveInfo?.alwaysCrit ? true : calcCritical
+        const alwaysCritMult = (moveInfo?.alwaysCrit && !calcCritical) ? 1.5 : 1.0
         const tricksterMult = moveInfo?.trickster ? 0.7 : 1.0
-        const damage = counterDamage ?? Math.floor(rawDmg * comebackMult * sickMult * gutsMult * revivedMult * tricksterMult * finisherMult * venomShockMult * chargedMult)
+        const damage = counterDamage ?? Math.floor(rawDmg * comebackMult * sickMult * gutsMult * revivedMult * tricksterMult * finisherMult * venomShockMult * chargedMult * alwaysCritMult)
 
         if (multiplier === 0) {
           await log(logsRef, `${enePokemon.name}에게는 효과가 없다…`)
@@ -1692,9 +1721,9 @@ export default async function handler(req, res) {
           }
           if (moveInfo?.rapidSpin && myPokemon.seeded) { myPokemon.seeded = false; await log(logsRef, `${myPokemon.name}${josa(myPokemon.name, "은는")} 씨뿌리기가 풀렸다!`) }
           // ★ 고속스핀으로 wrap 해제
-          if (moveInfo?.rapidSpin && myPokemon.wrapState) {
-            myPokemon.wrapState = null
-            await log(logsRef, `${myPokemon.name}${josa(myPokemon.name, "은는")} 속박에서 풀려났다!`)
+          if (moveInfo?.rapidSpin && myPokemon.tickDmgState) {
+            myPokemon.tickDmgState = null
+            await log(logsRef, `${myPokemon.name}${josa(myPokemon.name, "은는")} 감긴 것이 풀렸다!`)
           }
           if (moveInfo?.rapidSpin) {
             const { msgs: spinMsgs, fieldUpdate: spinFieldUpdate } = applyRapidSpin(mySlot, freshData)
@@ -1760,6 +1789,13 @@ export default async function handler(req, res) {
             enePokemon.wrapState = { turnsLeft: wrapTurns, moveName: moveData.name, attackerSlot: mySlot }
             await log(logsRef, `${enePokemon.name}${josa(enePokemon.name, "은는")} 꼼짝 못하게 됐다!`)
           }
+
+          // ★ 김밥말이: 교체봉인 없는 틱뎀만
+if (moveInfo?.tickDmg && enePokemon.hp > 0 && !enePokemon.tickDmgState) {
+  const tickTurns = Math.floor(Math.random() * 2) + 4
+  enePokemon.tickDmgState = { turnsLeft: tickTurns, moveName: moveData.name }
+  await log(logsRef, `${enePokemon.name}${josa(enePokemon.name, "은는")} 칭칭 감겼다!`)
+}
 
           if (enePokemon.hp <= 0) await log(logsRef, `${enePokemon.name}${josa(enePokemon.name, "은는")} 쓰러졌다!`, "faint")
         }
