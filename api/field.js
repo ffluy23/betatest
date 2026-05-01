@@ -58,6 +58,8 @@ export function applyFieldEffects(pokemon, slot, roomData) {
       // 독/강철 타입 → 독압정 제거
       msgs.push(`${pokemon.name}${josa(pokemon.name, "이가")} 독압정을 흡수했다!`)
       fieldUpdate[tsKey] = false
+   } else if (types.includes("비행")) {
+      // 비행 타입 → 독압정 면역
     } else if (!pokemon.status) {
       // 다른 타입 → 독 부여
       pokemon.status = "독"

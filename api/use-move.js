@@ -1737,6 +1737,15 @@ export default async function handler(req, res) {
           const effectMsgs = applyMoveEffect(moveInfo?.effect ?? null, myPokemon, enePokemon, damage, currentWeather)
           for (const msg of effectMsgs) await log(logsRef, msg)
 
+            if (moveInfo?.effect?.healBlock && enePokemon.hp > 0) {
+  if ((enePokemon.healBlocked ?? 0) > 0) {
+    await log(logsRef, `${enePokemon.name}${josa(enePokemon.name, "은는")} 이미 회복봉인 상태다!`)
+  } else {
+    enePokemon.healBlocked = 3
+    await log(logsRef, `${enePokemon.name}${josa(enePokemon.name, "의")} HP 회복이 봉인됐다!`)
+  }
+}
+
             if (moveInfo?.effect?.cureburn && enePokemon.hp > 0 && enePokemon.status === "화상") {
   enePokemon.status = null
   await log(logsRef, `${enePokemon.name}${josa(enePokemon.name, "의")} 화상이 나았다!`)
