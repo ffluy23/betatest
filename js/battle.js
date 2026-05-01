@@ -424,7 +424,7 @@ onAuthStateChanged(auth, async user => {
     document.getElementById("battle-screen").classList.add("visible")
   }
   waitForBattleReady(); listenLogs(room?.game_started_at ?? 0)
-  window.initSingleChat?.({ db, ROOM_ID, myUid, isSpectator })
+  window.initSingleChat?.({ db, ROOM_ID, myUid, isSpectator, gameStartedAt: room?.game_started_at ?? 0 })
 })
 
 function waitForBattleReady() {
