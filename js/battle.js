@@ -738,7 +738,7 @@ function updateBenchButtons(data) {
       const isFlying = myEntry[activeIdx]?.flyState?.flying ?? false
 const isDigging = myEntry[activeIdx]?.digState?.digging ?? false
 const enemySlotForWrap = mySlot === "p1" ? "p2" : "p1"
-const isWrapped = !!(myEntry[activeIdx]?.wrapState)
+const isWrapped = !activeFainted && !!(myEntry[activeIdx]?.wrapState)
 btn.disabled = isSpectator || !myTurn || (actionDone && !forceSwitch) || queueBusy
   || (!activeFainted && !forceSwitch && !!(myEntry[activeIdx]?.bideState?.turnsLeft > 0))
   || isFlying || isDigging || isWrapped
