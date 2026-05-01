@@ -418,7 +418,7 @@ export const moves = {
   "보복":       { power: 50, type: "악",   accuracy: 100, alwaysHit: false, effect: null, comeback: true },
   "마구찌르기": { power: 1,  type: "노말", accuracy: 85,  alwaysHit: false, effect: null,
                   multiHit: { min: 2, max: 5, fixedDamage: 10 } },
-  "고드름침": { power: 1,  type: "노말", accuracy: 100,  alwaysHit: false, effect: null,
+  "고드름침": { power: 1,  type: "얼음", accuracy: 100,  alwaysHit: false, effect: null,
                   multiHit: { min: 2, max: 5, fixedDamage: 10 } },
   "바늘미사일": { power: 1,  type: "벌레", accuracy: 95,  alwaysHit: false, effect: null,
                   multiHit: { min: 2, max: 5, fixedDamage: 6 } },
