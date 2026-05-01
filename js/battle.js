@@ -325,13 +325,14 @@ function typeText(log, text) {
 
 async function addLog(text) { await addDoc(logsRef, { text, type: "normal", ts: Date.now() }) }
 
-function listenLogs() {
+function listenLogs(gameStartedAt = 0) {
   const q = query(logsRef, orderBy("ts"))
   onSnapshot(q, snap => {
     snap.docs.forEach(d => {
       if (renderedLogIds.has(d.id)) return
-      renderedLogIds.add(d.id)
       const data = d.data()
+      if (gameStartedAt && data.ts < gameStartedAt) return  // ← 이 줄 추가
+      renderedLogIds.add(d.id)
       logQueue.push({ id: d.id, text: data.text ?? "", type: data.type ?? "normal", meta: data })
     })
     processLogQueue()
@@ -422,7 +423,7 @@ onAuthStateChanged(auth, async user => {
     if (lb) { lb.style.display = "inline-block"; lb.disabled = false; lb.innerText = "관전 종료"; lb.onclick = leaveAsSpectator }
     document.getElementById("battle-screen").classList.add("visible")
   }
-  waitForBattleReady(); listenLogs()
+  waitForBattleReady(); listenLogs(room?.game_started_at ?? 0)
   window.initSingleChat?.({ db, ROOM_ID, myUid, isSpectator })
 })
 
