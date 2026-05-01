@@ -126,6 +126,7 @@ function applyRankChanges(r, self, target, moveName) {
 }
 
 function calcHit(attacker, moveInfo, defender) {
+  if (moveInfo.alwaysHit || moveInfo.skipEvasion) return { hit: true, hitType: "hit" }
   if (Math.random() * 100 >= (moveInfo.accuracy ?? 100)) return { hit: false, hitType: "missed" }
   if (defender.flyState?.flying && !moveInfo.twister && moveInfo._name !== "번개")
     return { hit: false, hitType: "evaded" }
@@ -133,7 +134,6 @@ function calcHit(attacker, moveInfo, defender) {
     return { hit: false, hitType: "evaded" }
   if (defender.ghostDiveState?.diving)
     return { hit: false, hitType: "evaded" }
-  if (moveInfo.alwaysHit || moveInfo.skipEvasion) return { hit: true, hitType: "hit" }
   const as = Math.max(1, (attacker.speed ?? 3) - getStatusSpdPenalty(attacker))
   const ds = Math.max(1, (defender.speed ?? 3) - getStatusSpdPenalty(defender))
   const defSpdRank = (defender.ranks ?? {})

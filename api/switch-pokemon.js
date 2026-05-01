@@ -64,7 +64,8 @@ export default async function handler(req, res) {
       return res.status(400).json({ error: "교체 불가" })
     }
 
-    // 랭크 초기화
+
+// 랭크 초기화
     myPokemon.lastRankMove = null
     myPokemon.rankStack = 0
     if (myPokemon.ranks) {
@@ -72,6 +73,10 @@ export default async function handler(req, res) {
       myPokemon.ranks.def = 0; myPokemon.ranks.defTurns = 0
       myPokemon.ranks.spd = 0; myPokemon.ranks.spdTurns = 0
     }
+
+    // 방어 스택 초기화
+    myPokemon.lastDefendMove = null
+    myPokemon.defendStack = 0
 
     // 구르기 초기화
     myPokemon.rollState = { active: false, turn: 0 }
