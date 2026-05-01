@@ -22,12 +22,7 @@
 
 *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
 
-@font-face {
-    font-family: 'BoldRound';
-    src: url('https://cdn.jsdelivr.net/gh/projectnoonnu/2507-2@1.0/BoldDungGeunMo.woff2') format('woff2');
-    font-weight: normal;
-    font-display: swap;
-}
+@import url('https://cdn.jsdelivr.net/gh/MonadABXY/mona-font/web/mona.css');
 
 html { font-size: 16px; }
 
