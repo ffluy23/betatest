@@ -1332,7 +1332,7 @@ export default async function handler(req, res) {
   return res.status(200).json({ ok: true })
 }
 
-    if (moveInfo?.power == null) {
+    if (!moveInfo?.power) {  
       const r = moveInfo?.rank
       const targetsEnemy = (r && (r.targetAtk !== undefined || r.targetDef !== undefined || r.targetSpd !== undefined)) || moveInfo?.targetSelf === false
       if (targetsEnemy) {
