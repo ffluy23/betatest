@@ -60,12 +60,12 @@ onAuthStateChanged(auth, async user => {
 })
 
 // ══════════════════════════════════════════════════════
-//  게임 초기화 (처음 or 리셋)
+//  게임 초기화 (처음 or 리셋) → 베팅 화면 표시
 // ══════════════════════════════════════════════════════
 function initGame() {
   round     = 1
   pendingZP = 0
-  startRound()
+  showBetScreen()
 }
 
 window.resetToStart = function() {
@@ -73,26 +73,48 @@ window.resetToStart = function() {
   initGame()
 }
 
+function showBetScreen() {
+  hideAllOverlays()
+  const btn = document.getElementById("bet-confirm-btn")
+  document.getElementById("bet-zp-display").innerText = myCoins.toLocaleString() + " ZP"
+
+  if (myCoins < BET_AMOUNT) {
+    btn.disabled = true
+    btn.innerText = "ZP가 부족해..."
+  } else {
+    btn.disabled = false
+    btn.innerText = "💰 100ZP 베팅하기"
+  }
+  document.getElementById("overlay-bet").style.display = "flex"
+}
+
+window.confirmBet = async function() {
+  if (myCoins < BET_AMOUNT) {
+    showToast("ZP가 부족해! (최소 100ZP 필요)")
+    return
+  }
+  const btn = document.getElementById("bet-confirm-btn")
+  btn.disabled = true
+  btn.innerText = "처리 중..."
+
+  try {
+    await updateDoc(doc(db, "users", myUid), { coins: increment(-BET_AMOUNT) })
+    myCoins -= BET_AMOUNT
+    updateZpDisplay()
+  } catch(e) {
+    showToast("오류 발생! 다시 시도해봐")
+    btn.disabled = false
+    btn.innerText = "💰 100ZP 베팅하기"
+    return
+  }
+
+  startRound()
+}
+
 // ══════════════════════════════════════════════════════
 //  라운드 시작
 // ══════════════════════════════════════════════════════
-async function startRound() {
-  // 1라운드 시작 시에만 배팅 차감
-  if (round === 1) {
-    if (myCoins < BET_AMOUNT) {
-      showToast("ZP가 부족해! (최소 100ZP 필요)")
-      return
-    }
-    try {
-      await updateDoc(doc(db, "users", myUid), { coins: increment(-BET_AMOUNT) })
-      myCoins -= BET_AMOUNT
-      updateZpDisplay()
-    } catch(e) {
-      showToast("오류 발생! 다시 시도해봐")
-      return
-    }
-  }
-
+function startRound() {
   const cfg = ROUND_CONFIG[round - 1]
   board       = buildBoard(cfg)
   flipped     = Array.from({ length: GRID }, () => Array(GRID).fill(false))
@@ -371,7 +393,7 @@ function setMessage(msg) {
 }
 
 function hideAllOverlays() {
-  ["overlay-bear","overlay-clear","overlay-perfect","overlay-stop"].forEach(id => {
+  ["overlay-bet","overlay-bear","overlay-clear","overlay-perfect","overlay-stop"].forEach(id => {
     document.getElementById(id).style.display = "none"
   })
 }

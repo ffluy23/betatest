@@ -21,7 +21,7 @@
     <header class="game-header">
       <div class="header-title">
         <span class="bear-icon">🐻</span>
-        <h1>다투곰 뒤집기</h1>
+        <h1>다투곰 플립</h1>
         <span class="bear-icon">🐻</span>
       </div>
       <div class="header-info">
@@ -66,7 +66,7 @@
     <!-- 메시지 -->
     <div class="message-box" id="message-box">
       <p>2와 3을 모두 찾으면 라운드 클리어!</p>
-      <p class="message-sub">다투곰을 만나면... 모은 ZP가 전부 사라져!</p>
+      <p class="message-sub">다투곰을 만나면 모은 ZP가 전부 사라져!</p>
     </div>
 
     <!-- 토스트 -->
@@ -74,11 +74,27 @@
 
     <!-- ── 오버레이들 ── -->
 
+    <!-- 베팅 화면 (게임 시작 전) -->
+    <div class="overlay" id="overlay-bet" style="display:none;">
+      <div class="overlay-box bet">
+        <div class="overlay-icon">🎰</div>
+        <div class="overlay-title">다투곰 뒤집기</div>
+        <div class="overlay-sub">
+          다투곰을 만나면 모든 ZP가 사라져.<br><br>
+          <span class="bet-amount-text">베팅: <strong>100 ZP</strong></span>
+        </div>
+        <button class="btn-overlay bet-btn" id="bet-confirm-btn" onclick="confirmBet()">
+          💰 100ZP 베팅하기
+        </button>
+        <div class="bet-zp-info">보유 ZP: <span id="bet-zp-display">---</span></div>
+      </div>
+    </div>
+
     <!-- 다투곰 (게임 오버) -->
     <div class="overlay" id="overlay-bear" style="display:none;">
       <div class="overlay-box bear">
         <div class="overlay-icon shake-anim">🐻</div>
-        <div class="overlay-title">다투곰이다!!</div>
+        <div class="overlay-title">다투곰 등장!</div>
         <div class="overlay-sub" id="bear-sub">지금까지 모은 ZP가 전부 사라졌어...</div>
         <button class="btn-overlay bear" onclick="resetToStart()">처음부터 시작</button>
       </div>
