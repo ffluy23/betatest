@@ -205,7 +205,7 @@ export const moves = {
   "녹기": { power: 0, type: "독", accuracy: 100, alwaysHit: true, effect: null,
                 rank: { def: 2, turns: 2 } },
   "킬러스핀":   { power: 40, type: "독", accuracy: 100, alwaysHit: false, effect: null,
-                  rapidSpin: true, rank: { spd: 1, turns: 3 }, effect: { chance: 0.1, status: "독" } },
+                  rapidSpin: true, rank: { spd: 1, turns: 3 }, effect: { chance: 1, status: "독" } },
 
   // ───── 땅 ─────
   "지진":       { power: 50, type: "땅", accuracy: 100, alwaysHit: false, effect: null, aoe: true },
@@ -442,4 +442,6 @@ export const moves = {
 "분풀이":   { power: 45, type: "악",   accuracy: 100, alwaysHit: false, effect: null, vengeance: true },
 "물거품아리아": { power: 50, type: "물", accuracy: 100, alwaysHit: false, effect: { cureburn: true } },
 "불사르기":     { power: 60, type: "불", accuracy: 100, alwaysHit: false, effect: null, burnOff: true },
+"사이코노이즈":       { power: 45,  type: "에스퍼", accuracy: 100, alwaysHit: false,  effect: null,
+                      healBlock: true, targetSelf: false, aoeEnemy: true },
 }

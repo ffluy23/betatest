@@ -863,28 +863,51 @@ export default async function handler(req, res) {
       return res.status(200).json({ ok: true })
     }
 
-    if (moveInfo?.roar) {
-      const candidates = enemyEntry.map((p, i) => ({ p, i })).filter(({ p, i }) => i !== eneActiveIdx && p.hp > 0)
-      if (candidates.length === 0) {
-        await log(logsRef, `그러나 ${enePokemon.name}에게는 맞지 않았다!`)
-      } else {
-        const chosen = candidates[Math.floor(Math.random() * candidates.length)]
-        await log(logsRef, `${enePokemon.name}${josa(enePokemon.name, "은는")} 물러났다!`)
-        await log(logsRef, `${chosen.p.name}${josa(chosen.p.name, "이가")} 나왔다!`)
-        chosen.p.seeded = false
-        await safeUpdate(roomRef, { [`${mySlot}_entry`]: myEntry, [`${enemySlot}_entry`]: enemyEntry, [`${enemySlot}_active_idx`]: chosen.i, current_turn: enemySlot, turn_count: nextTurnCount })
-        return res.status(200).json({ ok: true })
-      }
-      await finishTurn({})
-      return res.status(200).json({ ok: true })
-    }
+   if (moveInfo?.roar) {
+  const candidates = enemyEntry.map((p, i) => ({ p, i })).filter(({ p, i }) => i !== eneActiveIdx && p.hp > 0)
+  if (candidates.length === 0) {
+    await log(logsRef, `그러나 ${enePokemon.name}에게는 맞지 않았다!`)
+  } else {
+    const chosen = candidates[Math.floor(Math.random() * candidates.length)]
+    await log(logsRef, `${enePokemon.name}${josa(enePokemon.name, "은는")} 물러났다!`)
+    await log(logsRef, `${chosen.p.name}${josa(chosen.p.name, "이가")} 나왔다!`)
+    chosen.p.seeded = false
 
-    if (moveInfo?.amulet) {
-      myPokemon.amuletTurns = 3
-      await log(logsRef, `${myPokemon.name}${josa(myPokemon.name, "은는")} 신비의 부적으로 몸을 감쌌다!`)
-      await finishTurn({})
-      return res.status(200).json({ ok: true })
+    // ★ 교대 출전 필드 효과 적용
+    const { msgs: fieldMsgs, hitLogs, statusMsgs, fieldUpdate } =
+      applyFieldEffects(chosen.p, enemySlot, freshData)
+
+    let ts = Date.now()
+    for (const msg of fieldMsgs) await log(logsRef, msg)
+    for (const hl of hitLogs) {
+      await log(logsRef, "", "hit", {
+        defender: enemySlot, hp: hl.hp, maxHp: hl.maxHp
+      })
     }
+    for (const msg of statusMsgs) await log(logsRef, msg)
+
+    // 필드 효과로 쓰러진 경우 → 또 강제교체
+    const fainted = chosen.p.hp <= 0
+    const allFainted = enemyEntry.every(p => p.hp <= 0)
+
+    await safeUpdate(roomRef, {
+      [`${mySlot}_entry`]: myEntry,
+      [`${enemySlot}_entry`]: enemyEntry,
+      [`${enemySlot}_active_idx`]: chosen.i,
+      current_turn: enemySlot,
+      turn_count: nextTurnCount,
+      ...fieldUpdate,
+      ...(fainted && !allFainted ? { [`force_switch_${enemySlot}`]: true, current_turn: enemySlot } : {}),
+      ...(allFainted ? { game_over: true, winner: myName, current_turn: null } : {})
+    })
+
+    if (allFainted) {
+      await log(logsRef, `${myName}의 승리!`, "win")
+    }
+  }
+  await finishTurn({})
+  return res.status(200).json({ ok: true })
+}
 
     if (moveInfo?.charge) {
       myPokemon.charged = true
