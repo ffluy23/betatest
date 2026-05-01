@@ -1223,6 +1223,50 @@ export default async function handler(req, res) {
       return res.status(200).json({ ok: true })
     }
 
+    if (moveInfo?.burnOff) {
+  const myTypes = Array.isArray(myPokemon.type) ? myPokemon.type : [myPokemon.type]
+  if (!myTypes.includes("불")) {
+    await log(logsRef, `${myPokemon.name}${josa(myPokemon.name, "은는")} 불 타입이 아니라 실패했다!`)
+    await finishTurn({})
+    return res.status(200).json({ ok: true })
+  }
+  const { hit, hitType } = calcHit(myPokemon, moveInfo, enePokemon)
+  if (!hit) {
+    myPokemon.lastMoveMissed = true
+    if (hitType === "evaded") await log(logsRef, `${enePokemon.name}에게는 맞지 않았다!`, "evade")
+    else await log(logsRef, `그러나 ${myPokemon.name}의 공격은 빗나갔다!`)
+    await finishTurn({})
+    return res.status(200).json({ ok: true })
+  }
+  myPokemon.lastMoveMissed = false
+  await log(logsRef, "", "attack", { attacker: mySlot })
+  const atkRankBO = getActiveRank(myPokemon, "atk")
+  const defRankEneBO = getActiveRank(enePokemon, "def")
+  const { damage, multiplier, critical, minRoll, minDice } = calcDamage(myPokemon, moveData.name, enePokemon, atkRankBO, defRankEneBO, null, null, currentWeather)
+  if (multiplier === 0) {
+    await log(logsRef, `${enePokemon.name}에게는 효과가 없다…`)
+  } else {
+    enePokemon.hp = Math.max(0, enePokemon.hp - damage)
+    if (enePokemon.hp <= 0 && enePokemon.enduring) { enePokemon.hp = 1; enePokemon.enduring = false }
+    await hitLog(enemySlot, enePokemon)
+    if (multiplier > 1) await log(logsRef, "효과가 굉장했다!")
+    if (multiplier < 1) await log(logsRef, "효과가 별로인 듯하다…")
+    if (minRoll) await log(logsRef, `${minDice}! (최소 피해 보장)`)
+    else if (critical) await log(logsRef, "급소에 맞았다!", "critical")
+    if (enePokemon.hp <= 0) await log(logsRef, `${enePokemon.name}${josa(enePokemon.name, "은는")} 쓰러졌다!`, "faint")
+    recordDmg(revengeUpdate ?? {}, enemySlot, damage)
+  }
+  // 불 타입 제거 (날개쉬기 방식)
+  const types = Array.isArray(myPokemon.type) ? [...myPokemon.type] : [myPokemon.type]
+  myPokemon._origType = myPokemon.type
+  myPokemon.type = types.filter(t => t !== "불")
+  if (myPokemon.type.length === 0) myPokemon.type = ["노말"]
+  myPokemon.roostTurns = 3
+  await log(logsRef, `${myPokemon.name}${josa(myPokemon.name, "은는")} 불꽃을 다 태워버려 불 타입이 사라졌다!`)
+  await finishTurn(revengeUpdate ?? {})
+  return res.status(200).json({ ok: true })
+}
+
     if (moveInfo?.divineStrike) {
       if (Math.random() < 0.15) {
         await log(logsRef, `이게 되네!!`)
@@ -1638,6 +1682,11 @@ export default async function handler(req, res) {
           }
           const effectMsgs = applyMoveEffect(moveInfo?.effect ?? null, myPokemon, enePokemon, damage, currentWeather)
           for (const msg of effectMsgs) await log(logsRef, msg)
+
+            if (moveInfo?.effect?.cureburn && enePokemon.hp > 0 && enePokemon.status === "화상") {
+  enePokemon.status = null
+  await log(logsRef, `${enePokemon.name}${josa(enePokemon.name, "의")} 화상이 나았다!`)
+}
 
           // ★ 트라이어택 상태이상
           if (moveInfo?.effect?.triAttack && enePokemon.hp > 0 && !enePokemon.status) {

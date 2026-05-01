@@ -398,6 +398,7 @@ export const moves = {
   "방어":       { power: 0,  type: "노말", accuracy: 100, alwaysHit: true,  effect: null, defend: true, targetSelf: true },
   "판별":       { power: 0,  type: "격투", accuracy: 100, alwaysHit: true,  effect: null, defend: true, targetSelf: true },
   "울부짖기":   { power: 0,  type: "노말", accuracy: 100, alwaysHit: false, effect: null, roar: true, targetSelf: false },
+  "날려버리기":   { power: 0,  type: "노말", accuracy: 100, alwaysHit: false, effect: null, roar: true, targetSelf: false },
   "원수갚기":   { power: 40, type: "노말", accuracy: 100, alwaysHit: false, effect: null, revenge: true },
   "뒀다쓰기":   { power: 70, type: "노말", accuracy: 100, alwaysHit: false, effect: null, lastResort: true },
   "신비의부적": { power: 0,  type: "노말", accuracy: 100, alwaysHit: true,  effect: null, amulet: true, targetSelf: true },
@@ -438,4 +439,6 @@ export const moves = {
                 effect: { chance: 0.2, triAttack: true } },
 "분함의발구르기": { power: 45, type: "땅", accuracy: 100, alwaysHit: false, effect: null, stomping: true },
 "분풀이":   { power: 45, type: "악",   accuracy: 100, alwaysHit: false, effect: null, vengeance: true },
+"물거품아리아": { power: 50, type: "물", accuracy: 100, alwaysHit: false, effect: { cureburn: true } },
+"불사르기":     { power: 60, type: "불", accuracy: 100, alwaysHit: false, effect: null, burnOff: true },
 }
