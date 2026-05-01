@@ -5,9 +5,9 @@ import { onAuthStateChanged } from "https://www.gstatic.com/firebasejs/10.7.1/fi
 import { doc, getDoc, updateDoc, onSnapshot } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js"
 
 const BGM_LIST = [
-  "https://stupid-turquoise-moc8mdlzqh.edgeone.app/PerituneMaterial_Rapid3.mp3",
-  "https://glad-gold-vahxrzr1mi.edgeone.app/戦いの旅路を征く.mp3",
-  "https://curly-indigo-f4dhznoudl.edgeone.app/PerituneMaterial_Rapid4.mp3"
+  "https://evolutionary-salmon-edlqyecl7t.edgeone.app/Sagittarius.mp3",
+  "https://yearning-gray-xd1k3bu4nb.edgeone.app/Shattered%20Icefront.mp3",
+  "https://due-magenta-jrpd19aqvt.edgeone.app/Reflect.mp3"
 ]
 
 const BG_LIST = [

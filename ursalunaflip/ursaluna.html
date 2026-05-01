@@ -1,0 +1,131 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
+  <meta name="mobile-web-app-capable" content="yes" />
+  <meta name="apple-mobile-web-app-capable" content="yes" />
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+  <meta name="theme-color" content="#1a1a2e" />
+  <title>다투곰 뒤집기</title>
+  <link rel="stylesheet" href="ursaluna.css" />
+  <link href="https://fonts.googleapis.com/css2?family=Galmuri11&family=DotGothic16&display=swap" rel="stylesheet" />
+</head>
+<body>
+
+  <div class="bg-grid"></div>
+
+  <div class="game-wrapper">
+
+    <!-- 헤더 -->
+    <header class="game-header">
+      <div class="header-title">
+        <span class="bear-icon">🐻</span>
+        <h1>다투곰 뒤집기</h1>
+        <span class="bear-icon">🐻</span>
+      </div>
+      <div class="header-info">
+        <div class="zp-display">
+          <span class="zp-label">💰 ZP</span>
+          <span class="zp-value" id="zp-display">---</span>
+        </div>
+        <div class="level-display">
+          <span class="lv-label">ROUND</span>
+          <span class="lv-value" id="round-display">-/-</span>
+        </div>
+      </div>
+    </header>
+
+    <!-- 라운드 진행 트랙 -->
+    <div class="round-track">
+      <div class="round-track-label">라운드 진행</div>
+      <div class="round-steps" id="round-steps"></div>
+    </div>
+
+    <!-- 상태 바 -->
+    <div class="status-bar">
+      <div class="score-chip">
+        <span class="score-label">이번 라운드 배수</span>
+        <span class="score-value" id="round-mult-display">×2</span>
+      </div>
+      <div class="score-chip">
+        <span class="score-label">누적 획득 ZP</span>
+        <span class="score-value earn" id="earn-display">+0</span>
+      </div>
+      <div class="score-chip">
+        <span class="score-label">다투곰 수</span>
+        <span class="score-value danger" id="danger-display">🐻 ?</span>
+      </div>
+    </div>
+
+    <!-- 보드 -->
+    <div class="board-container">
+      <div class="board-grid" id="board-grid"></div>
+    </div>
+
+    <!-- 메시지 -->
+    <div class="message-box" id="message-box">
+      <p>2와 3을 모두 찾으면 라운드 클리어!</p>
+      <p class="message-sub">다투곰을 만나면... 모은 ZP가 전부 사라져!</p>
+    </div>
+
+    <!-- 토스트 -->
+    <div class="toast" id="toast"></div>
+
+    <!-- ── 오버레이들 ── -->
+
+    <!-- 다투곰 (게임 오버) -->
+    <div class="overlay" id="overlay-bear" style="display:none;">
+      <div class="overlay-box bear">
+        <div class="overlay-icon shake-anim">🐻</div>
+        <div class="overlay-title">다투곰이다!!</div>
+        <div class="overlay-sub" id="bear-sub">지금까지 모은 ZP가 전부 사라졌어...</div>
+        <button class="btn-overlay bear" onclick="resetToStart()">처음부터 시작</button>
+      </div>
+    </div>
+
+    <!-- 라운드 클리어 (GO / STOP) -->
+    <div class="overlay" id="overlay-clear" style="display:none;">
+      <div class="overlay-box clear">
+        <div class="overlay-icon">🎉</div>
+        <div class="overlay-title" id="clear-title">라운드 클리어!</div>
+        <div class="overlay-sub" id="clear-sub"></div>
+        <div class="go-stop-btns">
+          <button class="btn-stop" onclick="chooseStop()">
+            <span class="btn-main-text">🛑 STOP</span>
+            <span class="btn-sub-text" id="stop-zp-text">ZP 받기</span>
+          </button>
+          <button class="btn-go" id="go-btn" onclick="chooseGo()">
+            <span class="btn-main-text">🔥 GO</span>
+            <span class="btn-sub-text" id="go-mult-text">다음 라운드</span>
+          </button>
+        </div>
+        <div class="go-warning" id="go-warning">⚠️ GO를 선택하면 지금까지 모은 ZP는 보장되지 않아!</div>
+      </div>
+    </div>
+
+    <!-- 9라운드 퍼펙트 클리어 -->
+    <div class="overlay" id="overlay-perfect" style="display:none;">
+      <div class="overlay-box gold">
+        <div class="overlay-icon">👑</div>
+        <div class="overlay-title">완벽한 클리어!</div>
+        <div class="overlay-sub" id="perfect-sub">9라운드를 전부 클리어했어!</div>
+        <button class="btn-overlay gold" onclick="resetToStart()">다시 도전!</button>
+      </div>
+    </div>
+
+    <!-- STOP 확정 -->
+    <div class="overlay" id="overlay-stop" style="display:none;">
+      <div class="overlay-box win">
+        <div class="overlay-icon">💰</div>
+        <div class="overlay-title">안전하게 탈출!</div>
+        <div class="overlay-sub" id="stop-sub"></div>
+        <button class="btn-overlay win" onclick="resetToStart()">다시 도전!</button>
+      </div>
+    </div>
+
+  </div>
+
+  <script type="module" src="ursaluna.js"></script>
+</body>
+</html>

@@ -4,71 +4,194 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Login</title>
-<link rel="stylesheet" href="css/style.css">
+
 </head>
 <style>
-    h2{
-        text-align: center;
-    }
+@font-face {
+    font-family: 'OneStoreMobileGothicTitleFont';
+    src: url('https://cdn.jsdelivr.net/gh/projectnoonnu/noonfonts_2105_2@1.0/ONE-Mobile-Title.woff') format('woff');
+    font-weight: normal;
+    font-display: swap;
+}
+* {
+  box-sizing: border-box;
+  margin: 0;
+  padding: 0;
+}
 
-    .login-box{
-        display: flex;
-        justify-content: center;
-        flex-direction: column;
-        align-items: center;
-        gap: 8px;
-    }
+body {
+  min-height: 100vh;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  align-items: center;
+  background: #ffffff;
+  color: #111;
+  font-family: 'OneStoreMobileGothicTitleFont';
+}
 
-    input{
-        font-family: 'Mona12', sans-serif;
-        width: 60%;
-        padding: 2%;
-    }
+h2 {
+  margin-bottom: 30px;
+  font-size: 32px;
+  font-weight: 600;
+}
 
-    .btn#loginBtn{
-        display: flex;
-        width: 65%;
-        font-family: 'Mona12', sans-serif;
-        flex-direction: column;
-        align-items: center;
-        justify-content: center;
-        padding: 9px;
-        border-radius: 6px;
-        cursor: pointer;
-        font-size: 12px;
-        background: #e9ecef;
-        border: 2px solid #ced4da;
-        box-shadow: 2px 2px 0 #adb5bd;
-        transition: 0.1s;
-        color: #495057;
-    }
+.login-box {
+  width: 100%;
+  max-width: 360px;
+  padding: 40px 30px;
+  border: 1px solid #e5e5e5;
+  border-radius: 16px;
+  background: #fff;
+  box-shadow: 0 10px 30px rgba(0,0,0,0.05);
+}
+
+.login-box input {
+  width: 100%;
+  height: 50px;
+  margin-bottom: 16px;
+  padding: 0 16px;
+  border: 1px solid #ddd;
+  border-radius: 10px;
+  background: #fafafa;
+  font-size: 15px;
+  transition: all 0.2s ease;
+  outline: none;
+}
+
+.login-box input::placeholder {
+  color: #aaa;
+}
+
+.login-box input:focus {
+  border-color: #111;
+  background: #fff;
+}
+
+.btn {
+  width: 100%;
+  height: 52px;
+  margin-top: 10px;
+  border: none;
+  border-radius: 12px;
+  background: #111;
+  color: #fff;
+  font-size: 15px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.btn:hover {
+  background: #333;
+}
+
+.btn:active {
+  transform: scale(0.97);
+}
+
+@media (max-width: 480px) {
+  .login-box {
+    max-width: calc(100% - 40px);
+    padding: 32px 24px;
+  }
+}
+
+.name {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  pointer-events: none; 
+  overflow: hidden;
+  z-index: 0;
+}
+
+.name p {
+  position: absolute;
+  color: rgba(0,0,0,0.2);
+  font-size: 18px;
+  font-weight: 500;
+  white-space: nowrap;
+  user-select: none;
+}
+
+h2, .login-box {
+  position: relative;
+  z-index: 1;
+}
 </style>
 <body>
-<div class="container">
-  <div class="header">
-    <div class="title">ZENITH RING</div>
-  </div>
-
-  <div class="screen">
-    <div class="screen-top">
-        <span>v1.0</span>
-            <div class="status">ONLINE</div>
-            <div class="battery">
-                <div class="battery-level"></div>
-            </div>
-    </div>
       <h2>Login</h2>
       <div class="login-box">
         <input id="email" type="email" placeholder="email">
         <input id="password" type="password" placeholder="password">
         <button class="btn" id="loginBtn">ENTER</button>
       </div>
-  </div>
-  <div class="footer">Made by Sonnet with Ampharos</div>
-</div>
+     
+       <div class="name">
+        <p>소넷</p>
+        <p>카무이</p>
+        <p>레머넌트</p>
+        <p>플리네</p>
+        <p>세라벨</p>
+        <p>버크</p>
+        <p>시안</p>
+        <p>녹시아</p>
+        <p>필리아</p>
+        <p>제뉴인</p>
+        <p>발렌타인</p>
+        <p>송백</p>
+        <p>비제</p>
+        <p>올매</p>
+        <p>나우</p>
+        <p>아주르</p>
+        <p>에버렛</p>
+        <p>시릴</p>
+        <p>유진</p>
+    </div>
 
 
 <script type="module" src="js/main.js"></script>
+<script>
+    const texts = document.querySelectorAll(".name p");
 
+texts.forEach(el => {
+  // 랜덤 시작 위치
+  const x = Math.random() * window.innerWidth;
+  const y = Math.random() * window.innerHeight;
+
+  el.style.left = x + "px";
+  el.style.top = y + "px";
+
+  float(el);
+});
+
+function float(el) {
+  let x = parseFloat(el.style.left);
+  let y = parseFloat(el.style.top);
+
+  // 랜덤 이동 속도
+  let dx = (Math.random() - 0.5) * 1.2;
+  let dy = (Math.random() - 0.5) * 1.2;
+
+  function animate() {
+    x += dx;
+    y += dy;
+
+    // 화면 벗어나면 방향 반전
+    if (x < 0 || x > window.innerWidth - 50) dx *= -1;
+    if (y < 0 || y > window.innerHeight - 20) dy *= -1;
+
+    el.style.left = x + "px";
+    el.style.top = y + "px";
+
+    requestAnimationFrame(animate);
+  }
+
+  animate();
+}
+</script>
 </body>
 </html>

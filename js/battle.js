@@ -421,6 +421,7 @@ onAuthStateChanged(auth, async user => {
     document.getElementById("battle-screen").classList.add("visible")
   }
   waitForBattleReady(); listenLogs()
+  window.initSingleChat?.({ db, ROOM_ID, myUid, isSpectator })
 })
 
 function waitForBattleReady() {
@@ -732,11 +733,12 @@ function updateBenchButtons(data) {
       const queueBusy = logQueue.length > 0 || isProcessing
       const activeFainted = (myEntry[activeIdx]?.hp ?? 0) <= 0
       const isFlying = myEntry[activeIdx]?.flyState?.flying ?? false
-      const isDigging = myEntry[activeIdx]?.digState?.digging ?? false
-      // ★ forceSwitch면 actionDone 무시하고 교체 허용
-      btn.disabled = isSpectator || !myTurn || (actionDone && !forceSwitch) || queueBusy
-        || (!activeFainted && !forceSwitch && !!(myEntry[activeIdx]?.bideState?.turnsLeft > 0))
-        || isFlying || isDigging
+const isDigging = myEntry[activeIdx]?.digState?.digging ?? false
+const enemySlotForWrap = mySlot === "p1" ? "p2" : "p1"
+const isWrapped = !!(myEntry[activeIdx]?.wrapState)
+btn.disabled = isSpectator || !myTurn || (actionDone && !forceSwitch) || queueBusy
+  || (!activeFainted && !forceSwitch && !!(myEntry[activeIdx]?.bideState?.turnsLeft > 0))
+  || isFlying || isDigging || isWrapped
       if (!isSpectator) btn.onclick = () => { playSound(SFX_BTN); switchPokemon(idx) }
     }
     bench.appendChild(btn)

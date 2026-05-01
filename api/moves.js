@@ -71,6 +71,8 @@ export const moves = {
   "고속스핀":   { power: 40, type: "노말", accuracy: 100, alwaysHit: false, effect: null,
                   rapidSpin: true, rank: { spd: 1, turns: 3 } },
   "울트라메가튀어오르기": { power: 0, type: "노말", accuracy: 100, alwaysHit: true, effect: null, divineStrike: true, targetSelf: true },
+  "아침햇살":           { power: 0,  type: "노말", accuracy: 100, alwaysHit: true,
+                      effect: { moonlight: true }, targetSelf: true },
 
   // ───── 불 ─────
   "화염바퀴":       { power: 40, type: "불", accuracy: 100, alwaysHit: false, effect: { chance: 0.1, status: "화상" } },
@@ -83,6 +85,8 @@ export const moves = {
   "불대문자":       { power: 40, type: "불", accuracy: 85,  alwaysHit: false, effect: null },
   "매지컬플레임":   { power: 45, type: "불", accuracy: 100, alwaysHit: false, effect: null,
                       rank: { targetAtk: -1, turns: 2 } },
+  "불꽃춤":   { power: 50, type: "불", accuracy: 100, alwaysHit: false, effect: null,
+                      rank: { chance:0.5, atk: 1, turns: 3 } },
   "불꽃튀기기":     { power: 40, type: "불", accuracy: 100, alwaysHit: false, effect: null, sparks: true  },
   "화염방사":       { power: 50, type: "불", accuracy: 100, alwaysHit: false, effect: { chance: 0.1, status: "화상" } },
   "열사의대지":     { power: 40, type: "땅", accuracy: 100, alwaysHit: false, effect: { chance: 0.3, status: "화상" } },
@@ -91,6 +95,7 @@ export const moves = {
 
   // ───── 물 ─────
   "거품광선":   { power: 40, type: "물", accuracy: 100, alwaysHit: false, effect: null },
+  "아쿠아테일":   { power: 50, type: "물", accuracy: 90, alwaysHit: false, effect: null },
   "껍질에숨기": { power: 0,  type: "물", accuracy: 100, alwaysHit: true,  targetSelf: true, effect: null,
                   rank: { def: 1, turns: 2 } },
   "거품":       { power: 40, type: "물", accuracy: 100, alwaysHit: false, effect: null, aoeEnemy: true },
@@ -197,6 +202,10 @@ export const moves = {
   "똬리틀기": { power: 0,  type: "독", accuracy: 100, alwaysHit: true,  targetSelf: true, effect: null,
                 rank: { atk: 1, def: 1, spd: 1, turns: 3 } },
   "베놈쇼크": { power: 40, type: "독", accuracy: 100, alwaysHit: false, effect: null, venomShock: true },
+  "녹기": { power: 0, type: "독", accuracy: 100, alwaysHit: true, effect: null,
+                rank: { def: 2, turns: 2 } },
+  "킬러스핀":   { power: 40, type: "독", accuracy: 100, alwaysHit: false, effect: null,
+                  rapidSpin: true, rank: { spd: 1, turns: 3 }, effect: { chance: 0.1, status: "독" } },
 
   // ───── 땅 ─────
   "지진":       { power: 50, type: "땅", accuracy: 100, alwaysHit: false, effect: null, aoe: true },
@@ -257,6 +266,7 @@ export const moves = {
   "회복봉인":       { power: 0,  type: "에스퍼", accuracy: 100, alwaysHit: true,  effect: null,
                       healBlock: true, targetSelf: false, aoeEnemy: true },
   "미래예지":       { power: 0,  type: "에스퍼", accuracy: 100, alwaysHit: true,  effect: null, futureSight: true },
+  "사이코팽":       { power: 50, type: "에스퍼", accuracy: 100, alwaysHit: false, effect: null, breakBarrier: true },
 
   // ───── 벌레 ─────
   "달려들기":   { power: 40, type: "벌레", accuracy: 100, alwaysHit: false,
@@ -395,6 +405,8 @@ export const moves = {
   "구르기":     { power: 30, type: "바위", accuracy: 90,  alwaysHit: false, effect: null, rollout: true },
   "태만함":     { power: 0,  type: "노말", accuracy: 100, alwaysHit: true,  effect: { heal: 0.22 }, targetSelf: true },
   "HP회복":     { power: 0,  type: "노말", accuracy: 100, alwaysHit: true,  effect: { heal: 0.22 }, targetSelf: true },
+  "알낳기":     { power: 0,  type: "노말", accuracy: 100, alwaysHit: true,  effect: { heal: 0.22 }, targetSelf: true },
+  "우유마시기":     { power: 0,  type: "노말", accuracy: 100, alwaysHit: true,  effect: { heal: 0.22 }, targetSelf: true },
   "생명의물방울":{ power: 0, type: "물",   accuracy: 100, alwaysHit: true,  effect: { heal: 0.22 }, targetSelf: true, waterHeal: true },
   "희망사항":   { power: 0,  type: "노말", accuracy: 100, alwaysHit: true,  effect: null, wish: true, targetSelf: true },
   "속임수":     { power: 50, type: "악",   accuracy: 100, alwaysHit: false, effect: null, trickster: true },
@@ -402,6 +414,8 @@ export const moves = {
   "돌진":       { power: 50, type: "노말", accuracy: 85,  alwaysHit: false, effect: { recoil: 0.25 } },
   "보복":       { power: 50, type: "악",   accuracy: 100, alwaysHit: false, effect: null, comeback: true },
   "마구찌르기": { power: 1,  type: "노말", accuracy: 85,  alwaysHit: false, effect: null,
+                  multiHit: { min: 2, max: 5, fixedDamage: 10 } },
+  "고드름침": { power: 1,  type: "노말", accuracy: 100,  alwaysHit: false, effect: null,
                   multiHit: { min: 2, max: 5, fixedDamage: 10 } },
   "바늘미사일": { power: 1,  type: "벌레", accuracy: 95,  alwaysHit: false, effect: null,
                   multiHit: { min: 2, max: 5, fixedDamage: 6 } },
@@ -417,4 +431,11 @@ export const moves = {
   "씨뿌리기":   { power: 0,  type: "풀",   accuracy: 90,  alwaysHit: false, effect: null, leechSeed: true, targetSelf: false },
   "치유파동":   { power: 0,  type: "에스퍼", accuracy: 100, alwaysHit: true, effect: null, healPulse: true, targetSelf: false },
   "참기":       { power: 0,  type: "노말",  accuracy: 100, alwaysHit: true,  effect: null, bide: true, targetSelf: true },
+"엉겨붙기": { power: 20, type: "벌레", accuracy: 100, alwaysHit: false, effect: null, wrap: true },
+"김밥말이": { power: 15, type: "노말", accuracy: 90,  alwaysHit: false, effect: null, wrap: true },
+"소금물":   { power: 65, type: "물",   accuracy: 100, alwaysHit: false, effect: null, saltWater: true },
+"트라이어택": { power: 80, type: "노말", accuracy: 100, alwaysHit: false,
+                effect: { chance: 0.2, triAttack: true } },
+"분함의발구르기": { power: 45, type: "땅", accuracy: 100, alwaysHit: false, effect: null, stomping: true },
+"분풀이":   { power: 45, type: "악",   accuracy: 100, alwaysHit: false, effect: null, vengeance: true },
 }
