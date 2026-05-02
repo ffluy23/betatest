@@ -408,6 +408,7 @@ export const moves = {
   "구르기":     { power: 30, type: "바위", accuracy: 90,  alwaysHit: false, effect: null, rollout: true },
   "태만함":     { power: 0,  type: "노말", accuracy: 100, alwaysHit: true,  effect: { heal: 0.22 }, targetSelf: true },
   "HP회복":     { power: 0,  type: "노말", accuracy: 100, alwaysHit: true,  effect: { heal: 0.22 }, targetSelf: true },
+  "게으름피우기":     { power: 0,  type: "노말", accuracy: 100, alwaysHit: true,  effect: { heal: 0.22 }, targetSelf: true },
   "알낳기":     { power: 0,  type: "노말", accuracy: 100, alwaysHit: true,  effect: { heal: 0.22 }, targetSelf: true },
   "우유마시기":     { power: 0,  type: "노말", accuracy: 100, alwaysHit: true,  effect: { heal: 0.22 }, targetSelf: true },
   "생명의물방울":{ power: 0, type: "물",   accuracy: 100, alwaysHit: true,  effect: { heal: 0.22 }, targetSelf: true, waterHeal: true },
