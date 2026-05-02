@@ -227,7 +227,7 @@ function processLogQueue() {
     isProcessing = false
     if (logQueue.length === 0) {
       if (pendingGameOver) { const data = pendingGameOver; pendingGameOver = null; showGameOver(data); return }
-      if (pendingTurnUpdate) { const data = pendingTurnUpdate; pendingTurnUpdate = null; updateTurnUI(data); updateMoveButtons(data); updateBenchButtons(data); return }
+      if (pendingTurnUpdate) { const data = pendingTurnUpdate; pendingTurnUpdate = null; actionDone = false; myTurn = data.current_turn === mySlot; updateTurnUI(data); updateMoveButtons(data); updateBenchButtons(data); return }
       if (lastRoomData) { updateMoveButtons(lastRoomData); updateBenchButtons(lastRoomData) }
     }
     setTimeout(processLogQueue, 50)
