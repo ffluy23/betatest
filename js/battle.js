@@ -484,13 +484,12 @@ function listenRoom() {
       }
 
       if (!wasMine && myTurn) {
-  if (logQueue.length === 0 && !isProcessing) {
-    actionDone = false
-  } else {
+  if (logQueue.length > 0 || isProcessing) {
     pendingTurnUpdate = data
     return
   }
-        const myPokemon = data[`${mySlot}_entry`]?.[data[`${mySlot}_active_idx`]]
+  actionDone = false
+  const myPokemon = data[`${mySlot}_entry`]?.[data[`${mySlot}_active_idx`]]
 
         if (!myPokemon || myPokemon.hp <= 0) {
           if (logQueue.length === 0 && !isProcessing) {

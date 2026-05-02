@@ -809,7 +809,8 @@ export default async function handler(req, res) {
 
         sanitizeEntries()
 
-        if (anyFainted) {
+const anyFaintedTotal = anyFainted || myPokemon.hp <= 0 || enePokemon.hp <= 0
+        if (anyFaintedTotal) {
           if (!isAllFainted(enemyEntry)) revengeUpdate[`revenge_ready_${enemySlot}`] = true
           if (isAllFainted(enemyEntry)) {
             await safeUpdate(roomRef, { [`${mySlot}_entry`]: myEntry, [`${enemySlot}_entry`]: enemyEntry, turn_count: nextTurn, game_over: true, winner: myName, current_turn: null, ...revengeUpdate })
