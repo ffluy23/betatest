@@ -1,4 +1,4 @@
-// moves.js (더블배틀)
+// moves.js
 export const moves = {
   // ───── 랭크 전용 기술 ─────
   "칼춤":     { power: 0, type: "노말", accuracy: 100, alwaysHit: true, effect: null,
@@ -93,6 +93,7 @@ export const moves = {
   "플레어드라이브": { power: 70, type: "불", accuracy: 100, alwaysHit: false, effect: { recoil: 0.33, chance: 0.1, status: "화상" } },
   "오버히트":   { power: 70, type: "불", accuracy: 100, alwaysHit: false, effect: null, targetSelf:true, rank: { atk: -1, turns: 3 } },
   "플레어송":   { power: 50, type: "불", accuracy: 100, alwaysHit: false, effect: null, rank: { atk: 1, turns: 3 } },
+  "원념의칼":     { power: 55, type: "불", accuracy: 100, alwaysHit: false, effect: { drain: 0.15 } },
 
   // ───── 물 ─────
   "거품광선":   { power: 40, type: "물", accuracy: 100, alwaysHit: false, effect: null },
@@ -143,6 +144,7 @@ export const moves = {
   "에너지볼":       { power: 40, type: "풀", accuracy: 100, alwaysHit: false, effect: null,
                       rank: { chance: 0.1, targetDef: -1, turns: 2 } },
   "솔라빔":         { power: 40, type: "풀", accuracy: 100, alwaysHit: false, effect: null },
+  "솔라블레이드": { power: 60, type: "풀", accuracy: 100, alwaysHit: false, effect: null, solarBlade: true },
   "나뭇잎":         { power: 30, type: "풀", accuracy: 100, alwaysHit: false, effect: null },
   "잎날가르기":     { power: 40, type: "풀", accuracy: 95,  alwaysHit: false, effect: null, highCrit: true, aoeEnemy: true },
   "씨폭탄":         { power: 40, type: "풀", accuracy: 100, alwaysHit: false, effect: null },
@@ -408,6 +410,7 @@ export const moves = {
   "구르기":     { power: 30, type: "바위", accuracy: 90,  alwaysHit: false, effect: null, rollout: true },
   "태만함":     { power: 0,  type: "노말", accuracy: 100, alwaysHit: true,  effect: { heal: 0.22 }, targetSelf: true },
   "HP회복":     { power: 0,  type: "노말", accuracy: 100, alwaysHit: true,  effect: { heal: 0.22 }, targetSelf: true },
+  "게으름피우기":     { power: 0,  type: "노말", accuracy: 100, alwaysHit: true,  effect: { heal: 0.22 }, targetSelf: true },
   "알낳기":     { power: 0,  type: "노말", accuracy: 100, alwaysHit: true,  effect: { heal: 0.22 }, targetSelf: true },
   "우유마시기":     { power: 0,  type: "노말", accuracy: 100, alwaysHit: true,  effect: { heal: 0.22 }, targetSelf: true },
   "생명의물방울":{ power: 0, type: "물",   accuracy: 100, alwaysHit: true,  effect: { heal: 0.22 }, targetSelf: true, waterHeal: true },
@@ -419,6 +422,8 @@ export const moves = {
   "보복":       { power: 50, type: "악",   accuracy: 100, alwaysHit: false, effect: null, comeback: true },
   "마구찌르기": { power: 1,  type: "노말", accuracy: 85,  alwaysHit: false, effect: null,
                   multiHit: { min: 2, max: 5, fixedDamage: 10 } },
+  "드래곤애로": { power: 1,  type: "드래곤", accuracy: 85,  alwaysHit: false, effect: null,
+                  multiHit: { min: 2, max: 2, fixedDamage: 30 } },
   "고드름침": { power: 1,  type: "얼음", accuracy: 100,  alwaysHit: false, effect: null,
                   multiHit: { min: 2, max: 5, fixedDamage: 10 } },
   "바늘미사일": { power: 1,  type: "벌레", accuracy: 95,  alwaysHit: false, effect: null,

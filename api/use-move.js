@@ -1158,6 +1158,22 @@ export default async function handler(req, res) {
       return res.status(200).json({ ok: true })
     }
 
+    if (moveInfo?.solarBlade && !myPokemon.solarBladeState?.charging) {
+  if (currentWeather === "쾌청") {
+    // 쾌청이면 바로 공격 (아래 일반 공격 흐름으로 넘어감)
+  } else {
+    myPokemon.solarBladeState = { charging: true }
+    await log(logsRef, `${myPokemon.name}${josa(myPokemon.name, "은는")} 빛을 모으고 있다!`)
+    await finishTurn({})
+    return res.status(200).json({ ok: true })
+  }
+}
+
+// 2턴째 발사
+if (myPokemon.solarBladeState?.charging) {
+  myPokemon.solarBladeState = null
+}
+
     if (moveInfo?.ghostDive && !myPokemon.ghostDiveState?.diving) {
       myPokemon.ghostDiveState = { diving: true }
       myPokemon.ghostDiveMoveName = moveData.name

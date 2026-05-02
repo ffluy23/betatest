@@ -526,6 +526,18 @@ if (myPokemon?.ghostDiveState?.diving) {
   return
 }
 
+if (myPokemon?.solarBladeState?.charging) {
+  const solarIdx = (myPokemon.moves ?? []).findIndex(m => m.name === "솔라블레이드")
+  if (solarIdx !== -1) {
+    actionDone = true
+    fetch(`${API}/api/use-move`, {
+      method: "POST", headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ roomId: ROOM_ID, mySlot, moveIdx: solarIdx })
+    })
+    return
+  }
+}
+
         // 역린/꽃잎댄스/소란피기 자동 발동
 if (myPokemon?.outrageState?.active) {
   const outrageMoveIdx = (myPokemon.moves ?? []).findIndex(m => m.name === myPokemon.outrageState.moveName)
