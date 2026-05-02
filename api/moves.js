@@ -452,4 +452,8 @@ export const moves = {
 "사이코노이즈": { power: 45, type: "에스퍼", accuracy: 100,
                   effect: { healBlock: true },
                   targetSelf: false, aoeEnemy: true },
+"블러드문":     { power: 120, type: "심안", accuracy: 100, alwaysHit: true, effect: null},
+"너죽이는생각":     { power: 120, type: "심안", accuracy: 100, alwaysHit: true, effect: null},
+"배북":     { power: 120, type: "심안", accuracy: 100, alwaysHit: true, effect: null},
+"파괴충동":     { power: 120, type: "심안", accuracy: 100, alwaysHit: true, effect: null},
 }
