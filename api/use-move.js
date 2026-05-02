@@ -1438,16 +1438,17 @@ if (myPokemon.solarBladeState?.charging) {
         await log(logsRef, `${enePokemon.name}${josa(enePokemon.name, "의")} 능력 변화가 원래대로 돌아왔다!`)
       }
 
-      if (moveInfo?.effect?.removeFlying) {
+     if (moveInfo?.effect?.removeFlying) {
   if ((myPokemon.healBlocked ?? 0) > 0) {
-    await log(logsRef, `${myPokemon.name}${josa(myPokemon.name, "은는")} 회복봉인 상태라 회복할 수 없다!`)
-  } else {
-    const healRate = moveInfo.effect.heal ?? 0.5
-    const heal = Math.max(1, Math.floor((myPokemon.maxHp ?? myPokemon.hp) * healRate))
-    myPokemon.hp = Math.min(myPokemon.maxHp ?? myPokemon.hp, myPokemon.hp + heal)
-    await log(logsRef, "", "heal_self", { slot: mySlot, hp: myPokemon.hp, maxHp: myPokemon.maxHp ?? myPokemon.hp })
-    await log(logsRef, `${myPokemon.name}${josa(myPokemon.name, "은는")} HP를 회복했다! (+${heal})`)
+    await log(logsRef, `${myPokemon.name}${josa(myPokemon.name, "은는")} 회복봉인 상태라 날개쉬기에 실패했다!`)
+    await finishTurn({})
+    return res.status(200).json({ ok: true })
   }
+  const healRate = moveInfo.effect.heal ?? 0.5
+  const heal = Math.max(1, Math.floor((myPokemon.maxHp ?? myPokemon.hp) * healRate))
+  myPokemon.hp = Math.min(myPokemon.maxHp ?? myPokemon.hp, myPokemon.hp + heal)
+  await log(logsRef, "", "heal_self", { slot: mySlot, hp: myPokemon.hp, maxHp: myPokemon.maxHp ?? myPokemon.hp })
+  await log(logsRef, `${myPokemon.name}${josa(myPokemon.name, "은는")} HP를 회복했다! (+${heal})`)
   const types = Array.isArray(myPokemon.type) ? [...myPokemon.type] : [myPokemon.type]
   myPokemon._origType = myPokemon.type
   if (types.length === 1) { myPokemon.type = ["노말"] }
