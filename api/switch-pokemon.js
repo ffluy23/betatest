@@ -140,8 +140,9 @@ newPokemon.hp = Math.min(newPokemon.maxHp ?? newPokemon.hp, newPokemon.hp + heal
     const fainted = newPokemon.hp <= 0
     const allFainted = myEntry.every(p => p.hp <= 0)
 
-    const updateData = {
+  const updateData = {
       [`${mySlot}_entry`]: sanitizeForFirestore(myEntry),
+      [`${enemySlot}_entry`]: sanitizeForFirestore(data[`${enemySlot}_entry`]),
       [`${mySlot}_active_idx`]: newIdx,
       current_turn: enemySlot,
       turn_count: nextTurnCount,

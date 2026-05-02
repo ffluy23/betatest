@@ -534,7 +534,6 @@ export default async function handler(req, res) {
     }
 
     tickVolatiles(enePokemon)
-    tickVolatiles(myPokemon)
 
     if (myPokemon.futureSight?.ready) {
       const fs = myPokemon.futureSight
@@ -1371,7 +1370,6 @@ if (myPokemon.solarBladeState?.charging) {
       await log(logsRef, `${myName}의 승리!`, "win")
     }
   }
-  await finishTurn({})
   return res.status(200).json({ ok: true })
 }
 
