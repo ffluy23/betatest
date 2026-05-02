@@ -65,7 +65,7 @@ export default async function handler(req, res) {
     await batch.commit()
 
     // intro_done: true 세팅
-    await roomRef.update({ intro_done: true })
+    await roomRef.update({ intro_done: true, game_started_at: Date.now() })
 
     return res.status(200).json({ ok: true })
 
