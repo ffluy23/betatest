@@ -671,6 +671,7 @@ async function leaveGame() {
     toxic_spikes_p1: false, toxic_spikes_p2: false,
     last_damage_taken_p1: 0, last_damage_taken_p2: 0,  // ← 추가
     weather: null, weatherTurns: 0,                     // ← 추가
+    game_started_at: 0,
 })
   location.href = "../main.html"
 }
