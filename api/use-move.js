@@ -1439,21 +1439,24 @@ if (myPokemon.solarBladeState?.charging) {
       }
 
       if (moveInfo?.effect?.removeFlying) {
-        const healRate = moveInfo.effect.heal ?? 0.5
-        const heal = Math.max(1, Math.floor((myPokemon.maxHp ?? myPokemon.hp) * healRate))
-        myPokemon.hp = Math.min(myPokemon.maxHp ?? myPokemon.hp, myPokemon.hp + heal)
-        await log(logsRef, "", "heal_self", { slot: mySlot, hp: myPokemon.hp, maxHp: myPokemon.maxHp ?? myPokemon.hp })
-        await log(logsRef, `${myPokemon.name}${josa(myPokemon.name, "은는")} HP를 회복했다! (+${heal})`)
-        const types = Array.isArray(myPokemon.type) ? [...myPokemon.type] : [myPokemon.type]
-        myPokemon._origType = myPokemon.type
-        if (types.length === 1) { myPokemon.type = ["노말"] }
-        else { myPokemon.type = types.filter(t => t !== "비행"); if (myPokemon.type.length === 0) myPokemon.type = ["노말"] }
-        myPokemon.roostTurns = 3
-        await log(logsRef, `${myPokemon.name}${josa(myPokemon.name, "은는")} 땅에 내려앉아 비행 타입이 사라졌다!`)
-        await finishTurn({})
-        return res.status(200).json({ ok: true })
-      }
-
+  if ((myPokemon.healBlocked ?? 0) > 0) {
+    await log(logsRef, `${myPokemon.name}${josa(myPokemon.name, "은는")} 회복봉인 상태라 회복할 수 없다!`)
+  } else {
+    const healRate = moveInfo.effect.heal ?? 0.5
+    const heal = Math.max(1, Math.floor((myPokemon.maxHp ?? myPokemon.hp) * healRate))
+    myPokemon.hp = Math.min(myPokemon.maxHp ?? myPokemon.hp, myPokemon.hp + heal)
+    await log(logsRef, "", "heal_self", { slot: mySlot, hp: myPokemon.hp, maxHp: myPokemon.maxHp ?? myPokemon.hp })
+    await log(logsRef, `${myPokemon.name}${josa(myPokemon.name, "은는")} HP를 회복했다! (+${heal})`)
+  }
+  const types = Array.isArray(myPokemon.type) ? [...myPokemon.type] : [myPokemon.type]
+  myPokemon._origType = myPokemon.type
+  if (types.length === 1) { myPokemon.type = ["노말"] }
+  else { myPokemon.type = types.filter(t => t !== "비행"); if (myPokemon.type.length === 0) myPokemon.type = ["노말"] }
+  myPokemon.roostTurns = 3
+  await log(logsRef, `${myPokemon.name}${josa(myPokemon.name, "은는")} 땅에 내려앉아 비행 타입이 사라졌다!`)
+  await finishTurn({})
+  return res.status(200).json({ ok: true })
+}
       let rankToApply = r
       if (moveData.name === "성장" && r) {
         rankToApply = { ...r, atk: getSunnyGrowthBonus(currentWeather) }
