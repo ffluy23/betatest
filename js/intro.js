@@ -199,6 +199,8 @@ function startBattle() {
   if (overlay.classList.contains("fade-out")) return
   overlay.classList.add("fade-out")
   document.getElementById("battle-screen").classList.add("visible")
+updateDoc(roomRef, { game_started_at: Date.now() })
+
   setTimeout(() => {
     overlay.classList.add("hidden")
     initVolumeSlider()
