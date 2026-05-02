@@ -92,6 +92,7 @@ export const moves = {
   "열사의대지":     { power: 40, type: "땅", accuracy: 100, alwaysHit: false, effect: { chance: 0.3, status: "화상" } },
   "플레어드라이브": { power: 70, type: "불", accuracy: 100, alwaysHit: false, effect: { recoil: 0.33, chance: 0.1, status: "화상" } },
   "오버히트":   { power: 70, type: "불", accuracy: 100, alwaysHit: false, effect: null, targetSelf:true, rank: { atk: -1, turns: 3 } },
+  "플레어송":   { power: 50, type: "불", accuracy: 100, alwaysHit: false, effect: null, rank: { atk: 1, turns: 3 } },
 
   // ───── 물 ─────
   "거품광선":   { power: 40, type: "물", accuracy: 100, alwaysHit: false, effect: null },
