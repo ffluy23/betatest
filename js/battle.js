@@ -502,30 +502,33 @@ function listenRoom() {
 
         // 공중날기 2턴째 자동 발동
         if (myPokemon?.flyState?.flying) {
-          actionDone = true
-          fetch(`${API}/api/use-move`, {
-            method: "POST", headers: { "Content-Type": "application/json" },
-            body: JSON.stringify({ roomId: ROOM_ID, mySlot, moveIdx: 0 })
-          })
-          return
-        }
-
-        // 구멍파기 2턴째 자동 발동
-        if (myPokemon?.digState?.digging) {
-          actionDone = true
-          fetch(`${API}/api/use-move`, {
-            method: "POST", headers: { "Content-Type": "application/json" },
-            body: JSON.stringify({ roomId: ROOM_ID, mySlot, moveIdx: 0 })
-          })
-          return
-        }
-
-        // 고스트다이브 2턴째 자동 발동
-if (myPokemon?.ghostDiveState?.diving) {
+  const flyMoveIdx = (myPokemon.moves ?? []).findIndex(m => moves[m.name]?.fly)
   actionDone = true
   fetch(`${API}/api/use-move`, {
     method: "POST", headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({ roomId: ROOM_ID, mySlot, moveIdx: 0 })
+    body: JSON.stringify({ roomId: ROOM_ID, mySlot, moveIdx: flyMoveIdx !== -1 ? flyMoveIdx : 0 })
+  })
+  return
+}
+
+        // 구멍파기 2턴째 자동 발동
+        if (myPokemon?.digState?.digging) {
+  const digMoveIdx = (myPokemon.moves ?? []).findIndex(m => moves[m.name]?.dig)
+  actionDone = true
+  fetch(`${API}/api/use-move`, {
+    method: "POST", headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ roomId: ROOM_ID, mySlot, moveIdx: digMoveIdx !== -1 ? digMoveIdx : 0 })
+  })
+  return
+}
+
+        // 고스트다이브 2턴째 자동 발동
+if (myPokemon?.ghostDiveState?.diving) {
+  const gdMoveIdx = (myPokemon.moves ?? []).findIndex(m => moves[m.name]?.ghostDive)
+  actionDone = true
+  fetch(`${API}/api/use-move`, {
+    method: "POST", headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ roomId: ROOM_ID, mySlot, moveIdx: gdMoveIdx !== -1 ? gdMoveIdx : 0 })
   })
   return
 }

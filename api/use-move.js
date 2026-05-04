@@ -1087,15 +1087,16 @@ const anyFaintedTotal = anyFainted || myPokemon.hp <= 0 || enePokemon.hp <= 0
         }
       }
       if (isLastTurn) {
-        myPokemon.outrageState = null
-        if (outrageInfo.confusion && (myPokemon.confusion ?? 0) <= 0) {
-          myPokemon.confusion = Math.floor(Math.random() * 3) + 1
-          await log(logsRef, `${myPokemon.name}${josa(myPokemon.name, "은는")} 혼란에 빠졌다!`)
-        }
-      } else {
-        myPokemon.outrageState = { active: true, turn: currentTurn + 1, maxTurn, moveName: moveData.name }
-        if (!outrageInfo.confusion) await log(logsRef, `${myPokemon.name}${josa(myPokemon.name, "은는")} 소란을 피우고 있다!`)
-      }
+  myPokemon.outrageState = null
+  if (outrageInfo.confusion && (myPokemon.confusion ?? 0) <= 0) {
+    myPokemon.confusion = Math.floor(Math.random() * 3) + 1
+    await log(logsRef, `${myPokemon.name}${josa(myPokemon.name, "은는")} 혼란에 빠졌다!`)
+  }
+  await log(logsRef, `${myPokemon.name}${josa(myPokemon.name, "의")} ${moveData.name}이 끝났다!`)
+} else {
+  myPokemon.outrageState = { active: true, turn: currentTurn + 1, maxTurn, moveName: moveData.name }
+  if (!outrageInfo.confusion) await log(logsRef, `${myPokemon.name}${josa(myPokemon.name, "은는")} 소란을 피우고 있다!`)
+}
       await finishTurn(outrageUpdate)
       return res.status(200).json({ ok: true })
     }
