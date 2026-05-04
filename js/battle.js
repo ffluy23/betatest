@@ -483,6 +483,18 @@ function listenRoom() {
         return
       }
 
+      if (myTurn && !actionDone && myPokemon?.outrageState?.active) {
+  const outrageMoveIdx = (myPokemon.moves ?? []).findIndex(m => m.name === myPokemon.outrageState.moveName)
+  if (outrageMoveIdx !== -1) {
+    actionDone = true
+    fetch(`${API}/api/use-move`, {
+      method: "POST", headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ roomId: ROOM_ID, mySlot, moveIdx: outrageMoveIdx })
+    })
+    return
+  }
+}
+
       if (!wasMine && myTurn) {
   if (logQueue.length > 0 || isProcessing) {
     pendingTurnUpdate = data
