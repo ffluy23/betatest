@@ -495,6 +495,36 @@ function listenRoom() {
   }
 }
 
+if (myTurn && !actionDone && myPokemon?.flyState?.flying) {
+  const flyMoveIdx = (myPokemon.moves ?? []).findIndex(m => moves[m.name]?.fly)
+  actionDone = true
+  fetch(`${API}/api/use-move`, {
+    method: "POST", headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ roomId: ROOM_ID, mySlot, moveIdx: flyMoveIdx !== -1 ? flyMoveIdx : 0 })
+  })
+  return
+}
+
+if (myTurn && !actionDone && myPokemon?.digState?.digging) {
+  const digMoveIdx = (myPokemon.moves ?? []).findIndex(m => moves[m.name]?.dig)
+  actionDone = true
+  fetch(`${API}/api/use-move`, {
+    method: "POST", headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ roomId: ROOM_ID, mySlot, moveIdx: digMoveIdx !== -1 ? digMoveIdx : 0 })
+  })
+  return
+}
+
+if (myTurn && !actionDone && myPokemon?.ghostDiveState?.diving) {
+  const gdMoveIdx = (myPokemon.moves ?? []).findIndex(m => moves[m.name]?.ghostDive)
+  actionDone = true
+  fetch(`${API}/api/use-move`, {
+    method: "POST", headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ roomId: ROOM_ID, mySlot, moveIdx: gdMoveIdx !== -1 ? gdMoveIdx : 0 })
+  })
+  return
+}
+
       if (!wasMine && myTurn) {
   if (logQueue.length > 0 || isProcessing) {
     pendingTurnUpdate = data
