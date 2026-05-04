@@ -472,6 +472,7 @@ function listenRoom() {
     if (!isSpectator) {
       const wasMine = myTurn
       myTurn = data.current_turn === mySlot
+      const myPokemon = data[`${mySlot}_entry`]?.[data[`${mySlot}_active_idx`]]
 
       // ★ 유턴 강제 교체 — wasMine/myTurn 체크 밖에서 먼저 처리
       if (data[`force_switch_${mySlot}`] && data.current_turn === mySlot) {
@@ -531,7 +532,6 @@ if (myTurn && !actionDone && myPokemon?.ghostDiveState?.diving) {
     return
   }
   actionDone = false
-  const myPokemon = data[`${mySlot}_entry`]?.[data[`${mySlot}_active_idx`]]
 
         if (!myPokemon || myPokemon.hp <= 0) {
           if (logQueue.length === 0 && !isProcessing) {
