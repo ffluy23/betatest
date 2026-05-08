@@ -4,7 +4,7 @@ import { auth, db } from "./firebase.js"
 import { onAuthStateChanged } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-auth.js"
 import { doc, getDoc, updateDoc, onSnapshot } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js"
 
-const API = "https://zenithring.vercel.app/"
+const API = "https://sonnettestsingle.vercel.app/"
 const roomRef = doc(db, "rooms", ROOM_ID)
 let myUid = null
 let myNickname = null
