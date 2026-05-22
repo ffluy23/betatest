@@ -240,7 +240,7 @@ window.acceptRing = async function() {
     await renderMail()
   } catch(e) {
     console.error(e)
-    showToast("수락 실패... 다시 시도해 주세요")
+    showToast("수락 실패... 다시 시도해 주세요.")
   }
 }
 
