@@ -3,182 +3,520 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>메일함</title>
+  <title>메일함 — 제니스고등학교</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@400;500;700;800&display=swap" rel="stylesheet" />
   <link rel="stylesheet" href="../css/style.css" />
   <style>
-    .mail{
+    /* ── 페이지 레이아웃 ── */
+    .mail-page {
+      max-width: 680px;
+      margin: 0 auto;
+      padding: calc(var(--header-h) + 32px) 24px 80px;
+    }
+
+    /* ── 페이지 헤더 ── */
+    .page-header {
+      display: flex;
+      align-items: center;
+      gap: 16px;
+      margin-bottom: 24px;
+      animation: fadeUp 0.4s ease both;
+    }
+
+    .back-link {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      width: 38px;
+      height: 38px;
+      border-radius: 50%;
+      background: var(--gray-100);
+      border: 1.5px solid var(--gray-200);
+      color: var(--text-sub);
+      text-decoration: none;
+      font-size: 16px;
+      transition: all 0.2s;
+      flex-shrink: 0;
+    }
+    .back-link:hover {
+      background: var(--green-pale);
+      border-color: var(--green-light);
+      color: var(--green-dark);
+    }
+
+    .page-title-wrap { flex: 1; }
+    .page-title {
+      font-size: 22px;
+      font-weight: 800;
+      color: var(--text-main);
+      letter-spacing: -0.5px;
+    }
+    .page-subtitle {
+      font-size: 12px;
+      color: var(--text-sub);
+      margin-top: 2px;
+    }
+
+    /* ── 메일 카드 ── */
+    .mail-card {
+      background: var(--white);
+      border-radius: var(--radius);
+      box-shadow: var(--shadow-md);
+      border: 1px solid var(--gray-200);
+      overflow: hidden;
+      animation: fadeUp 0.45s ease both;
+      animation-delay: 0.08s;
+    }
+
+    .mail-card-header {
+      padding: 18px 22px 14px;
+      border-bottom: 1px solid var(--gray-200);
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+    }
+
+    .mail-card-title {
+      font-size: 12px;
+      font-weight: 700;
+      color: var(--green-dark);
+      text-transform: uppercase;
+      letter-spacing: 1.2px;
+      display: flex;
+      align-items: center;
+      gap: 6px;
+    }
+    .mail-card-title::before {
+      content: '';
+      display: inline-block;
+      width: 4px;
+      height: 13px;
+      background: var(--green-primary);
+      border-radius: 2px;
+    }
+
+    .mail-count {
+      font-size: 11px;
+      color: var(--white);
+      background: var(--green-primary);
+      padding: 2px 8px;
+      border-radius: 20px;
+      font-weight: 600;
+    }
+
+    /* ── 메일 리스트 ── */
+    .mail-list {
+      max-height: 520px;
       overflow-y: auto;
     }
-    .mail-list div {
-      padding: 10px 0;
-      border-bottom: 1px solid #eee;
-      font-size: 14px;
-    }
-    .mail-list p {
-      padding: 10px 0;
-      border-bottom: 1px solid #eee;
-      font-size: 14px;
-      margin: 0;
-    }
-    .note-item {
-      cursor: pointer;
-    }
-    .note-item.unread { font-weight: bold; }
-    .note-item.read   { color: #888; }
 
+    .mail-item {
+      display: flex;
+      align-items: center;
+      gap: 14px;
+      padding: 14px 22px;
+      border-bottom: 1px solid var(--gray-200);
+      cursor: pointer;
+      transition: background 0.15s;
+      position: relative;
+    }
+    .mail-item:last-child { border-bottom: none; }
+    .mail-item:hover { background: var(--gray-100); }
+    .mail-item:active { background: var(--green-pale); }
+
+    /* 읽음/안읽음 */
+    .mail-item.unread .mail-item-title { font-weight: 700; color: var(--text-main); }
+    .mail-item.read .mail-item-title   { font-weight: 400; color: var(--text-sub); }
+    .mail-item.unread::before {
+      content: '';
+      position: absolute;
+      left: 10px;
+      top: 50%;
+      transform: translateY(-50%);
+      width: 6px;
+      height: 6px;
+      border-radius: 50%;
+      background: var(--green-primary);
+    }
+
+    /* 아이콘 뱃지 */
+    .mail-icon {
+      width: 40px;
+      height: 40px;
+      border-radius: 12px;
+      background: var(--green-pale);
+      border: 1.5px solid var(--green-light);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 18px;
+      flex-shrink: 0;
+    }
+    .mail-icon.type-ring   { background: #fff0f9; border-color: #f9c8e0; }
+    .mail-icon.type-gift   { background: #fff8e8; border-color: #f5dfa0; }
+    .mail-icon.type-letter { background: var(--green-pale); border-color: var(--green-light); }
+    .mail-icon.type-note   { background: #f0f4ff; border-color: #c8d4f5; }
+
+    .mail-item-body { flex: 1; min-width: 0; }
+    .mail-item-title {
+      font-size: 14px;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+    .mail-item-meta {
+      font-size: 11px;
+      color: var(--gray-400);
+      margin-top: 3px;
+    }
+
+    .mail-arrow {
+      color: var(--gray-400);
+      font-size: 13px;
+      flex-shrink: 0;
+    }
+
+    /* 빈 상태 */
+    .mail-empty {
+      padding: 56px 24px;
+      text-align: center;
+    }
+    .mail-empty-icon { font-size: 40px; margin-bottom: 12px; }
+    .mail-empty-text { font-size: 14px; color: var(--text-sub); }
+
+    /* 로딩 */
+    .mail-loading {
+      padding: 48px 24px;
+      text-align: center;
+      color: var(--text-sub);
+      font-size: 14px;
+    }
+    .mail-loading::after {
+      content: '';
+      display: block;
+      width: 28px;
+      height: 28px;
+      border: 3px solid var(--green-light);
+      border-top-color: var(--green-primary);
+      border-radius: 50%;
+      margin: 14px auto 0;
+      animation: spin 0.8s linear infinite;
+    }
+    @keyframes spin { to { transform: rotate(360deg); } }
+
+    /* ══════════════════════════════════════
+       모달 공통
+    ══════════════════════════════════════ */
     .modal-overlay {
-      display: none; position: fixed; inset: 0;
-      background: rgba(0,0,0,0.4); z-index: 100;
-      align-items: center; justify-content: center;
+      display: none;
+      position: fixed;
+      inset: 0;
+      background: rgba(45, 58, 46, 0.35);
+      backdrop-filter: blur(4px);
+      -webkit-backdrop-filter: blur(4px);
+      z-index: 300;
+      align-items: center;
+      justify-content: center;
+      padding: 20px;
     }
     .modal-overlay.open { display: flex; }
+
     .modal-box {
-      background: #fff; padding: 24px; border-radius: 8px;
-      min-width: 280px; max-width: 400px; width: 90%;
-      max-height: 90vh;
+      background: var(--white);
+      border-radius: var(--radius);
+      box-shadow: var(--shadow-lg);
+      border: 1px solid var(--gray-200);
+      width: 100%;
+      max-width: 420px;
+      max-height: 88vh;
+      overflow-y: auto;
+      animation: modalIn 0.22s ease both;
+    }
+    @keyframes modalIn {
+      from { opacity: 0; transform: scale(0.95) translateY(8px); }
+      to   { opacity: 1; transform: scale(1)    translateY(0); }
+    }
+
+    .modal-head {
+      padding: 22px 22px 16px;
+      border-bottom: 1px solid var(--gray-200);
+    }
+    .modal-head-icon { font-size: 28px; margin-bottom: 6px; }
+    .modal-head-title {
+      font-size: 17px;
+      font-weight: 800;
+      color: var(--text-main);
+      letter-spacing: -0.3px;
+    }
+    .modal-head-sub {
+      font-size: 12px;
+      color: var(--text-sub);
+      margin-top: 3px;
+    }
+
+    .modal-body { padding: 18px 22px; }
+
+    .modal-text-box {
+      background: var(--gray-100);
+      border: 1px solid var(--gray-200);
+      border-radius: var(--radius-sm);
+      padding: 14px 16px;
+      font-size: 14px;
+      line-height: 1.7;
+      color: var(--text-main);
+      white-space: pre-wrap;
+      word-break: break-all;
+      min-height: 60px;
+      max-height: 280px;
       overflow-y: auto;
     }
-    .modal-box h3 { margin: 0 0 16px; }
-    .modal-box .btn-row {
-      display: flex; gap: 8px;
-      margin-top: 12px; justify-content: flex-end;
-    }
-    .modal-box button { padding: 8px 16px; cursor: pointer; }
 
-    #note-view-text {
-      white-space: pre-wrap; word-break: break-all;
-      font-size: 15px; line-height: 1.6;
-      padding: 12px; background: #f9f9f9; border-radius: 6px;
-      min-height: 60px;
+    .modal-meta {
+      font-size: 11px;
+      color: var(--gray-400);
+      margin-top: 10px;
     }
 
-    /* 편지 본문 */
-    #letter-view-from {
+    /* 선물 info 박스 */
+    .gift-info-box {
+      background: var(--gray-100);
+      border: 1px solid var(--gray-200);
+      border-radius: var(--radius-sm);
+      padding: 20px 16px;
+      text-align: center;
+      max-height: 260px;
+      overflow-y: auto;
+    }
+
+    .modal-foot {
+      padding: 14px 22px 20px;
+      display: flex;
+      gap: 8px;
+      justify-content: flex-end;
+    }
+
+    /* 버튼 */
+    .btn-modal {
+      padding: 9px 20px;
+      border-radius: var(--radius-sm);
       font-size: 13px;
-      color: #888;
-      margin-bottom: 4px;
+      font-weight: 600;
+      font-family: inherit;
+      cursor: pointer;
+      transition: all 0.18s;
+      border: 1.5px solid transparent;
     }
-    #letter-view-title {
-      font-size: 16px;
-      font-weight: bold;
-      margin-bottom: 12px;
+    .btn-modal-primary {
+      background: var(--green-primary);
+      color: var(--white);
+      border-color: var(--green-primary);
     }
-    #letter-view-text {
-      white-space: pre-wrap; word-break: break-all;
-      font-size: 15px; line-height: 1.6;
-      padding: 12px; background: #f9f9f9; border-radius: 6px;
-      min-height: 60px;
-      max-height: 300px;
-      overflow-y: auto;
+    .btn-modal-primary:hover { background: var(--green-dark); border-color: var(--green-dark); }
+    .btn-modal-ghost {
+      background: transparent;
+      color: var(--gray-400);
+      border-color: var(--gray-200);
     }
+    .btn-modal-ghost:hover { border-color: #e05c5c; color: #e05c5c; }
+    .btn-modal-close {
+      background: transparent;
+      color: var(--text-sub);
+      border-color: var(--gray-200);
+    }
+    .btn-modal-close:hover { background: var(--gray-100); }
 
-    /* 선물 아이템 정보 박스 */
-    #gift-view-info {
-      background: #f9f9f9; border-radius: 6px;
-      padding: 12px; margin-bottom: 4px;
-      font-size: 14px; text-align: center;
-      max-height: 300px;
-      overflow-y: auto;
-    }
-    #gift-view-info p { margin: 4px 0; }
-
+    /* ── 토스트 ── */
     #toast {
-      position: fixed; bottom: 20px; left: 50%; transform: translateX(-50%);
-      background: #333; color: #fff; padding: 10px 20px; border-radius: 6px;
-      display: none; z-index: 9999; font-size: 14px;
+      position: fixed;
+      bottom: 28px;
+      left: 50%;
+      transform: translateX(-50%) translateY(12px);
+      background: var(--text-main);
+      color: var(--white);
+      padding: 10px 20px;
+      border-radius: 24px;
+      font-size: 13px;
+      font-weight: 500;
+      white-space: nowrap;
+      opacity: 0;
+      pointer-events: none;
+      z-index: 9999;
+      transition: opacity 0.22s, transform 0.22s;
     }
-    #toast.show { display: block; }
-
-    .empty-msg { color: #888; font-size: 14px; padding: 12px 0; }
-
-    .mail-box {
-      max-height: 400px;
-      overflow-y: auto;
+    #toast.show {
+      opacity: 1;
+      transform: translateX(-50%) translateY(0);
     }
 
-    .back-btn {
-      height: auto !important; flex-shrink: 0;
-      width: fit-content; padding: 8px 16px;
-    }
-
-    .btn-reject {
-      color: #aaa;
-      border-color: #ddd;
+    /* ── 모바일 ── */
+    @media (max-width: 768px) {
+      .mail-page {
+        padding: calc(var(--header-h) + 20px) 14px 88px;
+      }
+      .mail-item { padding: 12px 16px 12px 20px; gap: 12px; }
+      .mail-icon { width: 36px; height: 36px; font-size: 16px; border-radius: 10px; }
+      .modal-box { max-width: 100%; border-radius: 20px; }
     }
   </style>
 </head>
 <body>
-<div class="noise"></div>
-<div class="container">
-  <div class="header">
-    <div class="title">ZENITH RING</div>
-  </div>
-  <div class="screen">
-    <div class="screen-top">
-      <span>v1.0</span>
-      <div class="status">ONLINE</div>
-      <div class="battery"><div class="battery-level"></div></div>
-    </div>
-    <button onclick="location.href='../main.html'" class="btn back-btn" style="margin-bottom:16px;">← 돌아가기</button>
-    <div class="mail">
-    <div id="mail-list" class="mail-list">Loading...</div>
-    </div>
-  </div>
-  <div class="footer">Made by Sonnet with Ampharos</div>
-</div>
 
-<!-- ── 모달: 우정반지 요청 ── -->
-<div id="modal-ring-request" class="modal-overlay">
-  <div class="modal-box">
-    <h3>💍 우정반지 도착!</h3>
-    <p id="ring-req-from" style="font-size:15px;margin:0 0 16px;"></p>
-    <p style="font-size:12px;color:#aaa;margin:0 0 4px;">수락하면 양쪽 가방에 우정반지가 생겨!</p>
-    <div class="btn-row">
-      <button onclick="rejectRing()" style="color:#aaa;">거절</button>
-      <button onclick="acceptRing()">수락 💍</button>
+  <!-- ─── 헤더 ─── -->
+  <header class="header">
+    <a class="header-brand" href="../index.html">
+      <img
+        src="../image/뱃지.png"
+        alt="제니스고등학교 뱃지"
+        class="header-badge"
+        onerror="this.style.display='none'; this.nextElementSibling.style.display='flex';"
+      />
+      <div class="header-badge-fallback" style="display:none;">🏫</div>
+      <span class="header-school-name">제니스고등학교</span>
+    </a>
+    <div class="search-wrap" id="search-wrap">
+      <svg xmlns="http://www.w3.org/2000/svg" width="1em" height="1em" viewBox="0 0 24 24">
+        <path d="M0 0h24v24H0z" fill="none"/>
+        <path fill="#8eb998" d="m19.6 21l-6.3-6.3q-.75.6-1.725.95T9.5 16q-2.725 0-4.612-1.888T3 9.5t1.888-4.612T9.5 3t4.613 1.888T16 9.5q0 1.1-.35 2.075T14.7 13.3l6.3 6.3zM9.5 14q1.875 0 3.188-1.312T14 9.5t-1.312-3.187T9.5 5T6.313 6.313T5 9.5t1.313 3.188T9.5 14"/>
+      </svg>
+      <input type="text" id="search-input" placeholder="검색" autocomplete="off" />
+    </div>
+  </header>
+
+  <!-- ─── 메인 ─── -->
+  <div class="mail-page">
+
+    <div class="page-header">
+      <a href="../index.html" class="back-link">←</a>
+      <div class="page-title-wrap">
+        <div class="page-title">메일함</div>
+        <div class="page-subtitle" id="mail-subtitle">불러오는 중...</div>
+      </div>
+    </div>
+
+    <div class="mail-card">
+      <div class="mail-card-header">
+        <div class="mail-card-title">받은 메일</div>
+        <span class="mail-count" id="unread-count" style="display:none;"></span>
+      </div>
+      <div class="mail-list" id="mail-list">
+        <div class="mail-loading">메일함 불러오는 중</div>
+      </div>
+    </div>
+
+  </div>
+
+  <!-- ─── 모바일 하단 네비 ─── -->
+  <nav class="mobile-nav">
+    <a class="mobile-nav-btn" href="../profile.html">
+      <svg xmlns="http://www.w3.org/2000/svg" width="1em" height="1em" viewBox="0 0 512 512">
+        <path d="M0 0h512v512H0z" fill="none"/>
+        <path fill="#8eb998" d="M256 48C141.31 48 48 141.31 48 256s93.31 208 208 208s208-93.31 208-208S370.69 48 256 48m2 96a72 72 0 1 1-72 72a72 72 0 0 1 72-72m-2 288a175.55 175.55 0 0 1-129.18-56.6C135.66 329.62 215.06 320 256 320s120.34 9.62 129.18 55.39A175.52 175.52 0 0 1 256 432"/>
+      </svg>
+      프로필
+    </a>
+    <a class="mobile-nav-btn" href="../shop/shop.html">
+      <svg xmlns="http://www.w3.org/2000/svg" width="1em" height="1em" viewBox="0 0 48 48">
+        <path d="M0 0h48v48H0z" fill="none"/>
+        <g fill="none" stroke="#8eb998" stroke-linecap="round" stroke-linejoin="round" stroke-width="4">
+          <path fill="#8eb998" d="M4 12h40v8l-1.398.84a7 7 0 0 1-7.203 0L34 20l-1.398.84a7 7 0 0 1-7.203 0L24 20l-1.398.84a7 7 0 0 1-7.203 0L14 20l-1.399.84a7 7 0 0 1-7.202 0L4 20z"/>
+          <path d="M8 22.489V44h32V22M8 11.822V4h32v8"/>
+          <path fill="#8eb998" d="M19 32h10v12H19z"/>
+        </g>
+      </svg>
+      매점
+    </a>
+    <a class="mobile-nav-btn active" href="mail.html">
+      <svg xmlns="http://www.w3.org/2000/svg" width="1em" height="1em" viewBox="0 0 24 24">
+        <path d="M0 0h24v24H0z" fill="none"/>
+        <path fill="#8eb998" d="M4 20q-.825 0-1.412-.587T2 18V6q0-.825.588-1.412T4 4h16q.825 0 1.413.588T22 6v12q0 .825-.587 1.413T20 20zm8-7l8-5V6l-8 5l-8-5v2z"/>
+      </svg>
+      메일함
+    </a>
+    <a class="mobile-nav-btn" href="../battle.html">
+      <svg xmlns="http://www.w3.org/2000/svg" width="1em" height="1em" viewBox="0 0 24 24">
+        <path d="M0 0h24v24H0z" fill="none"/>
+        <path fill="#8eb998" d="M14.5 12a2.5 2.5 0 0 1-5 0a2.5 2.5 0 0 1 5 0m7.5 0c0 5.52-4.48 10-10 10S2 17.52 2 12S6.48 2 12 2s10 4.48 10 10m-2 0h-4c0-2.21-1.79-4-4-4s-4 1.79-4 4H4c0 4.41 3.59 8 8 8s8-3.59 8-8"/>
+      </svg>
+      배틀
+    </a>
+  </nav>
+
+  <!-- ══ 모달: 우정반지 요청 ══ -->
+  <div id="modal-ring-request" class="modal-overlay">
+    <div class="modal-box">
+      <div class="modal-head">
+        <div class="modal-head-icon">💍</div>
+        <div class="modal-head-title">우정반지 도착!</div>
+        <div class="modal-head-sub" id="ring-req-from"></div>
+      </div>
+      <div class="modal-body">
+        <div class="modal-text-box" style="font-size:13px; color:var(--text-sub);">
+          수락하면 양쪽 가방에 우정반지가 생겨요.
+        </div>
+      </div>
+      <div class="modal-foot">
+        <button class="btn-modal btn-modal-ghost" onclick="rejectRing()">거절</button>
+        <button class="btn-modal btn-modal-primary" onclick="acceptRing()">수락 💍</button>
+      </div>
     </div>
   </div>
-</div>
 
-<!-- ── 모달: 쪽지 내용 보기 ── -->
-<div id="modal-note-view" class="modal-overlay">
-  <div class="modal-box">
-    <h3>📨 익명의 쪽지</h3>
-    <div id="note-view-text"></div>
-    <p id="note-view-date" style="font-size:12px;color:#aaa;margin-top:10px;"></p>
-    <div class="btn-row">
-      <button onclick="closeNoteModal()">닫기</button>
+  <!-- ══ 모달: 쪽지 보기 ══ -->
+  <div id="modal-note-view" class="modal-overlay">
+    <div class="modal-box">
+      <div class="modal-head">
+        <div class="modal-head-icon">📨</div>
+        <div class="modal-head-title">익명의 쪽지</div>
+      </div>
+      <div class="modal-body">
+        <div class="modal-text-box" id="note-view-text"></div>
+        <div class="modal-meta" id="note-view-date"></div>
+      </div>
+      <div class="modal-foot">
+        <button class="btn-modal btn-modal-close" onclick="closeNoteModal()">닫기</button>
+      </div>
     </div>
   </div>
-</div>
 
-<!-- ── 모달: 일반 편지 보기 ── -->
-<div id="modal-letter-view" class="modal-overlay">
-  <div class="modal-box">
-    <h3>✉️ 편지 도착!</h3>
-    <div id="letter-view-from"></div>
-    <div id="letter-view-title"></div>
-    <div id="letter-view-text"></div>
-    <p id="letter-view-date" style="font-size:12px;color:#aaa;margin-top:10px;"></p>
-    <div class="btn-row">
-      <button onclick="closeLetterModal()">닫기</button>
+  <!-- ══ 모달: 편지 보기 ══ -->
+  <div id="modal-letter-view" class="modal-overlay">
+    <div class="modal-box">
+      <div class="modal-head">
+        <div class="modal-head-icon">✉️</div>
+        <div class="modal-head-title" id="letter-view-title">편지 도착!</div>
+        <div class="modal-head-sub" id="letter-view-from"></div>
+      </div>
+      <div class="modal-body">
+        <div class="modal-text-box" id="letter-view-text"></div>
+        <div class="modal-meta" id="letter-view-date"></div>
+      </div>
+      <div class="modal-foot">
+        <button class="btn-modal btn-modal-close" onclick="closeLetterModal()">닫기</button>
+      </div>
     </div>
   </div>
-</div>
 
-<!-- ── 모달: 선물 보기 / 수락 ── -->
-<div id="modal-gift-view" class="modal-overlay">
-  <div class="modal-box">
-    <h3>🎁 선물 도착!</h3>
-    <div id="gift-view-info"></div>
-    <div class="btn-row">
-      <button class="btn-reject" onclick="rejectGift()">거절</button>
-      <button onclick="acceptGift()">가방에 넣기</button>
+  <!-- ══ 모달: 선물 보기 ══ -->
+  <div id="modal-gift-view" class="modal-overlay">
+    <div class="modal-box">
+      <div class="modal-head">
+        <div class="modal-head-icon">🎁</div>
+        <div class="modal-head-title">선물 도착!</div>
+      </div>
+      <div class="modal-body">
+        <div class="gift-info-box" id="gift-view-info"></div>
+      </div>
+      <div class="modal-foot">
+        <button class="btn-modal btn-modal-ghost" onclick="rejectGift()">거절</button>
+        <button class="btn-modal btn-modal-primary" onclick="acceptGift()">가방에 넣기 🎒</button>
+      </div>
     </div>
   </div>
-</div>
 
-<div id="toast"></div>
-<script type="module" src="../js/mail.js"></script>
+  <div id="toast"></div>
+
+  <script type="module" src="../js/mail.js"></script>
 </body>
 </html>

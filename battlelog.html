@@ -1,157 +1,259 @@
 <!DOCTYPE html>
 <html lang="ko">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <link rel="stylesheet" href="css/style.css">
-    <style>
-        /* ── 게임 기록 모달 ── */
-  #log-modal {
-    display: none;
-    position: fixed; inset: 0; z-index: 999;
-    background: rgba(0,0,0,0.6);
-    align-items: center; justify-content: center;
-  }
-  #log-modal.open { display: flex; }
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>배틀 로그 — 제니스고등학교</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@400;500;700;800&display=swap" rel="stylesheet" />
+  <link rel="stylesheet" href="css/style.css" />
+  <style>
+    .log-page {
+      max-width: 680px;
+      margin: 0 auto;
+      padding: calc(var(--header-h) + 32px) 24px 80px;
+      display: flex;
+      flex-direction: column;
+      gap: 20px;
+    }
 
-  #log-modal-inner {
-    background: #fff;
-    border: 1px solid #ddd;
-    border-radius: 12px;
-    width: 520px; max-width: 95vw;
-    max-height: 80vh;
-    display: flex; flex-direction: column;
-    overflow: hidden;
-  }
+    /* ── 페이지 헤더 ── */
+    .page-header {
+      display: flex; align-items: center; gap: 16px;
+      animation: fadeUp 0.4s ease both;
+    }
+    .back-link {
+      display: flex; align-items: center; justify-content: center;
+      width: 38px; height: 38px; border-radius: 50%;
+      background: var(--gray-100); border: 1.5px solid var(--gray-200);
+      color: var(--text-sub); text-decoration: none; font-size: 16px;
+      flex-shrink: 0; transition: all 0.2s;
+    }
+    .back-link:hover { background: var(--green-pale); border-color: var(--green-light); color: var(--green-dark); }
+    .page-title    { font-size: 22px; font-weight: 800; color: var(--text-main); letter-spacing: -0.5px; }
+    .page-subtitle { font-size: 12px; color: var(--text-sub); margin-top: 2px; }
 
-  #log-modal-header {
-    display: flex; justify-content: space-between; align-items: center;
-    padding: 14px 18px;
-    border-bottom: 1px solid #eee;
-  }
-  #log-modal-title {
-    font-size: 14px; font-weight: bold; color: #111;
-  }
-  #log-modal-close {
-    background: none; border: none; color: #aaa;
-    font-size: 20px; cursor: pointer; line-height: 1;
-  }
-  #log-modal-close:hover { color: #333; }
+    /* ── 로그 카드 ── */
+    .log-card {
+      background: var(--white);
+      border-radius: var(--radius);
+      box-shadow: var(--shadow-md);
+      border: 1px solid var(--gray-200);
+      overflow: hidden;
+      animation: fadeUp 0.45s ease both;
+      animation-delay: 0.08s;
+    }
+    .log-card-head {
+      padding: 16px 22px 13px;
+      border-bottom: 1px solid var(--gray-200);
+    }
+    .log-card-label {
+      font-size: 12px; font-weight: 700; color: var(--green-dark);
+      text-transform: uppercase; letter-spacing: 1.2px;
+      display: flex; align-items: center; gap: 6px;
+    }
+    .log-card-label::before {
+      content: ''; display: inline-block;
+      width: 4px; height: 13px;
+      background: var(--green-primary); border-radius: 2px;
+    }
 
-  #log-modal-body {
-    padding: 14px 18px;
-    overflow-y: auto;
-    flex: 1;
-    line-height: 1.8;
-    font-size: 13px;
-    color: #333;
-  }
-  #log-modal-body p { margin: 2px 0; }
+    /* ── 로그 리스트 ── */
+    #game-log-list { display: flex; flex-direction: column; }
 
-  /* ── 게임 기록 목록 ── */
-  #game-log-section {
-    margin-top: 32px;
-  }
-  #game-log-section h3 {
-    font-size: 13px; color: #888;
-    margin: 0 0 10px;
-    letter-spacing: 0.1em;
-    text-transform: uppercase;
-  }
+    .game-log-item {
+      display: flex; flex-direction: column; gap: 3px;
+      padding: 14px 22px;
+      border-bottom: 1px solid var(--gray-200);
+      cursor: pointer;
+      transition: background 0.15s;
+    }
+    .game-log-item:last-child { border-bottom: none; }
+    .game-log-item:hover { background: var(--gray-100); }
 
- .game-log-box {
-  max-height: 30vh;
-  -webkit-overflow-scrolling: touch;
-}
-.screen {
-  overflow-y: auto;
-}
-#game-log-list {
-  display: flex; flex-direction: column; gap: 6px;
-  padding-bottom: 15px;
-}
+    .game-log-vs   { font-size: 14px; font-weight: 600; color: var(--text-main); }
+    .game-log-meta { font-size: 11px; color: var(--gray-400); }
 
-  .game-log-item {
-    display: flex; flex-direction: column; gap: 4px;
-    padding: 10px 14px;
-    background: rgba(255,255,255,0.04);
-    border: 1px solid #333;
-    border-radius: 8px;
-    cursor: pointer;
-    transition: background 0.15s, border-color 0.15s;
-  }
-  .game-log-item:hover {
-    background: rgba(255,255,255,0.08);
-    border-color: #555;
-  }
-  .game-log-vs {
-    font-size: 14px; font-weight: bold; color: #111;
-  }
-  .game-log-meta {
-    font-size: 11px; color: #888;
-  }
-  #game-log-empty {
-    font-size: 12px; color: #555; padding: 8px 0;
-  }
+    #game-log-empty {
+      padding: 48px 22px; text-align: center;
+      color: var(--text-sub); font-size: 14px;
+    }
 
-  .btn{
-    padding: 10px;
-    height: 40px;
-    margin-bottom: 5px;
-  }
+    /* ── 로그 모달 ── */
+    .modal-overlay {
+      display: none; position: fixed; inset: 0;
+      background: rgba(45, 58, 46, 0.35);
+      backdrop-filter: blur(4px); -webkit-backdrop-filter: blur(4px);
+      z-index: 300; align-items: center; justify-content: center; padding: 20px;
+    }
+    .modal-overlay.open { display: flex; }
 
-  .back-btn {
-  height: auto !important;
-  flex-shrink: 0;
-  width: fit-content;
-  padding: 8px 16px;
-}
+    .modal-box {
+      background: var(--white);
+      border-radius: var(--radius);
+      box-shadow: var(--shadow-lg);
+      border: 1px solid var(--gray-200);
+      width: 100%; max-width: 480px;
+      max-height: 85vh; overflow: hidden;
+      display: flex; flex-direction: column;
+      animation: modalIn 0.22s ease both;
+    }
+    @keyframes modalIn {
+      from { opacity: 0; transform: scale(0.95) translateY(8px); }
+      to   { opacity: 1; transform: scale(1) translateY(0); }
+    }
 
-    </style>
-    <title>Battle log</title>
+    .modal-head {
+      padding: 18px 22px 14px;
+      border-bottom: 1px solid var(--gray-200);
+      display: flex; align-items: center; justify-content: space-between;
+    }
+    .modal-head-icon  { font-size: 20px; margin-bottom: 2px; }
+    .modal-head-title { font-size: 15px; font-weight: 800; color: var(--text-main); }
+
+    .modal-close-btn {
+      background: none; border: none; cursor: pointer;
+      color: var(--gray-400); font-size: 18px; line-height: 1;
+      padding: 4px; border-radius: 6px; transition: all 0.15s;
+    }
+    .modal-close-btn:hover { background: var(--gray-100); color: var(--text-main); }
+
+    .modal-body {
+      padding: 16px 22px;
+      overflow-y: auto; flex: 1;
+      display: flex; flex-direction: column; gap: 4px;
+    }
+    .modal-body p {
+      font-size: 13px; color: var(--text-main);
+      line-height: 1.7; margin: 0;
+      padding: 5px 10px;
+      background: var(--gray-100);
+      border-radius: 6px;
+    }
+
+    /* ── 모바일 ── */
+    @media (max-width: 768px) {
+      .log-page      { padding: calc(var(--header-h) + 20px) 14px 88px; gap: 14px; }
+      .game-log-item { padding: 12px 16px; }
+      .modal-box     { border-radius: 20px; }
+    }
+  </style>
 </head>
 <body>
-<div class="container">
-  <div class="header">
-    <div class="title">ZENITH RING</div>
-  </div>
 
-  <div class="screen">
-        <div class="screen-top">
-            <span>v1.0</span>
-            <div class="status">ONLINE</div>
-            <div class="battery">
-                <div class="battery-level"></div>
-            </div>
-        </div>
-<button onclick="location.href='battle.html'" class="btn back-btn" style="margin-bottom:16px;">← 돌아가기</button>
-    <!-- 게임 기록 목록 -->
-<div id="game-log-section">
-  <h3>배틀 기록</h3>
-<div class="game-log-box">
-  <div id="game-log-list">
-    <div id="game-log-empty">Loading...</div>
-  </div>
- </div>
-</div>
-
-<!-- 로그 모달 -->
-<div id="log-modal">
-  <div id="log-modal-inner">
-    <div id="log-modal-header">
-      <span id="log-modal-title">게임 로그</span>
-      <button id="log-modal-close">✕</button>
+  <!-- ─── 헤더 ─── -->
+  <header class="header">
+    <a class="header-brand" href="index.html">
+      <img src="image/뱃지.png" alt="제니스고등학교 뱃지" class="header-badge"
+           onerror="this.style.display='none'; this.nextElementSibling.style.display='flex';" />
+      <div class="header-badge-fallback" style="display:none;">🏫</div>
+      <span class="header-school-name">제니스고등학교</span>
+    </a>
+    <div class="search-wrap" id="search-wrap">
+      <svg xmlns="http://www.w3.org/2000/svg" width="1em" height="1em" viewBox="0 0 24 24">
+        <path d="M0 0h24v24H0z" fill="none"/>
+        <path fill="#8eb998" d="m19.6 21l-6.3-6.3q-.75.6-1.725.95T9.5 16q-2.725 0-4.612-1.888T3 9.5t1.888-4.612T9.5 3t4.613 1.888T16 9.5q0 1.1-.35 2.075T14.7 13.3l6.3 6.3zM9.5 14q1.875 0 3.188-1.312T14 9.5t-1.312-3.187T9.5 5T6.313 6.313T5 9.5t1.313 3.188T9.5 14"/>
+      </svg>
+      <input type="text" id="search-input" placeholder="검색" autocomplete="off" />
     </div>
-    <div id="log-modal-body"></div>
+  </header>
+
+  <!-- ─── 메인 ─── -->
+  <div class="log-page">
+
+    <div class="page-header">
+      <a href="battle.html" class="back-link">←</a>
+      <div>
+        <div class="page-title">배틀 로그</div>
+        <div class="page-subtitle">지난 게임 기록</div>
+      </div>
+    </div>
+
+    <div class="log-card">
+      <div class="log-card-head">
+        <div class="log-card-label">전체 기록</div>
+      </div>
+      <div id="game-log-list">
+        <div id="game-log-empty">불러오는 중...</div>
+      </div>
+    </div>
+
   </div>
-</div>
 
- </div>
+  <!-- ─── 모바일 하단 네비 ─── -->
+  <nav class="mobile-nav">
+    <a class="mobile-nav-btn" href="profile/profile.html">
+      <svg xmlns="http://www.w3.org/2000/svg" width="1em" height="1em" viewBox="0 0 512 512">
+        <path d="M0 0h512v512H0z" fill="none"/>
+        <path fill="#8eb998" d="M256 48C141.31 48 48 141.31 48 256s93.31 208 208 208s208-93.31 208-208S370.69 48 256 48m2 96a72 72 0 1 1-72 72a72 72 0 0 1 72-72m-2 288a175.55 175.55 0 0 1-129.18-56.6C135.66 329.62 215.06 320 256 320s120.34 9.62 129.18 55.39A175.52 175.52 0 0 1 256 432"/>
+      </svg>
+      프로필
+    </a>
+    <a class="mobile-nav-btn" href="shop/shop.html">
+      <svg xmlns="http://www.w3.org/2000/svg" width="1em" height="1em" viewBox="0 0 48 48">
+        <path d="M0 0h48v48H0z" fill="none"/>
+        <g fill="none" stroke="#8eb998" stroke-linecap="round" stroke-linejoin="round" stroke-width="4">
+          <path fill="#8eb998" d="M4 12h40v8l-1.398.84a7 7 0 0 1-7.203 0L34 20l-1.398.84a7 7 0 0 1-7.203 0L24 20l-1.398.84a7 7 0 0 1-7.203 0L14 20l-1.399.84a7 7 0 0 1-7.202 0L4 20z"/>
+          <path d="M8 22.489V44h32V22M8 11.822V4h32v8"/>
+          <path fill="#8eb998" d="M19 32h10v12H19z"/>
+        </g>
+      </svg>
+      매점
+    </a>
+    <a class="mobile-nav-btn" href="mail/mail.html">
+      <svg xmlns="http://www.w3.org/2000/svg" width="1em" height="1em" viewBox="0 0 24 24">
+        <path d="M0 0h24v24H0z" fill="none"/>
+        <path fill="#8eb998" d="M4 20q-.825 0-1.412-.587T2 18V6q0-.825.588-1.412T4 4h16q.825 0 1.413.588T22 6v12q0 .825-.587 1.413T20 20zm8-7l8-5V6l-8 5l-8-5v2z"/>
+      </svg>
+      메일함
+    </a>
+    <a class="mobile-nav-btn active" href="battle.html">
+      <svg xmlns="http://www.w3.org/2000/svg" width="1em" height="1em" viewBox="0 0 24 24">
+        <path d="M0 0h24v24H0z" fill="none"/>
+        <path fill="#8eb998" d="M14.5 12a2.5 2.5 0 0 1-5 0a2.5 2.5 0 0 1 5 0m7.5 0c0 5.52-4.48 10-10 10S2 17.52 2 12S6.48 2 12 2s10 4.48 10 10m-2 0h-4c0-2.21-1.79-4-4-4s-4 1.79-4 4H4c0 4.41 3.59 8 8 8s8-3.59 8-8"/>
+      </svg>
+      배틀
+    </a>
+  </nav>
 
-<div class="footer">Made by Sonnet with Ampharos</div>
-</div>
+  <!-- ── 로그 모달 ── -->
+  <div id="log-modal" class="modal-overlay">
+    <div class="modal-box">
+      <div class="modal-head">
+        <div>
+          <div class="modal-head-icon">⚔️</div>
+          <div class="modal-head-title" id="log-modal-title">게임 로그</div>
+        </div>
+        <button class="modal-close-btn" id="log-modal-close">✕</button>
+      </div>
+      <div class="modal-body" id="log-modal-body"></div>
+    </div>
+  </div>
 
-<script type="module" src="js/firebase.js"></script>
-<script type="module" src="js/main.js"></script>
+  <script type="module" src="js/main.js"></script>
+
+  <script>
+    // 모바일 검색창 토글
+    const searchWrap  = document.getElementById('search-wrap');
+    const searchInput = document.getElementById('search-input');
+    if (searchWrap && searchInput) {
+      searchWrap.querySelector('svg').addEventListener('click', (e) => {
+        if (window.innerWidth <= 768) {
+          e.stopPropagation();
+          searchWrap.classList.toggle('expanded');
+          if (searchWrap.classList.contains('expanded')) searchInput.focus();
+        }
+      });
+      document.addEventListener('click', (e) => {
+        if (window.innerWidth <= 768 && !searchWrap.contains(e.target))
+          searchWrap.classList.remove('expanded');
+      });
+      searchInput.addEventListener('blur', () => {
+        if (window.innerWidth <= 768)
+          setTimeout(() => searchWrap.classList.remove('expanded'), 200);
+      });
+    }
+  </script>
 </body>
 </html>

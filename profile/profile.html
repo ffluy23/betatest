@@ -3,168 +3,531 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>프로필 — 제니스고등학교</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@400;500;700;800&display=swap" rel="stylesheet" />
   <link rel="stylesheet" href="../css/style.css" />
-  <title>Profile</title>
   <style>
-    .profile {
+    /* ── 페이지 레이아웃 ── */
+    .profile-page {
+      max-width: 720px;
+      margin: 0 auto;
+      padding: calc(var(--header-h) + 32px) 24px 80px;
       display: flex;
       flex-direction: column;
+      gap: 20px;
+    }
+
+    /* ── 페이지 헤더 ── */
+    .page-header {
+      display: flex;
+      align-items: center;
+      gap: 16px;
+      animation: fadeUp 0.4s ease both;
+    }
+    .back-link {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      width: 38px; height: 38px;
+      border-radius: 50%;
+      background: var(--gray-100);
+      border: 1.5px solid var(--gray-200);
+      color: var(--text-sub);
+      text-decoration: none;
+      font-size: 16px;
+      flex-shrink: 0;
+      transition: all 0.2s;
+    }
+    .back-link:hover { background: var(--green-pale); border-color: var(--green-light); color: var(--green-dark); }
+
+    .page-title      { font-size: 22px; font-weight: 800; color: var(--text-main); letter-spacing: -0.5px; }
+    .page-subtitle   { font-size: 12px; color: var(--text-sub); margin-top: 2px; }
+
+    /* ── 공통 카드 ── */
+    .p-card {
+      background: var(--white);
+      border-radius: var(--radius);
+      box-shadow: var(--shadow-md);
+      border: 1px solid var(--gray-200);
+      overflow: hidden;
+      animation: fadeUp 0.45s ease both;
+    }
+    .p-card-head {
+      padding: 18px 22px 14px;
+      border-bottom: 1px solid var(--gray-200);
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+    .p-card-label {
+      font-size: 12px;
+      font-weight: 700;
+      color: var(--green-dark);
+      text-transform: uppercase;
+      letter-spacing: 1.2px;
+      display: flex;
+      align-items: center;
+      gap: 6px;
+    }
+    .p-card-label::before {
+      content: '';
+      display: inline-block;
+      width: 4px; height: 13px;
+      background: var(--green-primary);
+      border-radius: 2px;
+    }
+    .p-card-body { padding: 22px; }
+
+    /* ── 프로필 정보 카드 ── */
+    .profile-info-card { animation-delay: 0.05s; }
+    .profile-row {
+      display: flex;
+      align-items: center;
+      gap: 20px;
+    }
+    .profile-avatar-lg {
+      width: 80px; height: 80px;
+      background: var(--green-pale);
+      border-radius: 50%;
+      border: 3px solid var(--green-light);
+      box-shadow: var(--shadow-sm);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      flex-shrink: 0;
+    }
+    .profile-avatar-lg svg { width: 50px; height: 50px; }
+
+    .profile-details { flex: 1; min-width: 0; }
+    .profile-nick {
+      font-size: 22px;
+      font-weight: 800;
+      color: var(--text-main);
+      letter-spacing: -0.5px;
+    }
+    .profile-active-title {
+      display: inline-block;
+      font-size: 12px;
+      color: var(--white);
+      background: var(--green-primary);
+      padding: 3px 12px;
+      border-radius: 20px;
+      font-weight: 500;
+      margin-top: 6px;
+    }
+    .profile-coins-row {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      margin-top: 10px;
+      font-size: 14px;
+      color: var(--text-sub);
+      font-weight: 500;
+    }
+
+    /* ── 갤러리 ── */
+    .gallery-card { animation-delay: 0.1s; }
+    .gallery-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(100px, 1fr));
       gap: 10px;
-    }
-    .gallery-box {
-      max-height: 400px;
+      max-height: 380px;
       overflow-y: auto;
-      margin-top: 2px;
     }
-    #gallery {
+    .gallery-grid img {
+      width: 100%;
+      aspect-ratio: 1;
+      object-fit: cover;
+      border-radius: var(--radius-sm);
+      border: 1.5px solid var(--gray-200);
+      transition: transform 0.18s, box-shadow 0.18s;
+    }
+    .gallery-grid img:hover {
+      transform: scale(1.04);
+      box-shadow: var(--shadow-md);
+    }
+    .gallery-empty {
+      color: var(--text-sub);
+      font-size: 14px;
+      padding: 8px 0;
+    }
+
+    /* ══════════════════════════════════════
+       관리자 패널
+    ══════════════════════════════════════ */
+    #admin-panel {
+      display: none;
+      background: var(--white);
+      border-radius: var(--radius);
+      box-shadow: var(--shadow-md);
+      border: 2px solid #f0c040;
+      overflow: hidden;
+      animation: fadeUp 0.5s ease both;
+      animation-delay: 0.15s;
+    }
+    .admin-head {
+      padding: 16px 22px;
+      background: #fffbea;
+      border-bottom: 1px solid #f0c040;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+    .admin-head-title {
+      font-size: 14px;
+      font-weight: 700;
+      color: #9a7200;
+    }
+    .admin-badge {
+      font-size: 10px;
+      background: #fff3cd;
+      border: 1px solid #e0c060;
+      border-radius: 4px;
+      padding: 1px 7px;
+      color: #9a7200;
+      font-weight: 600;
+    }
+    .admin-body { padding: 20px 22px; display: flex; flex-direction: column; gap: 14px; }
+
+    /* 수신자 영역 */
+    .admin-section-label {
+      font-size: 12px;
+      font-weight: 700;
+      color: var(--text-sub);
+      text-transform: uppercase;
+      letter-spacing: 0.8px;
+      margin-bottom: 6px;
+    }
+    .ap-recv-row {
       display: flex;
       gap: 8px;
-      flex-wrap: wrap;
     }
-    #gallery img {
-      width: 100px;
-      height: 100px;
-      object-fit: cover;
-      border-radius: 4px;
+    .ap-recv-row input {
+      flex: 1;
+    }
+    .ap-check-row {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      font-size: 13px;
+      color: var(--text-sub);
+      cursor: pointer;
+      margin-top: 6px;
+    }
+    .ap-check-row input[type="checkbox"] {
+      width: 15px; height: 15px;
+      accent-color: var(--green-primary);
+    }
+    .ap-tags {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 6px;
+      min-height: 28px;
+      margin-top: 8px;
+    }
+    .ap-tag {
+      display: inline-flex;
+      align-items: center;
+      gap: 4px;
+      background: var(--green-pale);
+      border: 1px solid var(--green-light);
+      border-radius: 20px;
+      padding: 3px 10px;
+      font-size: 13px;
+      color: var(--green-dark);
+    }
+    .ap-tag button {
+      background: none; border: none; cursor: pointer;
+      color: var(--gray-400); font-size: 14px; padding: 0;
+      line-height: 1;
+    }
+    .ap-tag button:hover { color: #e05c5c; }
+
+    /* 탭 */
+    .ap-tabs {
+      display: flex;
+      gap: 6px;
+    }
+    .ap-tab {
+      flex: 1;
+      padding: 8px 4px;
+      font-size: 12px;
+      font-weight: 600;
+      font-family: inherit;
+      border: 1.5px solid var(--gray-200);
+      border-radius: var(--radius-sm);
+      background: var(--gray-100);
+      color: var(--text-sub);
+      cursor: pointer;
+      transition: all 0.18s;
+    }
+    .ap-tab.on {
+      background: var(--green-primary);
+      color: var(--white);
+      border-color: var(--green-primary);
+    }
+
+    /* 폼 공통 인풋 */
+    .admin-body input[type="text"],
+    .admin-body input[type="email"],
+    .admin-body textarea,
+    .admin-body select {
+      width: 100%;
+      padding: 10px 14px;
+      border: 1.5px solid var(--gray-200);
+      border-radius: var(--radius-sm);
+      font-size: 14px;
+      font-family: inherit;
+      color: var(--text-main);
+      background: var(--white);
+      outline: none;
+      transition: border-color 0.2s;
+      box-sizing: border-box;
+    }
+    .admin-body input:focus,
+    .admin-body textarea:focus,
+    .admin-body select:focus {
+      border-color: var(--green-primary);
+      box-shadow: 0 0 0 3px rgba(142,185,152,0.12);
+    }
+    .admin-body textarea {
+      height: 90px;
+      resize: none;
+    }
+
+    /* 발송 버튼 */
+    .ap-send-btn {
+      width: 100%;
+      padding: 12px;
+      font-size: 14px;
+      font-weight: 700;
+      font-family: inherit;
+      background: var(--green-primary);
+      color: var(--white);
+      border: none;
+      border-radius: var(--radius-sm);
+      cursor: pointer;
+      transition: background 0.2s, transform 0.1s;
+    }
+    .ap-send-btn:hover   { background: var(--green-dark); }
+    .ap-send-btn:active  { transform: scale(0.98); }
+    .ap-send-btn:disabled { background: var(--gray-400); cursor: not-allowed; }
+
+    .ap-result {
+      font-size: 12px;
+      color: var(--text-sub);
+      text-align: center;
+      min-height: 16px;
     }
 
     /* ── 토스트 ── */
     #toast {
-      position: fixed; bottom: 20px; left: 50%; transform: translateX(-50%);
-      background: #333; color: #fff; padding: 10px 20px; border-radius: 6px;
-      display: none; z-index: 9999; font-size: 14px;
+      position: fixed;
+      bottom: 28px;
+      left: 50%;
+      transform: translateX(-50%) translateY(12px);
+      background: var(--text-main);
+      color: var(--white);
+      padding: 10px 20px;
+      border-radius: 24px;
+      font-size: 13px;
+      font-weight: 500;
+      white-space: nowrap;
+      opacity: 0;
+      pointer-events: none;
+      z-index: 9999;
+      transition: opacity 0.22s, transform 0.22s;
     }
-    #toast.show { display: block; }
+    #toast.show { opacity: 1; transform: translateX(-50%) translateY(0); }
 
-    /* ── 관리자 패널: container 완전 바깥 ── */
-    #admin-panel {
-      display: none;
-      max-width: 480px;
-      margin: 16px auto;
-      padding: 16px;
-      border: 2px dashed #e0b000;
-      border-radius: 8px;
-      background: #fffdf0;
-      font-size: 13px;
+    /* ── 모바일 ── */
+    @media (max-width: 768px) {
+      .profile-page { padding: calc(var(--header-h) + 20px) 14px 88px; gap: 14px; }
+      .p-card-body  { padding: 16px; }
+      .profile-nick { font-size: 18px; }
+      .profile-avatar-lg { width: 64px; height: 64px; }
+      .profile-avatar-lg svg { width: 40px; height: 40px; }
+      .gallery-grid { grid-template-columns: repeat(auto-fill, minmax(80px, 1fr)); gap: 8px; }
+      .ap-tabs { flex-wrap: wrap; }
+      .admin-body { padding: 16px; gap: 12px; }
     }
-    #admin-panel label { font-size: 13px; }
-    #admin-panel input,
-    #admin-panel textarea,
-    #admin-panel select {
-      width: 100%;
-      box-sizing: border-box;
-      padding: 7px 10px;
-      font-size: 13px;
-      border: 1px solid #ddd;
-      border-radius: 6px;
-      margin-bottom: 6px;
-      background: #fff;
-    }
-    #admin-panel textarea { height: 80px; resize: none; }
-    .ap-row { display: flex; gap: 6px; margin-bottom: 6px; }
-    .ap-row input { margin-bottom: 0; }
-    .ap-tags { display: flex; flex-wrap: wrap; gap: 6px; min-height: 24px; margin-bottom: 8px; }
-    .ap-tag {
-      display: inline-flex; align-items: center; gap: 4px;
-      background: #eee; border-radius: 20px; padding: 2px 10px;
-    }
-    .ap-tag button { background: none; border: none; cursor: pointer; color: #999; font-size: 13px; padding: 0; }
-    .ap-tabs { display: flex; gap: 6px; margin-bottom: 10px; }
-    .ap-tab {
-      flex: 1; padding: 6px 4px; font-size: 12px;
-      border: 1px solid #ddd; border-radius: 6px;
-      background: #f5f5f5; color: #888; cursor: pointer;
-    }
-    .ap-tab.on { background: #333; color: #fff; border-color: #333; }
-    .ap-send {
-      width: 100%; padding: 9px; font-size: 14px; font-weight: bold;
-      background: #333; color: #fff; border: none; border-radius: 6px;
-      cursor: pointer; margin-top: 8px;
-    }
-    .ap-send:disabled { background: #aaa; }
-    .ap-result { font-size: 12px; color: #888; text-align: center; margin-top: 6px; min-height: 16px; }
   </style>
 </head>
 <body>
-  <div class="noise"></div>
 
-  <!-- 기존 프로필 영역 -->
-  <div class="container">
-    <div class="header">
-      <div class="title">ZENITH RING</div>
+  <!-- ─── 헤더 ─── -->
+  <header class="header">
+    <a class="header-brand" href="../index.html">
+      <img
+        src="../image/뱃지.png"
+        alt="제니스고등학교 뱃지"
+        class="header-badge"
+        onerror="this.style.display='none'; this.nextElementSibling.style.display='flex';"
+      />
+      <div class="header-badge-fallback" style="display:none;">🏫</div>
+      <span class="header-school-name">제니스고등학교</span>
+    </a>
+    <div class="search-wrap" id="search-wrap">
+      <svg xmlns="http://www.w3.org/2000/svg" width="1em" height="1em" viewBox="0 0 24 24">
+        <path d="M0 0h24v24H0z" fill="none"/>
+        <path fill="#8eb998" d="m19.6 21l-6.3-6.3q-.75.6-1.725.95T9.5 16q-2.725 0-4.612-1.888T3 9.5t1.888-4.612T9.5 3t4.613 1.888T16 9.5q0 1.1-.35 2.075T14.7 13.3l6.3 6.3zM9.5 14q1.875 0 3.188-1.312T14 9.5t-1.312-3.187T9.5 5T6.313 6.313T5 9.5t1.313 3.188T9.5 14"/>
+      </svg>
+      <input type="text" id="search-input" placeholder="검색" autocomplete="off" />
     </div>
-    <div class="screen">
-      <div class="screen-top">
-        <span>v1.0</span>
-        <div class="status">ONLINE</div>
-        <div class="battery"><div class="battery-level"></div></div>
-      </div>
-      <div class="profile">
-        <div id="nickname"></div>
-        <div id="coins"></div>
-      </div>
-      <div class="gallery-box">
-        <h2>Entry</h2>
-        <hr>
-        <div id="gallery"></div>
+  </header>
+
+  <!-- ─── 메인 ─── -->
+  <div class="profile-page">
+
+    <!-- 페이지 헤더 -->
+    <div class="page-header">
+      <a href="../index.html" class="back-link">←</a>
+      <div>
+        <div class="page-title">프로필</div>
+        <div class="page-subtitle">내 정보 및 엔트리</div>
       </div>
     </div>
-    <div class="footer">Made by Sonnet with Ampharos</div>
+
+    <!-- 프로필 정보 -->
+    <div class="p-card profile-info-card">
+      <div class="p-card-head">
+        <div class="p-card-label">내 정보</div>
+      </div>
+      <div class="p-card-body">
+        <div class="profile-row">
+          <div class="profile-avatar-lg">
+            <svg xmlns="http://www.w3.org/2000/svg" width="1em" height="1em" viewBox="0 0 512 512">
+              <path d="M0 0h512v512H0z" fill="none"/>
+              <path fill="#8eb998" d="M256 48C141.31 48 48 141.31 48 256s93.31 208 208 208s208-93.31 208-208S370.69 48 256 48m2 96a72 72 0 1 1-72 72a72 72 0 0 1 72-72m-2 288a175.55 175.55 0 0 1-129.18-56.6C135.66 329.62 215.06 320 256 320s120.34 9.62 129.18 55.39A175.52 175.52 0 0 1 256 432"/>
+            </svg>
+          </div>
+          <div class="profile-details">
+            <div class="profile-nick" id="nickname">—</div>
+            <div class="profile-active-title" id="active-title">칭호 없음</div>
+            <div class="profile-coins-row">
+              <span>🪙</span>
+              <span id="coins">0 코인</span>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- 갤러리 -->
+    <div class="p-card gallery-card">
+      <div class="p-card-head">
+        <div class="p-card-label">엔트리 갤러리</div>
+      </div>
+      <div class="p-card-body">
+        <div id="gallery" class="gallery-grid"></div>
+      </div>
+    </div>
+
+    <!-- 관리자 패널 -->
+    <div id="admin-panel">
+      <div class="admin-head">
+        <span style="font-size:18px;">📮</span>
+        <span class="admin-head-title">관리자 메일 발송</span>
+        <span class="admin-badge">ADMIN</span>
+      </div>
+      <div class="admin-body">
+
+        <!-- 수신자 -->
+        <div>
+          <div class="admin-section-label">수신자</div>
+          <div class="ap-recv-row">
+            <input id="ap-recv" type="text" placeholder="닉네임 입력..."
+                   onkeydown="if(event.key==='Enter') apAdd()" />
+            <button class="login-btn" onclick="apAdd()" style="width:auto;padding:10px 16px;margin:0;">추가</button>
+          </div>
+          <label class="ap-check-row">
+            <input type="checkbox" id="ap-all" onchange="apToggleAll(this)" />
+            전체 유저에게 발송
+          </label>
+          <div id="ap-tags" class="ap-tags">
+            <span style="color:var(--gray-400);font-size:13px;">수신자를 추가해주세요</span>
+          </div>
+        </div>
+
+        <!-- 탭 -->
+        <div>
+          <div class="admin-section-label">메일 종류</div>
+          <div class="ap-tabs">
+            <button id="ap-tab-letter" class="ap-tab on" onclick="apSwitch('letter')">✉️ 편지</button>
+            <button id="ap-tab-item"   class="ap-tab"    onclick="apSwitch('item')">🎁 아이템</button>
+            <button id="ap-tab-both"   class="ap-tab"    onclick="apSwitch('both')">✉️ + 🎁 같이</button>
+          </div>
+        </div>
+
+        <!-- 편지 폼 -->
+        <div id="ap-form-letter">
+          <div id="ap-title-row" style="margin-bottom:8px;">
+            <input id="ap-title" type="text" placeholder="제목" />
+          </div>
+          <textarea id="ap-body" placeholder="내용을 입력하세요..."></textarea>
+        </div>
+
+        <!-- 아이템 폼 -->
+        <div id="ap-form-item" style="display:none;">
+          <select id="ap-item-type" onchange="apItemChange()" style="margin-bottom:8px;">
+            <option value="ingredient_good">🧂 좋은 조미료</option>
+            <option value="ingredient_bad">🫙 이상한 조미료</option>
+            <option value="custom_ingredient">✏️ 조미료 — 이름 직접 입력</option>
+            <option value="custom_etc">📦 기타 — 이름 직접 입력</option>
+            <option value="custom_poppin">🧁 포핀 (이름 직접 입력)</option>
+            <option value="title_ticket">📃 칭호 선택권[진짜 자유]</option>
+          </select>
+          <input id="ap-custom" type="text" placeholder="아이템 이름" style="display:none;" />
+        </div>
+
+        <!-- 발송 -->
+        <div>
+          <button id="ap-send" class="ap-send-btn" onclick="apSend()">📮 발송하기</button>
+          <div id="ap-result" class="ap-result" style="margin-top:8px;"></div>
+        </div>
+
+      </div>
+    </div>
+
   </div>
 
-  <!-- 관리자 패널: container 완전 바깥 -->
-  <div id="admin-panel">
-    <div style="font-weight:bold;color:#b07800;margin-bottom:12px;">
-      📮 관리자 메일 발송
-      <span style="font-size:10px;background:#fff3cd;border:1px solid #e0c060;border-radius:4px;padding:1px 6px;margin-left:4px;">ADMIN</span>
-    </div>
-
-    <!-- 수신자 -->
-    <div style="color:#888;margin-bottom:4px;">수신자</div>
-    <div class="ap-row">
-      <input id="ap-recv" type="text" placeholder="닉네임..."
-             onkeydown="if(event.key==='Enter')apAdd()" style="flex:1;margin:0;" />
-      <button onclick="apAdd()" style="padding:7px 12px;font-size:13px;border:1px solid #ddd;border-radius:6px;background:#fff;cursor:pointer;white-space:nowrap;">추가</button>
-    </div>
-    <label style="display:flex;align-items:center;gap:6px;margin-bottom:8px;cursor:pointer;">
-      <input type="checkbox" id="ap-all" onchange="apToggleAll(this)" /> 전체 발송
-    </label>
-    <div id="ap-tags" class="ap-tags">
-      <span style="color:#bbb;font-size:12px;">수신자를 추가해줘</span>
-    </div>
-
-    <!-- 탭 -->
-    <div style="color:#888;margin-bottom:6px;margin-top:4px;">메일 종류</div>
-    <div class="ap-tabs">
-      <button id="ap-tab-letter" class="ap-tab on" onclick="apSwitch('letter')">✉️ 편지</button>
-      <button id="ap-tab-item"   class="ap-tab"    onclick="apSwitch('item')">🎁 아이템</button>
-      <button id="ap-tab-both"   class="ap-tab"    onclick="apSwitch('both')">✉️+🎁 같이</button>
-    </div>
-
-    <!-- 편지 폼 -->
-    <div id="ap-form-letter">
-      <div id="ap-title-row">
-        <input id="ap-title" type="text" placeholder="제목" />
-      </div>
-      <textarea id="ap-body" placeholder="내용..."></textarea>
-    </div>
-
-    <!-- 아이템 폼 -->
-    <div id="ap-form-item" style="display:none;">
-      <select id="ap-item-type" onchange="apItemChange()">
-        <option value="ingredient_good">🧂 좋은 조미료</option>
-        <option value="ingredient_bad">🫙 이상한 조미료</option>
-        <option value="custom_ingredient">✏️ 조미료 — 이름 직접 입력</option>
-        <option value="custom_etc">📦 기타 — 이름 직접 입력</option>
-         <option value="custom_poppin">🧁 포핀 (이름 직접 입력)</option>
-         <option value="title_ticket">📃 칭호 선택권[진짜 자유]</option>
-      </select>
-      <input id="ap-custom" type="text" placeholder="아이템 이름" style="display:none;" />
-    </div>
-
-    <button id="ap-send" class="ap-send" onclick="apSend()">📮 발송하기</button>
-    <div id="ap-result" class="ap-result"></div>
-  </div>
+  <!-- ─── 모바일 하단 네비 ─── -->
+  <nav class="mobile-nav">
+    <a class="mobile-nav-btn active" href="profile.html">
+      <svg xmlns="http://www.w3.org/2000/svg" width="1em" height="1em" viewBox="0 0 512 512">
+        <path d="M0 0h512v512H0z" fill="none"/>
+        <path fill="#8eb998" d="M256 48C141.31 48 48 141.31 48 256s93.31 208 208 208s208-93.31 208-208S370.69 48 256 48m2 96a72 72 0 1 1-72 72a72 72 0 0 1 72-72m-2 288a175.55 175.55 0 0 1-129.18-56.6C135.66 329.62 215.06 320 256 320s120.34 9.62 129.18 55.39A175.52 175.52 0 0 1 256 432"/>
+      </svg>
+      프로필
+    </a>
+    <a class="mobile-nav-btn" href="../shop/shop.html">
+      <svg xmlns="http://www.w3.org/2000/svg" width="1em" height="1em" viewBox="0 0 48 48">
+        <path d="M0 0h48v48H0z" fill="none"/>
+        <g fill="none" stroke="#8eb998" stroke-linecap="round" stroke-linejoin="round" stroke-width="4">
+          <path fill="#8eb998" d="M4 12h40v8l-1.398.84a7 7 0 0 1-7.203 0L34 20l-1.398.84a7 7 0 0 1-7.203 0L24 20l-1.398.84a7 7 0 0 1-7.203 0L14 20l-1.399.84a7 7 0 0 1-7.202 0L4 20z"/>
+          <path d="M8 22.489V44h32V22M8 11.822V4h32v8"/>
+          <path fill="#8eb998" d="M19 32h10v12H19z"/>
+        </g>
+      </svg>
+      매점
+    </a>
+    <a class="mobile-nav-btn" href="../mail/mail.html">
+      <svg xmlns="http://www.w3.org/2000/svg" width="1em" height="1em" viewBox="0 0 24 24">
+        <path d="M0 0h24v24H0z" fill="none"/>
+        <path fill="#8eb998" d="M4 20q-.825 0-1.412-.587T2 18V6q0-.825.588-1.412T4 4h16q.825 0 1.413.588T22 6v12q0 .825-.587 1.413T20 20zm8-7l8-5V6l-8 5l-8-5v2z"/>
+      </svg>
+      메일함
+    </a>
+    <a class="mobile-nav-btn" href="../battle.html">
+      <svg xmlns="http://www.w3.org/2000/svg" width="1em" height="1em" viewBox="0 0 24 24">
+        <path d="M0 0h24v24H0z" fill="none"/>
+        <path fill="#8eb998" d="M14.5 12a2.5 2.5 0 0 1-5 0a2.5 2.5 0 0 1 5 0m7.5 0c0 5.52-4.48 10-10 10S2 17.52 2 12S6.48 2 12 2s10 4.48 10 10m-2 0h-4c0-2.21-1.79-4-4-4s-4 1.79-4 4H4c0 4.41 3.59 8 8 8s8-3.59 8-8"/>
+      </svg>
+      배틀
+    </a>
+  </nav>
 
   <div id="toast"></div>
   <script type="module" src="../js/profile.js"></script>

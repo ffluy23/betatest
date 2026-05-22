@@ -1,197 +1,185 @@
 <!DOCTYPE html>
-<html lang="ko">
+<html lang="en">
 <head>
-<meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Login</title>
-
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <link rel="stylesheet" href="css/style.css">
+    <title>제니스고등학교</title>
 </head>
-<style>
-@font-face {
-    font-family: 'OneStoreMobileGothicTitleFont';
-    src: url('https://cdn.jsdelivr.net/gh/projectnoonnu/noonfonts_2105_2@1.0/ONE-Mobile-Title.woff') format('woff');
-    font-weight: normal;
-    font-display: swap;
-}
-* {
-  box-sizing: border-box;
-  margin: 0;
-  padding: 0;
-}
-
-body {
-  min-height: 100vh;
-  display: flex;
-  flex-direction: column;
-  justify-content: center;
-  align-items: center;
-  background: #ffffff;
-  color: #111;
-  font-family: 'OneStoreMobileGothicTitleFont';
-}
-
-h2 {
-  margin-bottom: 30px;
-  font-size: 32px;
-  font-weight: 600;
-}
-
-.login-box {
-  width: 100%;
-  max-width: 360px;
-  padding: 40px 30px;
-  border: 1px solid #e5e5e5;
-  border-radius: 16px;
-  background: #fff;
-  box-shadow: 0 10px 30px rgba(0,0,0,0.05);
-}
-
-.login-box input {
-  width: 100%;
-  height: 50px;
-  margin-bottom: 16px;
-  padding: 0 16px;
-  border: 1px solid #ddd;
-  border-radius: 10px;
-  background: #fafafa;
-  font-size: 15px;
-  transition: all 0.2s ease;
-  outline: none;
-}
-
-.login-box input::placeholder {
-  color: #aaa;
-}
-
-.login-box input:focus {
-  border-color: #111;
-  background: #fff;
-}
-
-.btn {
-  width: 100%;
-  height: 52px;
-  margin-top: 10px;
-  border: none;
-  border-radius: 12px;
-  background: #111;
-  color: #fff;
-  font-size: 15px;
-  font-weight: 600;
-  cursor: pointer;
-  transition: all 0.2s ease;
-}
-
-.btn:hover {
-  background: #333;
-}
-
-.btn:active {
-  transform: scale(0.97);
-}
-
-@media (max-width: 480px) {
-  .login-box {
-    max-width: calc(100% - 40px);
-    padding: 32px 24px;
-  }
-}
-
-.name {
-  position: fixed;
-  top: 0;
-  left: 0;
-  width: 100%;
-  height: 100%;
-  pointer-events: none; 
-  overflow: hidden;
-  z-index: 0;
-}
-
-.name p {
-  position: absolute;
-  color: rgba(0,0,0,0.2);
-  font-size: 18px;
-  font-weight: 500;
-  white-space: nowrap;
-  user-select: none;
-}
-
-h2, .login-box {
-  position: relative;
-  z-index: 1;
-}
-</style>
 <body>
-      <h2>Login</h2>
-      <div class="login-box">
-        <input id="email" type="email" placeholder="email">
-        <input id="password" type="password" placeholder="password">
-        <button class="btn" id="loginBtn">ENTER</button>
+
+    <!-- ─── 헤더 ─── -->
+  <header class="header">
+    <a class="header-brand" href="index.html">
+      <img
+        src="image/뱃지.png"
+        alt="제니스고등학교 뱃지"
+        class="header-badge"
+        onerror="this.style.display='none'; this.nextElementSibling.style.display='flex';"
+      />
+      <div class="header-badge-fallback" style="display:none;">🏫</div>
+      <span class="header-school-name">제니스고등학교</span>
+    </a>
+
+    <div class="search-wrap" id="search-wrap">
+      <svg xmlns="http://www.w3.org/2000/svg" width="1em" height="1em" viewBox="0 0 24 24">
+        <path d="M0 0h24v24H0z" fill="none"/>
+        <path fill="#8eb998" d="m19.6 21l-6.3-6.3q-.75.6-1.725.95T9.5 16q-2.725 0-4.612-1.888T3 9.5t1.888-4.612T9.5 3t4.613 1.888T16 9.5q0 1.1-.35 2.075T14.7 13.3l6.3 6.3zM9.5 14q1.875 0 3.188-1.312T14 9.5t-1.312-3.187T9.5 5T6.313 6.313T5 9.5t1.313 3.188T9.5 14"/>
+      </svg>
+      <input type="text" id="search-input" placeholder="검색" autocomplete="off" />
+    </div>
+  </header>
+
+  <!-- ─── 히어로 (학교 배경 + 그라데이션) ─── -->
+  <section class="hero">
+    <div class="hero-bg"></div>
+    <div class="hero-gradient"></div>
+    <div class="hero-content">
+      <h1 class="hero-title">제니스고등학교</h1>
+      <p class="hero-subtitle">Zenith High School</p>
+    </div>
+  </section>
+
+  <!-- ─── 메인 콘텐츠 ─── -->
+  <main class="main-content">
+
+    <!-- 로그인 / 프로필 -->
+    <div class="card login-container-wrap">
+      <div class="card-title">내 계정</div>
+      <div id="login-container">
+        <div class="login-form">
+          <div class="login-title">로그인</div>
+          <input type="email" id="login-email" placeholder="이메일" />
+          <input type="password" id="login-password" placeholder="비밀번호" />
+          <button class="login-btn" id="login-btn">로그인</button>
+          <div id="login-error" class="login-error"></div>
+        </div>
       </div>
-     
-       <div class="name">
-        <p>소넷</p>
-        <p>카무이</p>
-        <p>레머넌트</p>
-        <p>플리네</p>
-        <p>세라벨</p>
-        <p>버크</p>
-        <p>시안</p>
-        <p>녹시아</p>
-        <p>필리아</p>
-        <p>제뉴인</p>
-        <p>발렌타인</p>
-        <p>송백</p>
-        <p>비제</p>
-        <p>올매</p>
-        <p>나우</p>
-        <p>아주르</p>
-        <p>에버렛</p>
-        <p>시릴</p>
-        <p>유진</p>
     </div>
 
+    <!-- 달력 -->
+    <div class="card calendar-wrap">
+      <div class="card-title">달력</div>
+      <div id="calendar"></div>
+    </div>
+
+    <!-- 네비게이션 -->
+    <div class="card nav-container-wrap">
+      <div class="card-title">메뉴</div>
+      <nav class="nav-grid">
+        <a class="nav-btn" href="profile/profile.html">
+          <svg xmlns="http://www.w3.org/2000/svg" width="1em" height="1em" viewBox="0 0 512 512">
+            <path d="M0 0h512v512H0z" fill="none"/>
+            <path fill="#8eb998" d="M256 48C141.31 48 48 141.31 48 256s93.31 208 208 208s208-93.31 208-208S370.69 48 256 48m2 96a72 72 0 1 1-72 72a72 72 0 0 1 72-72m-2 288a175.55 175.55 0 0 1-129.18-56.6C135.66 329.62 215.06 320 256 320s120.34 9.62 129.18 55.39A175.52 175.52 0 0 1 256 432"/>
+          </svg>
+          프로필
+        </a>
+
+        <a class="nav-btn" href="shop/shop.html">
+          <svg xmlns="http://www.w3.org/2000/svg" width="1em" height="1em" viewBox="0 0 48 48">
+            <path d="M0 0h48v48H0z" fill="none"/>
+            <g fill="none" stroke="#8eb998" stroke-linecap="round" stroke-linejoin="round" stroke-width="4">
+              <path fill="#8eb998" d="M4 12h40v8l-1.398.84a7 7 0 0 1-7.203 0L34 20l-1.398.84a7 7 0 0 1-7.203 0L24 20l-1.398.84a7 7 0 0 1-7.203 0L14 20l-1.399.84a7 7 0 0 1-7.202 0L4 20z"/>
+              <path d="M8 22.489V44h32V22M8 11.822V4h32v8"/>
+              <path fill="#8eb998" d="M19 32h10v12H19z"/>
+            </g>
+          </svg>
+          매점
+        </a>
+
+        <a class="nav-btn" href="mail/mail.html">
+          <svg xmlns="http://www.w3.org/2000/svg" width="1em" height="1em" viewBox="0 0 24 24">
+            <path d="M0 0h24v24H0z" fill="none"/>
+            <path fill="#8eb998" d="M4 20q-.825 0-1.412-.587T2 18V6q0-.825.588-1.412T4 4h16q.825 0 1.413.588T22 6v12q0 .825-.587 1.413T20 20zm8-7l8-5V6l-8 5l-8-5v2z"/>
+          </svg>
+          메일함
+        </a>
+
+        <a class="nav-btn" href="battle.html">
+          <svg xmlns="http://www.w3.org/2000/svg" width="1em" height="1em" viewBox="0 0 24 24">
+            <path d="M0 0h24v24H0z" fill="none"/>
+            <path fill="#8eb998" d="M14.5 12a2.5 2.5 0 0 1-5 0a2.5 2.5 0 0 1 5 0m7.5 0c0 5.52-4.48 10-10 10S2 17.52 2 12S6.48 2 12 2s10 4.48 10 10m-2 0h-4c0-2.21-1.79-4-4-4s-4 1.79-4 4H4c0 4.41 3.59 8 8 8s8-3.59 8-8"/>
+          </svg>
+          배틀
+        </a>
+      </nav>
+    </div>
+
+    <!-- 오늘의 급식 -->
+    <div class="card meal-wrap">
+      <div class="card-title">오늘의 급식</div>
+      <div id="meal-container">
+        <div class="meal-loading">급식 정보를 불러오는 중...</div>
+      </div>
+    </div>
+
+  </main>
+
+  <!-- ─── 모바일 하단 네비게이션 바 ─── -->
+  <nav class="mobile-nav">
+    <a class="mobile-nav-btn" href="profile/profile.html">
+      <svg xmlns="http://www.w3.org/2000/svg" width="1em" height="1em" viewBox="0 0 512 512">
+        <path d="M0 0h512v512H0z" fill="none"/>
+        <path fill="#8eb998" d="M256 48C141.31 48 48 141.31 48 256s93.31 208 208 208s208-93.31 208-208S370.69 48 256 48m2 96a72 72 0 1 1-72 72a72 72 0 0 1 72-72m-2 288a175.55 175.55 0 0 1-129.18-56.6C135.66 329.62 215.06 320 256 320s120.34 9.62 129.18 55.39A175.52 175.52 0 0 1 256 432"/>
+      </svg>
+      프로필
+    </a>
+    <a class="mobile-nav-btn" href="shop/shop.html">
+      <svg xmlns="http://www.w3.org/2000/svg" width="1em" height="1em" viewBox="0 0 48 48">
+        <path d="M0 0h48v48H0z" fill="none"/>
+        <g fill="none" stroke="#8eb998" stroke-linecap="round" stroke-linejoin="round" stroke-width="4">
+          <path fill="#8eb998" d="M4 12h40v8l-1.398.84a7 7 0 0 1-7.203 0L34 20l-1.398.84a7 7 0 0 1-7.203 0L24 20l-1.398.84a7 7 0 0 1-7.203 0L14 20l-1.399.84a7 7 0 0 1-7.202 0L4 20z"/>
+          <path d="M8 22.489V44h32V22M8 11.822V4h32v8"/>
+          <path fill="#8eb998" d="M19 32h10v12H19z"/>
+        </g>
+      </svg>
+      매점
+    </a>
+    <a class="mobile-nav-btn" href="mail/mail.html">
+      <svg xmlns="http://www.w3.org/2000/svg" width="1em" height="1em" viewBox="0 0 24 24">
+        <path d="M0 0h24v24H0z" fill="none"/>
+        <path fill="#8eb998" d="M4 20q-.825 0-1.412-.587T2 18V6q0-.825.588-1.412T4 4h16q.825 0 1.413.588T22 6v12q0 .825-.587 1.413T20 20zm8-7l8-5V6l-8 5l-8-5v2z"/>
+      </svg>
+      메일함
+    </a>
+    <a class="mobile-nav-btn" href="battle.html">
+      <svg xmlns="http://www.w3.org/2000/svg" width="1em" height="1em" viewBox="0 0 24 24">
+        <path d="M0 0h24v24H0z" fill="none"/>
+        <path fill="#8eb998" d="M14.5 12a2.5 2.5 0 0 1-5 0a2.5 2.5 0 0 1 5 0m7.5 0c0 5.52-4.48 10-10 10S2 17.52 2 12S6.48 2 12 2s10 4.48 10 10m-2 0h-4c0-2.21-1.79-4-4-4s-4 1.79-4 4H4c0 4.41 3.59 8 8 8s8-3.59 8-8"/>
+      </svg>
+      배틀
+    </a>
+  </nav>
+    
 
 <script type="module" src="js/main.js"></script>
-<script>
-    const texts = document.querySelectorAll(".name p");
 
-texts.forEach(el => {
-  // 랜덤 시작 위치
-  const x = Math.random() * window.innerWidth;
-  const y = Math.random() * window.innerHeight;
-
-  el.style.left = x + "px";
-  el.style.top = y + "px";
-
-  float(el);
-});
-
-function float(el) {
-  let x = parseFloat(el.style.left);
-  let y = parseFloat(el.style.top);
-
-  // 랜덤 이동 속도
-  let dx = (Math.random() - 0.5) * 1.2;
-  let dy = (Math.random() - 0.5) * 1.2;
-
-  function animate() {
-    x += dx;
-    y += dy;
-
-    // 화면 벗어나면 방향 반전
-    if (x < 0 || x > window.innerWidth - 50) dx *= -1;
-    if (y < 0 || y > window.innerHeight - 20) dy *= -1;
-
-    el.style.left = x + "px";
-    el.style.top = y + "px";
-
-    requestAnimationFrame(animate);
-  }
-
-  animate();
-}
-</script>
+  <!-- 모바일 검색창 토글 & 하단 네비 active 표시 -->
+  <script>
+    // 검색창 모바일 토글
+    const searchWrap = document.getElementById('search-wrap');
+    const searchInput = document.getElementById('search-input');
+    if (searchWrap && searchInput) {
+      searchWrap.querySelector('svg').addEventListener('click', (e) => {
+        if (window.innerWidth <= 768) {
+          e.stopPropagation();
+          searchWrap.classList.toggle('expanded');
+          if (searchWrap.classList.contains('expanded')) searchInput.focus();
+        }
+      });
+      document.addEventListener('click', (e) => {
+        if (window.innerWidth <= 768 && !searchWrap.contains(e.target)) {
+          searchWrap.classList.remove('expanded');
+        }
+      });
+      searchInput.addEventListener('focus', () => searchWrap.classList.add('focused'));
+      searchInput.addEventListener('blur', () => {
+        searchWrap.classList.remove('focused');
+        if (window.innerWidth <= 768) {
+          setTimeout(() => searchWrap.classList.remove('expanded'), 200);
+        }
+      });
+    }
+  </script>
 </body>
 </html>

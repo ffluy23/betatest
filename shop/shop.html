@@ -3,377 +3,627 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>매점</title>
+  <title>매점 — 제니스고등학교</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@400;500;700;800&display=swap" rel="stylesheet" />
   <link rel="stylesheet" href="../css/style.css" />
   <style>
-    p{
-      font-size: 13px;
-      color: #555;
+    /* ── 페이지 ── */
+    .shop-page {
+      max-width: 720px;
+      margin: 0 auto;
+      padding: calc(var(--header-h) + 32px) 24px 80px;
+      display: flex;
+      flex-direction: column;
+      gap: 20px;
     }
 
-    input{
-      font-family: 'Mona12', sans-serif;
+    /* ── 페이지 헤더 ── */
+    .page-header {
+      display: flex;
+      align-items: center;
+      gap: 16px;
+      animation: fadeUp 0.4s ease both;
+    }
+    .back-link {
+      display: flex; align-items: center; justify-content: center;
+      width: 38px; height: 38px; border-radius: 50%;
+      background: var(--gray-100); border: 1.5px solid var(--gray-200);
+      color: var(--text-sub); text-decoration: none; font-size: 16px;
+      flex-shrink: 0; transition: all 0.2s;
+    }
+    .back-link:hover { background: var(--green-pale); border-color: var(--green-light); color: var(--green-dark); }
+    .page-title    { font-size: 22px; font-weight: 800; color: var(--text-main); letter-spacing: -0.5px; }
+    .page-subtitle { font-size: 12px; color: var(--text-sub); margin-top: 2px; }
+
+    /* 코인 표시 */
+    .coin-badge {
+      margin-left: auto;
+      display: flex; align-items: center; gap: 6px;
+      background: var(--green-pale);
+      border: 1.5px solid var(--green-light);
+      border-radius: 20px;
+      padding: 6px 14px;
+      font-size: 14px; font-weight: 700; color: var(--green-dark);
+      flex-shrink: 0;
     }
 
-    #toast {
-      position: fixed; bottom: 20px; left: 50%; transform: translateX(-50%);
-      background: #333; color: #fff; padding: 10px 20px; border-radius: 6px;
-      display: none; z-index: 9999; font-size: 14px;
+    /* ── 탭 ── */
+    .tab-bar {
+      display: flex;
+      gap: 8px;
+      animation: fadeUp 0.42s ease both;
+      animation-delay: 0.04s;
     }
-    #toast.show { display: block; }
-
-    .modal-overlay {
-      display: none; position: fixed; inset: 0;
-      background: rgba(0,0,0,0.4); z-index: 100;
-      align-items: center; justify-content: center;
-    }
-    .modal-overlay.open { display: flex; }
-    .modal-box {
-      background: #fff; padding: 24px; border-radius: 8px;
-      min-width: 280px; max-width: 400px; width: 90%;
-    }
-    .modal-box h4 { margin: 0 0 16px; }
-    .modal-box input {
-      width: 100%; box-sizing: border-box;
-      padding: 8px; margin-bottom: 8px;
-    }
-    .modal-box textarea {
-      width: 100%; box-sizing: border-box;
-      padding: 8px; resize: vertical;
-    }
-    .modal-box .btn-row {
-      display: flex; gap: 8px;
-      margin-top: 12px; justify-content: flex-end;
-    }
-    .modal-box button { padding: 8px 16px; cursor: pointer; }
-
-    #gacha-result {
-      display: none; text-align: center; padding: 16px;
-      border: 1px solid #ccc; border-radius: 8px; margin-top: 12px;
-    }
-    #gacha-result.show { display: block; }
-
-    .item-card {
-      border: 1px solid #ddd; border-radius: 8px;
-      padding: 16px; margin-bottom: 12px;
-    }
-    .item-card h4 { margin: 0 0 4px; }
-    .item-card p  { margin: 0 0 10px; font-size: 14px; color: #555; }
-    .item-card .price { font-weight: bold; margin-bottom: 10px; display: block; }
-
-    #user-coins { font-size: 16px; margin-bottom: 20px; }
-
-    /* 가방 아이템 */
-    #inventory-list div {
-      padding: 8px 0; border-bottom: 1px solid #f0f0f0; font-size: 14px;
-    }
-    .inv-item-giftable {
-      cursor: pointer;
-      border-radius: 6px;
-      transition: background 0.15s;
-    }
-    .inv-item-giftable:hover { background: #f5f5f5; padding-left: 4px; }
-
     .tab-btn {
-      padding: 8px 16px; cursor: pointer;
-      border: 1px solid #ccc; background: #fff;
-      border-radius: 4px; font-family: 'Mona12', sans-serif;
+      flex: 1;
+      padding: 9px 8px;
+      font-size: 13px; font-weight: 600; font-family: inherit;
+      border: 1.5px solid var(--gray-200);
+      border-radius: var(--radius-sm);
+      background: var(--gray-100); color: var(--text-sub);
+      cursor: pointer; transition: all 0.18s;
     }
-    .tab-btn.active { background: #333; color: #fff; border-color: #333; }
+    .tab-btn.active {
+      background: var(--green-primary); color: var(--white); border-color: var(--green-primary);
+    }
 
+    /* ── 탭 콘텐츠 ── */
     .tab-content { display: none; }
     .tab-content.active { display: block; }
 
-    #tab-shop.active {
+    /* ── 공통 카드 ── */
+    .s-card {
+      background: var(--white);
+      border-radius: var(--radius);
+      box-shadow: var(--shadow-md);
+      border: 1px solid var(--gray-200);
+      overflow: hidden;
+      animation: fadeUp 0.45s ease both;
+      animation-delay: 0.08s;
+    }
+    .s-card-head {
+      padding: 16px 22px 13px;
+      border-bottom: 1px solid var(--gray-200);
+    }
+    .s-card-label {
+      font-size: 12px; font-weight: 700; color: var(--green-dark);
+      text-transform: uppercase; letter-spacing: 1.2px;
+      display: flex; align-items: center; gap: 6px;
+    }
+    .s-card-label::before {
+      content: ''; display: inline-block;
+      width: 4px; height: 13px;
+      background: var(--green-primary); border-radius: 2px;
+    }
+
+    /* ── 상점 탭: 상품 그리드 ── */
+    .shop-grid {
       display: grid;
-      grid-template-columns: repeat(2, 1fr);
-      gap: 16px;
-      max-height: 400px;
-      overflow-y: auto;
+      grid-template-columns: 1fr 1fr;
+      gap: 0;
     }
-    #tab-inventory { max-height: 400px; overflow-y: auto; }
 
-    button { font-family: 'Mona12'; }
-
-    .back-btn {
-      height: auto !important; flex-shrink: 0;
-      width: fit-content; padding: 8px 16px;
+    .shop-item {
+      padding: 20px 22px;
+      border-right: 1px solid var(--gray-200);
+      border-bottom: 1px solid var(--gray-200);
+      display: flex; flex-direction: column; gap: 6px;
     }
-    .shop-top { display: flex; justify-content: space-between; }
+    .shop-item:nth-child(2n) { border-right: none; }
+    .shop-item:nth-last-child(-n+2) { border-bottom: none; }
 
-    .buy {
-      padding: 8px 16px; cursor: pointer;
-      border: 1px solid #ccc; background: #fff; border-radius: 4px;
+    .shop-item-icon  { font-size: 26px; }
+    .shop-item-name  { font-size: 15px; font-weight: 700; color: var(--text-main); }
+    .shop-item-desc  { font-size: 12px; color: var(--text-sub); line-height: 1.5; flex: 1; }
+    .shop-item-price {
+      font-size: 13px; font-weight: 700; color: var(--green-dark);
+      background: var(--green-pale); border: 1px solid var(--green-light);
+      border-radius: 20px; padding: 2px 10px; display: inline-block; width: fit-content;
     }
-    .buy:active { background: #333; color: #fff; border-color: #333; }
+    .shop-item-btn {
+      margin-top: 4px;
+      padding: 9px 0;
+      background: var(--green-primary); color: var(--white);
+      border: none; border-radius: var(--radius-sm);
+      font-size: 13px; font-weight: 600; font-family: inherit;
+      cursor: pointer; transition: background 0.18s, transform 0.1s;
+      width: 100%;
+    }
+    .shop-item-btn:hover  { background: var(--green-dark); }
+    .shop-item-btn:active { transform: scale(0.97); }
 
-    /* 선물 모달 아이템 정보 */
-    #gift-item-info {
-      background: #f9f9f9; border-radius: 6px;
-      padding: 10px 12px; margin-bottom: 12px;
-      font-size: 14px;
+    /* 포핀 링크 카드 */
+    .poffin-link {
+      display: flex; align-items: center; justify-content: space-between;
+      padding: 16px 22px;
+      text-decoration: none; color: var(--text-main);
+      transition: background 0.15s;
     }
-    #gift-item-info p { margin: 0; }
+    .poffin-link:hover { background: var(--gray-100); }
+    .poffin-link-left  { display: flex; align-items: center; gap: 12px; }
+    .poffin-link-icon  {
+      width: 40px; height: 40px; border-radius: 12px;
+      background: #fff8e8; border: 1.5px solid #f5dfa0;
+      display: flex; align-items: center; justify-content: center; font-size: 20px;
+    }
+    .poffin-link-title { font-size: 14px; font-weight: 600; }
+    .poffin-link-sub   { font-size: 12px; color: var(--text-sub); margin-top: 2px; }
+    .poffin-link-arrow { font-size: 16px; color: var(--gray-400); }
+
+    /* ── 가방 탭 ── */
+    .inv-list { display: flex; flex-direction: column; }
+    .inv-item {
+      display: flex; align-items: center; gap: 12px;
+      padding: 13px 22px;
+      border-bottom: 1px solid var(--gray-200);
+      font-size: 14px; color: var(--text-main);
+    }
+    .inv-item:last-child { border-bottom: none; }
+
+    .inv-item-icon {
+      width: 36px; height: 36px; border-radius: 10px;
+      background: var(--green-pale); border: 1.5px solid var(--green-light);
+      display: flex; align-items: center; justify-content: center;
+      font-size: 17px; flex-shrink: 0;
+    }
+    .inv-item-icon.ring   { background: #fff0f9; border-color: #f9c8e0; }
+    .inv-item-icon.ticket { background: #f3f0ff; border-color: #c8bef5; }
+
+    .inv-item-body { flex: 1; min-width: 0; }
+    .inv-item-name { font-size: 14px; font-weight: 600; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+    .inv-item-meta { font-size: 11px; color: var(--gray-400); margin-top: 2px; }
+
+    .inv-item-giftable { cursor: pointer; }
+    .inv-item-giftable:hover { background: var(--gray-100); }
+    .inv-item-giftable .inv-item-meta::after { content: ' · 탭해서 선물'; color: var(--green-dark); }
+
+    .inv-empty {
+      padding: 40px 22px; text-align: center;
+      color: var(--text-sub); font-size: 14px;
+    }
 
     /* ── 칭호 탭 ── */
-    #tab-title { max-height: 440px; overflow-y: auto; }
-
-    .title-list {
-      display: flex;
-      flex-direction: column;
-      gap: 6px;
+    .title-active-box {
+      margin-bottom: 14px;
+      padding: 12px 16px;
+      background: var(--gray-100);
+      border: 1px solid var(--gray-200);
+      border-radius: var(--radius-sm);
     }
+    .title-active-label { font-size: 11px; color: var(--gray-400); font-weight: 600; text-transform: uppercase; letter-spacing: 0.8px; margin-bottom: 4px; }
 
+    .title-list { display: flex; flex-direction: column; gap: 6px; }
     .title-item {
-      display: flex;
-      align-items: center;
-      justify-content: space-between;
-      padding: 10px 12px;
-      border: 1px solid #eee;
-      border-radius: 8px;
-      font-size: 14px;
-      cursor: pointer;
-      transition: background 0.12s;
+      display: flex; align-items: center; justify-content: space-between;
+      padding: 11px 14px;
+      border: 1.5px solid var(--gray-200); border-radius: var(--radius-sm);
+      font-size: 14px; cursor: pointer;
+      transition: background 0.12s, border-color 0.12s;
     }
-    .title-item:hover { background: #f7f7f7; }
-    .title-item.title-active {
-      border-color: #bbb;
-      background: #fafafa;
-    }
+    .title-item:hover { background: var(--gray-100); border-color: var(--green-light); }
+    .title-item.title-active { border-color: var(--green-primary); background: var(--green-pale); }
 
     .title-equip-btn {
-      font-size: 12px;
-      color: #888;
-      border: 1px solid #ddd;
-      border-radius: 4px;
-      padding: 3px 8px;
-      flex-shrink: 0;
+      font-size: 11px; color: var(--text-sub);
+      border: 1px solid var(--gray-200); border-radius: 6px;
+      padding: 3px 8px; flex-shrink: 0; background: var(--white);
     }
-    .title-item:hover .title-equip-btn {
-      border-color: #aaa;
-      color: #555;
-    }
-
     .title-equipped-badge {
-      font-size: 11px;
-      color: #fff;
-      background: #555;
-      border-radius: 4px;
-      padding: 3px 8px;
-      flex-shrink: 0;
+      font-size: 11px; color: var(--white);
+      background: var(--green-primary); border-radius: 6px;
+      padding: 3px 8px; flex-shrink: 0;
     }
 
-    @media (max-width: 480px) {
-  /* 상단 버튼 + 코인 */
-  .shop-top {
-    flex-wrap: wrap;
-    gap: 6px;
-  }
-  .shop-top .back-btn {
-    font-size: 11px;
-    padding: 6px 10px;
-  }
-  #user-coins {
-    font-size: 13px;
-    width: 100%;
-    margin-bottom: 8px;
-  }
+    .title-wrap { padding: 20px 22px; }
 
-  /* 탭 버튼 */
-  .tab-btn {
-    padding: 6px 10px;
-    font-size: 12px;
-  }
+    /* 가챠 결과 */
+    #gacha-result {
+      display: none;
+      text-align: center;
+      padding: 16px;
+      background: var(--gray-100);
+      border: 1px solid var(--gray-200);
+      border-radius: var(--radius-sm);
+      margin-top: 12px;
+    }
+    #gacha-result.show { display: block; }
 
-  /* 상점 그리드: 2열 → 1열 */
-  #tab-shop.active {
-    grid-template-columns: 1fr;
-    max-height: none;
-  }
+    /* ══════════════════════════════════════
+       모달 공통
+    ══════════════════════════════════════ */
+    .modal-overlay {
+      display: none; position: fixed; inset: 0;
+      background: rgba(45, 58, 46, 0.35);
+      backdrop-filter: blur(4px); -webkit-backdrop-filter: blur(4px);
+      z-index: 300; align-items: center; justify-content: center; padding: 20px;
+    }
+    .modal-overlay.open { display: flex; }
 
-  /* 가방/칭호 탭 높이 제한 해제 */
-  #tab-inventory,
-  #tab-title {
-    max-height: none;
-  }
+    .modal-box {
+      background: var(--white);
+      border-radius: var(--radius);
+      box-shadow: var(--shadow-lg);
+      border: 1px solid var(--gray-200);
+      width: 100%; max-width: 400px;
+      max-height: 88vh; overflow-y: auto;
+      animation: modalIn 0.22s ease both;
+    }
+    @keyframes modalIn {
+      from { opacity: 0; transform: scale(0.95) translateY(8px); }
+      to   { opacity: 1; transform: scale(1) translateY(0); }
+    }
 
-  /* 아이템 카드 */
-  .item-card {
-    padding: 12px;
-    margin-bottom: 8px;
-  }
-  .item-card h4 {
-    font-size: 13px;
-    margin-bottom: 2px;
-  }
-  .item-card .price {
-    font-size: 13px;
-    margin-bottom: 8px;
-  }
+    .modal-head { padding: 20px 22px 14px; border-bottom: 1px solid var(--gray-200); }
+    .modal-head-icon  { font-size: 26px; margin-bottom: 4px; }
+    .modal-head-title { font-size: 16px; font-weight: 800; color: var(--text-main); }
+    .modal-head-desc  { font-size: 12px; color: var(--text-sub); margin-top: 4px; line-height: 1.6; }
 
-  /* 구매 버튼 */
-  .buy {
-    width: 100%;
-    padding: 8px;
-    font-size: 13px;
-  }
+    .modal-body { padding: 18px 22px; display: flex; flex-direction: column; gap: 10px; }
 
-  /* 모달 */
-  .modal-box {
-    padding: 16px;
-  }
-  .modal-box h4 {
-    font-size: 14px;
-  }
+    .modal-input {
+      width: 100%; padding: 10px 14px;
+      border: 1.5px solid var(--gray-200); border-radius: var(--radius-sm);
+      font-size: 14px; font-family: inherit; color: var(--text-main);
+      outline: none; transition: border-color 0.2s; box-sizing: border-box;
+    }
+    .modal-input:focus { border-color: var(--green-primary); box-shadow: 0 0 0 3px rgba(142,185,152,0.12); }
 
-  /* 칭호 아이템 */
-  .title-item {
-    font-size: 13px;
-    padding: 9px 10px;
-  }
-}
+    .modal-textarea {
+      width: 100%; padding: 10px 14px; height: 90px; resize: none;
+      border: 1.5px solid var(--gray-200); border-radius: var(--radius-sm);
+      font-size: 14px; font-family: inherit; color: var(--text-main);
+      outline: none; transition: border-color 0.2s; box-sizing: border-box;
+    }
+    .modal-textarea:focus { border-color: var(--green-primary); box-shadow: 0 0 0 3px rgba(142,185,152,0.12); }
+
+    .modal-search-row { display: flex; gap: 8px; }
+    .modal-search-row .modal-input { flex: 1; }
+    .modal-search-btn {
+      padding: 10px 14px;
+      background: var(--gray-100); color: var(--text-sub);
+      border: 1.5px solid var(--gray-200); border-radius: var(--radius-sm);
+      font-size: 13px; font-weight: 600; font-family: inherit;
+      cursor: pointer; white-space: nowrap; flex-shrink: 0; transition: all 0.18s;
+    }
+    .modal-search-btn:hover { background: var(--green-pale); border-color: var(--green-light); color: var(--green-dark); }
+
+    .modal-result { font-size: 13px; color: var(--text-sub); min-height: 18px; }
+
+    .modal-gift-item {
+      background: var(--gray-100); border: 1px solid var(--gray-200);
+      border-radius: var(--radius-sm); padding: 12px 14px; font-size: 14px;
+    }
+    .modal-gift-item p { margin: 0; }
+
+    .modal-foot {
+      padding: 12px 22px 20px;
+      display: flex; gap: 8px; justify-content: flex-end;
+    }
+    .btn-modal-primary {
+      padding: 9px 20px; border-radius: var(--radius-sm);
+      font-size: 13px; font-weight: 600; font-family: inherit; cursor: pointer;
+      background: var(--green-primary); color: var(--white); border: none; transition: background 0.18s;
+    }
+    .btn-modal-primary:hover { background: var(--green-dark); }
+    .btn-modal-primary:disabled { background: var(--gray-400); cursor: not-allowed; }
+    .btn-modal-ghost {
+      padding: 9px 20px; border-radius: var(--radius-sm);
+      font-size: 13px; font-weight: 600; font-family: inherit; cursor: pointer;
+      background: transparent; color: var(--text-sub); border: 1.5px solid var(--gray-200); transition: all 0.18s;
+    }
+    .btn-modal-ghost:hover { background: var(--gray-100); }
+
+    /* ── 토스트 ── */
+    #toast {
+      position: fixed; bottom: 28px; left: 50%;
+      transform: translateX(-50%) translateY(12px);
+      background: var(--text-main); color: var(--white);
+      padding: 10px 20px; border-radius: 24px;
+      font-size: 13px; font-weight: 500; white-space: nowrap;
+      opacity: 0; pointer-events: none; z-index: 9999;
+      transition: opacity 0.22s, transform 0.22s;
+    }
+    #toast.show { opacity: 1; transform: translateX(-50%) translateY(0); }
+
+    /* ── 모바일 ── */
+    @media (max-width: 768px) {
+      .shop-page  { padding: calc(var(--header-h) + 20px) 14px 88px; gap: 14px; }
+      .coin-badge { font-size: 12px; padding: 5px 10px; }
+      .shop-grid  { grid-template-columns: 1fr; }
+      .shop-item  { border-right: none; }
+      .shop-item:nth-last-child(-n+2) { border-bottom: 1px solid var(--gray-200); }
+      .shop-item:last-child { border-bottom: none; }
+      .inv-item   { padding: 12px 16px; }
+      .title-wrap { padding: 16px; }
+      .modal-box  { border-radius: 20px; }
+    }
   </style>
 </head>
 <body>
-<div class="noise"></div>
-<div class="container">
-  <div class="header">
-    <div class="title">ZENITH RING</div>
-  </div>
-  <div class="screen">
-    <div class="screen-top">
-      <span>v1.0</span>
-      <div class="status">ONLINE</div>
-      <div class="battery"><div class="battery-level"></div></div>
+
+  <!-- ─── 헤더 ─── -->
+  <header class="header">
+    <a class="header-brand" href="../index.html">
+      <img src="../image/뱃지.png" alt="제니스고등학교 뱃지" class="header-badge"
+           onerror="this.style.display='none'; this.nextElementSibling.style.display='flex';" />
+      <div class="header-badge-fallback" style="display:none;">🏫</div>
+      <span class="header-school-name">제니스고등학교</span>
+    </a>
+    <div class="search-wrap" id="search-wrap">
+      <svg xmlns="http://www.w3.org/2000/svg" width="1em" height="1em" viewBox="0 0 24 24">
+        <path d="M0 0h24v24H0z" fill="none"/>
+        <path fill="#8eb998" d="m19.6 21l-6.3-6.3q-.75.6-1.725.95T9.5 16q-2.725 0-4.612-1.888T3 9.5t1.888-4.612T9.5 3t4.613 1.888T16 9.5q0 1.1-.35 2.075T14.7 13.3l6.3 6.3zM9.5 14q1.875 0 3.188-1.312T14 9.5t-1.312-3.187T9.5 5T6.313 6.313T5 9.5t1.313 3.188T9.5 14"/>
+      </svg>
+      <input type="text" id="search-input" placeholder="검색" autocomplete="off" />
+    </div>
+  </header>
+
+  <!-- ─── 메인 ─── -->
+  <div class="shop-page">
+
+    <!-- 페이지 헤더 -->
+    <div class="page-header">
+      <a href="../index.html" class="back-link">←</a>
+      <div>
+        <div class="page-title">매점</div>
+        <div class="page-subtitle">ZP로 아이템을 구매해요</div>
+      </div>
+      <div class="coin-badge">
+        <span>🪙</span>
+        <span id="user-coins">...</span>
+      </div>
     </div>
 
-    <div class="shop-top">
-      <button onclick="location.href='../main.html'" class="btn back-btn" style="margin-bottom:16px;">← 돌아가기</button>
-      <button onclick="location.href='./poffin.html'" class="btn back-btn" style="margin-bottom:16px;">포핀 만들기🧁</button>
-      <div id="user-coins">ZP: Loading...</div>
-    </div>
-
-    <div style="display:flex; gap:8px; margin-bottom:20px; flex-wrap:wrap;">
-      <button class="tab-btn active" onclick="switchTab('shop', this)">매점</button>
-      <button class="tab-btn"        onclick="switchTab('inventory', this)">가방</button>
-      <button class="tab-btn"        onclick="switchTab('title', this)">칭호</button>
+    <!-- 탭 -->
+    <div class="tab-bar">
+      <button class="tab-btn active" onclick="switchTab('shop', this)">🛒 매점</button>
+      <button class="tab-btn"        onclick="switchTab('inventory', this)">🎒 가방</button>
+      <button class="tab-btn"        onclick="switchTab('title', this)">🏷️ 칭호</button>
     </div>
 
     <!-- ── 매점 탭 ── -->
     <div id="tab-shop" class="tab-content active">
-      <div class="item-card">
-        <h4>우정반지</h4>
-        <span class="price">2,500ZP</span>
-        <button class="buy" onclick="openModal('ring')">구매하기</button>
+      <div class="s-card">
+        <div class="s-card-head"><div class="s-card-label">상품 목록</div></div>
+        <div class="shop-grid">
+          <div class="shop-item">
+            <div class="shop-item-icon">💍</div>
+            <div class="shop-item-name">우정반지</div>
+            <div class="shop-item-desc">친구와 맞추기에 안성맞춤인 반지 한 쌍!</div>
+            <div class="shop-item-price">2,500 ZP</div>
+            <button class="shop-item-btn" onclick="openModal('ring')">구매하기</button>
+          </div>
+          <div class="shop-item">
+            <div class="shop-item-icon">🏷️</div>
+            <div class="shop-item-name">칭호 뽑기</div>
+            <div class="shop-item-desc">무작위 칭호 1회 뽑기. 중복 시 50ZP 반환.</div>
+            <div class="shop-item-price">500 ZP</div>
+            <button class="shop-item-btn" onclick="openModal('title')">1회 뽑기</button>
+          </div>
+          <div class="shop-item">
+            <div class="shop-item-icon">📨</div>
+            <div class="shop-item-name">익명 쪽지</div>
+            <div class="shop-item-desc">누구에게나 익명으로 쪽지를 보낼 수 있어요.</div>
+            <div class="shop-item-price">300 ZP</div>
+            <button class="shop-item-btn" onclick="openModal('note')">구매하기</button>
+          </div>
+          <div class="shop-item">
+            <div class="shop-item-icon">🧂</div>
+            <div class="shop-item-name">랜덤 요리 재료</div>
+            <div class="shop-item-desc">포핀을 만드는 데 쓸 수 있는 조미료!</div>
+            <div class="shop-item-price">200 ZP</div>
+            <button class="shop-item-btn" onclick="openModal('ingredient')">구매하기</button>
+          </div>
+        </div>
       </div>
-      <div class="item-card">
-        <h4>칭호 뽑기</h4>
-        <span class="price">500ZP</span>
-        <button class="buy" onclick="openModal('title')">1회 뽑기</button>
-      </div>
-      <div class="item-card">
-        <h4>익명 쪽지</h4>
-        <span class="price">300ZP</span>
-        <button class="buy" onclick="openModal('note')">구매하기</button>
-      </div>
-      <div class="item-card">
-        <h4>랜덤 요리 재료</h4>
-        <span class="price">200ZP</span>
-        <button class="buy" onclick="openModal('ingredient')">구매하기</button>
+
+      <!-- 포핀 만들기 링크 -->
+      <div class="s-card">
+        <a class="poffin-link" href="./poffin.html">
+          <div class="poffin-link-left">
+            <div class="poffin-link-icon">🧁</div>
+            <div>
+              <div class="poffin-link-title">포핀 만들기</div>
+              <div class="poffin-link-sub">재료를 모아 포핀을 제작해요</div>
+            </div>
+          </div>
+          <span class="poffin-link-arrow">›</span>
+        </a>
       </div>
     </div>
 
     <!-- ── 가방 탭 ── -->
     <div id="tab-inventory" class="tab-content">
-      <div id="inventory-list">Loading...</div>
+      <div class="s-card">
+        <div class="s-card-head"><div class="s-card-label">내 가방</div></div>
+        <div class="inv-list" id="inventory-list">
+          <div class="inv-empty">불러오는 중...</div>
+        </div>
+      </div>
     </div>
 
     <!-- ── 칭호 탭 ── -->
     <div id="tab-title" class="tab-content">
-      <div id="title-display">Loading...</div>
+      <div class="s-card">
+        <div class="s-card-head"><div class="s-card-label">보유 칭호</div></div>
+        <div class="title-wrap">
+          <div id="title-display">불러오는 중...</div>
+        </div>
+      </div>
+    </div>
+
+  </div>
+
+  <!-- ─── 모바일 하단 네비 ─── -->
+  <nav class="mobile-nav">
+    <a class="mobile-nav-btn" href="../profile/profile.html">
+      <svg xmlns="http://www.w3.org/2000/svg" width="1em" height="1em" viewBox="0 0 512 512">
+        <path d="M0 0h512v512H0z" fill="none"/>
+        <path fill="#8eb998" d="M256 48C141.31 48 48 141.31 48 256s93.31 208 208 208s208-93.31 208-208S370.69 48 256 48m2 96a72 72 0 1 1-72 72a72 72 0 0 1 72-72m-2 288a175.55 175.55 0 0 1-129.18-56.6C135.66 329.62 215.06 320 256 320s120.34 9.62 129.18 55.39A175.52 175.52 0 0 1 256 432"/>
+      </svg>
+      프로필
+    </a>
+    <a class="mobile-nav-btn active" href="shop.html">
+      <svg xmlns="http://www.w3.org/2000/svg" width="1em" height="1em" viewBox="0 0 48 48">
+        <path d="M0 0h48v48H0z" fill="none"/>
+        <g fill="none" stroke="#8eb998" stroke-linecap="round" stroke-linejoin="round" stroke-width="4">
+          <path fill="#8eb998" d="M4 12h40v8l-1.398.84a7 7 0 0 1-7.203 0L34 20l-1.398.84a7 7 0 0 1-7.203 0L24 20l-1.398.84a7 7 0 0 1-7.203 0L14 20l-1.399.84a7 7 0 0 1-7.202 0L4 20z"/>
+          <path d="M8 22.489V44h32V22M8 11.822V4h32v8"/>
+          <path fill="#8eb998" d="M19 32h10v12H19z"/>
+        </g>
+      </svg>
+      매점
+    </a>
+    <a class="mobile-nav-btn" href="../mail/mail.html">
+      <svg xmlns="http://www.w3.org/2000/svg" width="1em" height="1em" viewBox="0 0 24 24">
+        <path d="M0 0h24v24H0z" fill="none"/>
+        <path fill="#8eb998" d="M4 20q-.825 0-1.412-.587T2 18V6q0-.825.588-1.412T4 4h16q.825 0 1.413.588T22 6v12q0 .825-.587 1.413T20 20zm8-7l8-5V6l-8 5l-8-5v2z"/>
+      </svg>
+      메일함
+    </a>
+    <a class="mobile-nav-btn" href="../battle.html">
+      <svg xmlns="http://www.w3.org/2000/svg" width="1em" height="1em" viewBox="0 0 24 24">
+        <path d="M0 0h24v24H0z" fill="none"/>
+        <path fill="#8eb998" d="M14.5 12a2.5 2.5 0 0 1-5 0a2.5 2.5 0 0 1 5 0m7.5 0c0 5.52-4.48 10-10 10S2 17.52 2 12S6.48 2 12 2s10 4.48 10 10m-2 0h-4c0-2.21-1.79-4-4-4s-4 1.79-4 4H4c0 4.41 3.59 8 8 8s8-3.59 8-8"/>
+      </svg>
+      배틀
+    </a>
+  </nav>
+
+  <!-- ══ 모달: 우정반지 ══ -->
+  <div id="modal-ring" class="modal-overlay">
+    <div class="modal-box">
+      <div class="modal-head">
+        <div class="modal-head-icon">💍</div>
+        <div class="modal-head-title">우정반지 보내기</div>
+        <div class="modal-head-desc">친구와 맞추기에 안성맞춤인 반지 한 쌍!<br>어쩐지 마음이 따뜻해지는 기분이다...</div>
+      </div>
+      <div class="modal-body">
+        <div class="modal-search-row">
+          <input id="ring-search" class="modal-input" type="text" placeholder="상대방 이름 입력"
+                 onkeydown="if(event.key==='Enter') searchUser('ring')" />
+          <button class="modal-search-btn" onclick="searchUser('ring')">검색</button>
+        </div>
+        <div class="modal-result" id="ring-result"></div>
+      </div>
+      <div class="modal-foot">
+        <button class="btn-modal-ghost" onclick="closeModal('ring')">취소</button>
+        <button class="btn-modal-primary" id="ring-confirm-btn" disabled onclick="buyRing()">보내기 (2,500ZP)</button>
+      </div>
     </div>
   </div>
-  <div class="footer">Made by Sonnet with Ampharos</div>
-</div>
 
-<!-- ── 모달: 우정반지 ── -->
-<div id="modal-ring" class="modal-overlay">
-  <div class="modal-box">
-    <h4>우정반지 보내기</h4>
-    <p>친구와 맞추기에 안성맞춤인 반지 한 쌍이다!<br>
-    어쩐지 마음이 따뜻해지는 기분이다...</p>
-    <input id="ring-search" type="text" placeholder="상대방 이름 입력" />
-    <button onclick="searchUser('ring')">검색</button>
-    <div id="ring-result" style="margin-top:10px;font-size:14px;"></div>
-    <div class="btn-row">
-      <button onclick="closeModal('ring')">취소</button>
-      <button id="ring-confirm-btn" disabled onclick="buyRing()">보내기 (2,500ZP)</button>
+  <!-- ══ 모달: 칭호 뽑기 ══ -->
+  <div id="modal-title" class="modal-overlay">
+    <div class="modal-box">
+      <div class="modal-head">
+        <div class="modal-head-icon">🏷️</div>
+        <div class="modal-head-title">랜덤 칭호 뽑기</div>
+        <div class="modal-head-desc">어떤 칭호가 나올지는 알 수 없어요. 중복 시 50ZP 반환!</div>
+      </div>
+      <div class="modal-body">
+        <div id="gacha-result"></div>
+      </div>
+      <div class="modal-foot">
+        <button class="btn-modal-ghost" onclick="closeModal('title')">닫기</button>
+        <button class="btn-modal-primary" id="gacha-btn" onclick="buyTitle()">뽑기 (500ZP)</button>
+      </div>
     </div>
   </div>
-</div>
 
-<!-- ── 모달: 랜덤 칭호 ── -->
-<div id="modal-title" class="modal-overlay">
-  <div class="modal-box">
-    <h4>랜덤 칭호 뽑기</h4>
-    <p>칭호를 무작위로 뽑을 수 있는 뽑기<br>
-    어떤 칭호가 나올지는 알 수 없다<br>
-    <span style="font-size:12px;color:#e07b00;">중복 시 50ZP 반환</span></p>
-    <div id="gacha-result"></div>
-    <div class="btn-row">
-      <button onclick="closeModal('title')">닫기</button>
-      <button id="gacha-btn" onclick="buyTitle()">뽑기 (500ZP)</button>
+  <!-- ══ 모달: 익명 쪽지 ══ -->
+  <div id="modal-note" class="modal-overlay">
+    <div class="modal-box">
+      <div class="modal-head">
+        <div class="modal-head-icon">📨</div>
+        <div class="modal-head-title">익명 쪽지 보내기</div>
+      </div>
+      <div class="modal-body">
+        <div class="modal-search-row">
+          <input id="note-search" class="modal-input" type="text" placeholder="상대방 이름 입력"
+                 onkeydown="if(event.key==='Enter') searchUser('note')" />
+          <button class="modal-search-btn" onclick="searchUser('note')">검색</button>
+        </div>
+        <div class="modal-result" id="note-result"></div>
+        <textarea id="note-text" class="modal-textarea" placeholder="쪽지 내용 (최대 100자)" maxlength="100"></textarea>
+      </div>
+      <div class="modal-foot">
+        <button class="btn-modal-ghost" onclick="closeModal('note')">취소</button>
+        <button class="btn-modal-primary" id="note-confirm-btn" disabled onclick="buyNote()">보내기 (300ZP)</button>
+      </div>
     </div>
   </div>
-</div>
 
-<!-- ── 모달: 익명 쪽지 ── -->
-<div id="modal-note" class="modal-overlay">
-  <div class="modal-box">
-    <h4>📨 익명 쪽지 보내기</h4>
-    <input id="note-search" type="text" placeholder="상대방 이름 입력" />
-    <button onclick="searchUser('note')">검색</button>
-    <div id="note-result" style="margin-top:8px;font-size:14px;"></div>
-    <textarea id="note-text" rows="4" placeholder="쪽지 내용 (최대 100자)" maxlength="100" style="margin-top:10px;"></textarea>
-    <div class="btn-row">
-      <button onclick="closeModal('note')">취소</button>
-      <button id="note-confirm-btn" disabled onclick="buyNote()">보내기 (300ZP)</button>
+  <!-- ══ 모달: 랜덤 요리 재료 ══ -->
+  <div id="modal-ingredient" class="modal-overlay">
+    <div class="modal-box">
+      <div class="modal-head">
+        <div class="modal-head-icon">🧂</div>
+        <div class="modal-head-title">랜덤 요리 재료</div>
+        <div class="modal-head-desc">랜덤으로 조미료를 얻을 수 있는 뽑기.<br>포핀을 만드는 데 사용할 수 있어요!</div>
+      </div>
+      <div class="modal-foot">
+        <button class="btn-modal-ghost" onclick="closeModal('ingredient')">취소</button>
+        <button class="btn-modal-primary" onclick="buyIngredient()">구매 (200ZP)</button>
+      </div>
     </div>
   </div>
-</div>
 
-<!-- ── 모달: 랜덤 요리 재료 ── -->
-<div id="modal-ingredient" class="modal-overlay">
-  <div class="modal-box">
-    <h4>🧂 랜덤 요리 재료</h4>
-    <p>랜덤으로 조미료를 얻을 수 있는 뽑기<br>
-    포핀을 만드는 데 사용할 수 있다!</p>
-    <div class="btn-row">
-      <button onclick="closeModal('ingredient')">취소</button>
-      <button onclick="buyIngredient()">구매 (200ZP)</button>
+  <!-- ══ 모달: 아이템 선물 ══ -->
+  <div id="modal-gift" class="modal-overlay">
+    <div class="modal-box">
+      <div class="modal-head">
+        <div class="modal-head-icon">🎁</div>
+        <div class="modal-head-title">아이템 선물하기</div>
+        <div class="modal-head-desc">선물하면 가방에서 사라져요. 신중하게!</div>
+      </div>
+      <div class="modal-body">
+        <div class="modal-gift-item" id="gift-item-info"></div>
+        <div class="modal-search-row">
+          <input id="gift-search" class="modal-input" type="text" placeholder="상대방 이름 입력"
+                 onkeydown="if(event.key==='Enter') searchGiftUser()" />
+          <button class="modal-search-btn" onclick="searchGiftUser()">검색</button>
+        </div>
+        <div class="modal-result" id="gift-result"></div>
+      </div>
+      <div class="modal-foot">
+        <button class="btn-modal-ghost" onclick="closeGiftModal()">취소</button>
+        <button class="btn-modal-primary" id="gift-confirm-btn" disabled onclick="sendGift()">선물하기 🎁</button>
+      </div>
     </div>
   </div>
-</div>
 
-<!-- ── 모달: 아이템 선물 ── -->
-<div id="modal-gift" class="modal-overlay">
-  <div class="modal-box">
-    <h4>🎁 아이템 선물하기</h4>
-    <div id="gift-item-info"></div>
-    <input id="gift-search" type="text" placeholder="상대방 이름 입력" />
-    <button onclick="searchGiftUser()">검색</button>
-    <div id="gift-result" style="margin-top:8px;font-size:14px;"></div>
-    <p style="font-size:12px;color:#aaa;margin-top:8px;">
-      선물하면 가방에서 사라진다! 누구한테 주고 싶어?
-    </p>
-    <div class="btn-row">
-      <button onclick="closeGiftModal()">취소</button>
-      <button id="gift-confirm-btn" disabled onclick="sendGift()">선물하기</button>
-    </div>
-  </div>
-</div>
+  <div id="toast"></div>
 
-<div id="toast"></div>
-<script type="module" src="../js/shop.js"></script>
+  <script type="module" src="../js/shop.js"></script>
+
+  <!-- 모바일 검색창 토글 -->
+  <script>
+    const searchWrap  = document.getElementById('search-wrap');
+    const searchInput = document.getElementById('search-input');
+    if (searchWrap && searchInput) {
+      searchWrap.querySelector('svg').addEventListener('click', (e) => {
+        if (window.innerWidth <= 768) {
+          e.stopPropagation();
+          searchWrap.classList.toggle('expanded');
+          if (searchWrap.classList.contains('expanded')) searchInput.focus();
+        }
+      });
+      document.addEventListener('click', (e) => {
+        if (window.innerWidth <= 768 && !searchWrap.contains(e.target))
+          searchWrap.classList.remove('expanded');
+      });
+      searchInput.addEventListener('blur', () => {
+        if (window.innerWidth <= 768)
+          setTimeout(() => searchWrap.classList.remove('expanded'), 200);
+      });
+    }
+    // 모달 오버레이 클릭 닫기
+    document.querySelectorAll('.modal-overlay').forEach(el => {
+      el.addEventListener('click', e => { if (e.target === el) el.classList.remove('open') });
+    });
+  </script>
 </body>
 </html>

@@ -48,7 +48,7 @@ export function startWeather(newWeather, turns, prevWeather, allPokemon) {
         p.ranks.def = Math.min(base + 3, prev + 2)  // MAX_DEF_BONUS = 3
         p.ranks.defTurns = 999  // 날씨 지속 중 유지
         p.weatherDefBoost = true
-        msgs.push(`${p.name}${josa(p.name, "의")} 모래바람으로 방어가 올랐다!`)
+        msgs.push(`모래바람으로 ${p.name}${josa(p.name, "의")} 방어가 올랐다!`)
       }
     }
   }

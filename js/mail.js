@@ -1,9 +1,7 @@
-// js/mail.js
-
 import { auth, db } from "./firebase.js"
 import { onAuthStateChanged } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-auth.js"
 import {
-  doc, getDoc, updateDoc, setDoc,
+  doc, getDoc, updateDoc,
   arrayUnion, arrayRemove
 } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js"
 
@@ -34,16 +32,24 @@ const POPPIN_COLOR = {
   mild: '#F5C842', burnt: '#888888', bad: '#AAAAAA', poppin: '#FFB6C1'
 }
 
+// 메일 타입별 아이콘 & 아이콘 클래스
+const MAIL_META = {
+  note:         { icon: '📨', cls: 'type-note'   },
+  letter:       { icon: '✉️',  cls: 'type-letter' },
+  ring_request: { icon: '💍', cls: 'type-ring'   },
+  gift:         { icon: '🎁', cls: 'type-gift'   },
+}
+
 // ══════════════════════════════════════════════════════
 //  상태
 // ══════════════════════════════════════════════════════
 let myUid  = null
 let myData = null
-
+let currentRingMailItem = null
 let currentGiftMailItem = null
 
 // ══════════════════════════════════════════════════════
-//  유틸
+//  토스트
 // ══════════════════════════════════════════════════════
 function showToast(msg, duration = 2500) {
   const t = document.getElementById("toast")
@@ -53,18 +59,30 @@ function showToast(msg, duration = 2500) {
 }
 
 // ══════════════════════════════════════════════════════
+//  날짜 포맷
+// ══════════════════════════════════════════════════════
+function formatDate(ts, short = true) {
+  if (!ts) return ""
+  return new Date(ts).toLocaleString("ko-KR", short
+    ? { month: "numeric", day: "numeric", hour: "2-digit", minute: "2-digit" }
+    : undefined
+  )
+}
+
+// ══════════════════════════════════════════════════════
 //  모달 닫기
 // ══════════════════════════════════════════════════════
-window.closeNoteModal = function() {
-  document.getElementById("modal-note-view").classList.remove("open")
-}
-window.closeGiftModal = function() {
+window.closeNoteModal   = () => document.getElementById("modal-note-view").classList.remove("open")
+window.closeLetterModal = () => document.getElementById("modal-letter-view").classList.remove("open")
+window.closeGiftModal   = () => {
   document.getElementById("modal-gift-view").classList.remove("open")
   currentGiftMailItem = null
 }
-window.closeLetterModal = function() {
-  document.getElementById("modal-letter-view").classList.remove("open")
-}
+
+// 오버레이 클릭으로 닫기
+document.querySelectorAll(".modal-overlay").forEach(el => {
+  el.addEventListener("click", e => { if (e.target === el) el.classList.remove("open") })
+})
 
 // ══════════════════════════════════════════════════════
 //  메일함 렌더
@@ -75,81 +93,120 @@ async function renderMail() {
   const inbox  = myData?.inbox ?? []
   const listEl = document.getElementById("mail-list")
 
+  // 안읽음 카운트 & 서브타이틀 업데이트
+  const unreadCount = inbox.filter(i => !i.read).length
+  const subtitleEl  = document.getElementById("mail-subtitle")
+  const countEl     = document.getElementById("unread-count")
+
+  if (subtitleEl) subtitleEl.textContent = `총 ${inbox.length}개${unreadCount > 0 ? ` · 안읽음 ${unreadCount}개` : ''}`
+  if (countEl) {
+    if (unreadCount > 0) { countEl.textContent = unreadCount; countEl.style.display = '' }
+    else                 { countEl.style.display = 'none' }
+  }
+
   if (inbox.length === 0) {
-    listEl.innerHTML = '<p class="empty-msg">메일함이 비어있어.</p>'
+    listEl.innerHTML = `
+      <div class="mail-empty">
+        <div class="mail-empty-icon">📭</div>
+        <div class="mail-empty-text">메일함이 비어있어요.</div>
+      </div>`
     return
   }
 
-  listEl.innerHTML = '<div class="mail-box" id="mail-box"></div>'
-  const boxEl = document.getElementById("mail-box")
+  listEl.innerHTML = ""
 
   const sorted = inbox
     .map((item, i) => ({ item, i }))
     .sort((a, b) => (b.item.at ?? 0) - (a.item.at ?? 0))
 
-  sorted.forEach(({ item, i }) => {
-    const div  = document.createElement("div")
-    const date = item.at
-      ? new Date(item.at).toLocaleString("ko-KR", {
-          month:"numeric", day:"numeric", hour:"2-digit", minute:"2-digit"
-        })
-      : ""
+  sorted.forEach(({ item }) => {
+    const meta = MAIL_META[item.type] ?? { icon: '📩', cls: '' }
+    const date = formatDate(item.at)
 
+    let titleHtml = ""
     if (item.type === "note") {
-      div.className = `note-item ${item.read ? "read" : "unread"}`
-      div.innerHTML = `📨 익명의 쪽지 · ${date}`
-      div.addEventListener("click", () => openNoteModal(item, i))
-
+      titleHtml = "익명의 쪽지"
     } else if (item.type === "letter") {
-      div.className = `note-item ${item.read ? "read" : "unread"}`
-      div.innerHTML = `✉️ <strong>${item.fromName ?? "익명"}</strong>의 편지: ${item.title ?? "(제목 없음)"} · ${date}`
-      div.addEventListener("click", () => openLetterModal(item, i))
-
+      titleHtml = `<strong>${item.fromName ?? "익명"}</strong>의 편지 — ${item.title ?? "(제목 없음)"}`
     } else if (item.type === "ring_request") {
-      div.className = `note-item ${item.read ? "read" : "unread"}`
-      div.innerHTML = `💍 <strong>${item.fromNickname}</strong>${josa(item.fromNickname, "이가")} 우정반지를 보냈어! · ${date}`
-      div.addEventListener("click", () => openRingRequestModal(item, i))
-
+      titleHtml = `<strong>${item.fromNickname}</strong>${josa(item.fromNickname, "이가")} 우정반지를 보냈어요`
     } else if (item.type === "gift") {
       const gItem = item.item ?? {}
-      let label   = "📦 알 수 없는 아이템"
-      if (gItem.type === "ingredient") {
-        label = `🧂 ${gItem.name}`
-      } else if (gItem.type === "poppin") {
-        const color = POPPIN_COLOR[gItem.pType] ?? "#aaa"
-        label = `🧁 <span style="color:${color};">${gItem.name}</span>`
-      } else if (gItem.type === "title_ticket") {
-        label = `📃 ${gItem.name}`
-      }
-      div.className = `note-item ${item.read ? "read" : "unread"}`
-      div.innerHTML =
-        `🎁 <strong>${item.fromNickname}</strong>${josa(item.fromNickname, "이가")} 선물을 보냈어: ${label} · ${date}`
-      div.addEventListener("click", () => openGiftViewModal(item, i))
-
+      let giftLabel = "알 수 없는 아이템"
+      if (gItem.type === "ingredient")   giftLabel = `🧂 ${gItem.name}`
+      else if (gItem.type === "poppin")  giftLabel = `🧁 ${gItem.name}`
+      else if (gItem.type === "title_ticket") giftLabel = `📃 ${gItem.name}`
+      titleHtml = `<strong>${item.fromNickname}</strong>의 선물 — ${giftLabel}`
     } else {
-      div.innerHTML = `📩 알 수 없는 메일 · ${date}`
+      titleHtml = "알 수 없는 메일"
     }
 
-    boxEl.appendChild(div)
+    const div = document.createElement("div")
+    div.className = `mail-item ${item.read ? "read" : "unread"}`
+    div.innerHTML = `
+      <div class="mail-icon ${meta.cls}">${meta.icon}</div>
+      <div class="mail-item-body">
+        <div class="mail-item-title">${titleHtml}</div>
+        <div class="mail-item-meta">${date}</div>
+      </div>
+      <span class="mail-arrow">›</span>
+    `
+
+    if (item.type === "note")         div.addEventListener("click", () => openNoteModal(item))
+    else if (item.type === "letter")  div.addEventListener("click", () => openLetterModal(item))
+    else if (item.type === "ring_request") div.addEventListener("click", () => openRingRequestModal(item))
+    else if (item.type === "gift")    div.addEventListener("click", () => openGiftViewModal(item))
+
+    listEl.appendChild(div)
   })
 }
 
 // ══════════════════════════════════════════════════════
-//  우정반지 요청 모달
+//  읽음 처리
 // ══════════════════════════════════════════════════════
-let currentRingMailItem = null
-
-function openRingRequestModal(item, index) {
-  currentRingMailItem = item
-  document.getElementById("ring-req-from").innerText =
-    `💍 ${item.fromNickname}${josa(item.fromNickname, "이가")} 우정반지를 보냈어!`
-  document.getElementById("modal-ring-request").classList.add("open")
-  if (!item.read) markRead(item, "ring_request")
+async function markRead(item) {
+  if (item.read) return
+  const updated = { ...item, read: true }
+  try {
+    await updateDoc(doc(db, "users", myUid), { inbox: arrayRemove(item) })
+    await updateDoc(doc(db, "users", myUid), { inbox: arrayUnion(updated) })
+    item.read = true
+  } catch(e) {
+    console.warn("읽음 처리 실패", e)
+  }
 }
 
-window.closeRingRequestModal = function() {
-  document.getElementById("modal-ring-request").classList.remove("open")
-  currentRingMailItem = null
+// ══════════════════════════════════════════════════════
+//  쪽지 모달
+// ══════════════════════════════════════════════════════
+function openNoteModal(item) {
+  document.getElementById("note-view-text").innerText = item.text ?? "(내용 없음)"
+  document.getElementById("note-view-date").innerText = formatDate(item.at, false)
+  document.getElementById("modal-note-view").classList.add("open")
+  markRead(item)
+}
+
+// ══════════════════════════════════════════════════════
+//  편지 모달
+// ══════════════════════════════════════════════════════
+function openLetterModal(item) {
+  document.getElementById("letter-view-from").innerText  = `보낸 사람: ${item.fromName ?? "익명"}`
+  document.getElementById("letter-view-title").innerText = item.title ?? "(제목 없음)"
+  document.getElementById("letter-view-text").innerText  = item.text  ?? "(내용 없음)"
+  document.getElementById("letter-view-date").innerText  = formatDate(item.at, false)
+  document.getElementById("modal-letter-view").classList.add("open")
+  markRead(item)
+}
+
+// ══════════════════════════════════════════════════════
+//  우정반지 모달
+// ══════════════════════════════════════════════════════
+function openRingRequestModal(item) {
+  currentRingMailItem = item
+  document.getElementById("ring-req-from").innerText =
+    `${item.fromNickname}${josa(item.fromNickname, "이가")} 우정반지를 보냈어요!`
+  document.getElementById("modal-ring-request").classList.add("open")
+  markRead(item)
 }
 
 window.acceptRing = async function() {
@@ -165,9 +222,10 @@ window.acceptRing = async function() {
     }
     await updateDoc(doc(db, "users", myUid), { inventory: arrayUnion(ringItem) })
     await updateDoc(doc(db, "users", myUid), { inbox: arrayRemove(mailItem) })
+
     const senderSnap = await getDoc(doc(db, "users", mailItem.fromUid))
     const senderInv  = senderSnap.data()?.inventory ?? []
-    const oldRing = senderInv.find(
+    const oldRing    = senderInv.find(
       i => i.type === "friendship_ring" && i.withUid === myUid && i.status === "pending"
     )
     if (oldRing) {
@@ -175,12 +233,14 @@ window.acceptRing = async function() {
       await updateDoc(doc(db, "users", mailItem.fromUid), { inventory: arrayRemove(oldRing) })
       await updateDoc(doc(db, "users", mailItem.fromUid), { inventory: arrayUnion(newRing) })
     }
-    showToast(`💍 ${mailItem.fromNickname}${josa(mailItem.fromNickname, "과와")}의 우정반지를 수락했어!`)
-    closeRingRequestModal()
+
+    showToast(`💍 ${mailItem.fromNickname}${josa(mailItem.fromNickname, "과와")}의 우정반지를 수락했어요!`)
+    document.getElementById("modal-ring-request").classList.remove("open")
+    currentRingMailItem = null
     await renderMail()
   } catch(e) {
     console.error(e)
-    showToast("수락 실패... 다시 해봐")
+    showToast("수락 실패... 다시 시도해 주세요")
   }
 }
 
@@ -189,8 +249,9 @@ window.rejectRing = async function() {
   const mailItem = currentRingMailItem
   try {
     await updateDoc(doc(db, "users", myUid), { inbox: arrayRemove(mailItem) })
-    showToast("반지 요청을 거절했어.")
-    closeRingRequestModal()
+    showToast("반지 요청을 거절했어요.")
+    document.getElementById("modal-ring-request").classList.remove("open")
+    currentRingMailItem = null
     await renderMail()
   } catch(e) {
     console.error(e)
@@ -199,149 +260,77 @@ window.rejectRing = async function() {
 }
 
 // ══════════════════════════════════════════════════════
-//  쪽지 모달
+//  선물 모달
 // ══════════════════════════════════════════════════════
-function openNoteModal(item, index) {
-  document.getElementById("note-view-text").innerText = item.text ?? "(내용 없음)"
-  document.getElementById("note-view-date").innerText = item.at
-    ? new Date(item.at).toLocaleString("ko-KR")
-    : ""
-  document.getElementById("modal-note-view").classList.add("open")
-  if (!item.read) markRead(item, "note")
-}
-
-// ══════════════════════════════════════════════════════
-//  일반 편지 모달
-// ══════════════════════════════════════════════════════
-function openLetterModal(item, index) {
-  document.getElementById("letter-view-from").innerText  = `보낸 사람: ${item.fromName ?? "익명"}`
-  document.getElementById("letter-view-title").innerText = item.title ?? "(제목 없음)"
-  document.getElementById("letter-view-text").innerText  = item.text  ?? "(내용 없음)"
-  document.getElementById("letter-view-date").innerText  = item.at
-    ? new Date(item.at).toLocaleString("ko-KR")
-    : ""
-  document.getElementById("modal-letter-view").classList.add("open")
-  if (!item.read) markRead(item, "letter")
-}
-
-// ══════════════════════════════════════════════════════
-//  선물 보기 모달
-// ══════════════════════════════════════════════════════
-function openGiftViewModal(item, index) {
+function openGiftViewModal(item) {
   currentGiftMailItem = item
-
   const gItem = item.item ?? {}
 
   let infoHtml = `
-    <p style="font-size:13px;color:#666;margin-bottom:10px;">
-      <strong>${item.fromNickname}</strong>${josa(item.fromNickname, "이가")} 선물을 보냈어!
+    <p style="font-size:13px;color:var(--text-sub);margin-bottom:12px;">
+      <strong>${item.fromNickname}</strong>${josa(item.fromNickname, "이가")} 선물을 보냈어요!
     </p>
   `
 
   if (gItem.type === "ingredient") {
-    infoHtml += `<p style="font-size:16px;margin:0 0 8px;">🧂 <strong>${gItem.name}</strong></p>`
+    infoHtml += `<p style="font-size:20px;margin:0 0 4px;">🧂</p>
+                 <p style="font-size:16px;font-weight:700;color:var(--text-main);margin:0;">${gItem.name}</p>`
 
   } else if (gItem.type === "poppin") {
     const color   = POPPIN_COLOR[gItem.pType] ?? "#aaa"
     const imgHtml = gItem.img
       ? `<img src="${gItem.img}" alt="${gItem.name}"
-           style="width:64px;height:64px;object-fit:contain;image-rendering:pixelated;
-                  display:block;margin:0 auto 8px;">`
-      : `<div style="font-size:40px;text-align:center;margin-bottom:8px;">🧁</div>`
-    infoHtml += `
-      ${imgHtml}
-      <p style="font-size:16px;margin:0 0 8px;font-weight:bold;color:${color};">${gItem.name}</p>
-    `
+           style="width:72px;height:72px;object-fit:contain;image-rendering:pixelated;display:block;margin:0 auto 10px;">`
+      : `<div style="font-size:48px;margin-bottom:10px;">🧁</div>`
+    infoHtml += `${imgHtml}
+      <p style="font-size:16px;font-weight:700;color:${color};margin:0;">${gItem.name}</p>`
 
   } else if (gItem.type === "title_ticket") {
     infoHtml += `
-      <p style="font-size:16px;margin:0 0 8px;">
-        📃 <strong style="color:#7c5cfc;">${gItem.name}</strong>
-      </p>
-      <p style="font-size:12px;color:#999;margin:0;line-height:1.6;">
-        원하는 칭호를 하나 선택할 수 있다. 커스텀 칭호도 가능하다.<br>소넷 선생님께 들고가보자.
-      </p>
-    `
+      <p style="font-size:20px;margin:0 0 6px;">📃</p>
+      <p style="font-size:16px;font-weight:700;color:#7c5cfc;margin:0 0 6px;">${gItem.name}</p>
+      <p style="font-size:12px;color:var(--text-sub);line-height:1.6;margin:0;">
+        원하는 칭호를 하나 선택할 수 있어요.<br>커스텀 칭호도 가능해요.
+      </p>`
   }
 
-  // 메시지 (있을 때만 표시)
-  if (item.message && item.message.trim()) {
+  if (item.message?.trim()) {
     infoHtml += `
       <div style="
-        margin-top:10px;
-        padding:10px 12px;
-        background:#f9f9f9;
-        border-radius:6px;
-        font-size:14px;
-        line-height:1.6;
-        color:#444;
-        white-space:pre-wrap;
-        word-break:break-all;
-        text-align:left;
-      ">${item.message}</div>
-    `
+        margin-top:14px; padding:10px 14px;
+        background:var(--white); border:1px solid var(--gray-200);
+        border-radius:var(--radius-sm); font-size:13px;
+        line-height:1.7; color:var(--text-main);
+        white-space:pre-wrap; word-break:break-all; text-align:left;
+      ">${item.message}</div>`
   }
 
   document.getElementById("gift-view-info").innerHTML = infoHtml
   document.getElementById("modal-gift-view").classList.add("open")
-
-  if (!item.read) markRead(item, "gift")
+  markRead(item)
 }
 
-// ══════════════════════════════════════════════════════
-//  읽음 처리
-// ══════════════════════════════════════════════════════
-async function markRead(item, type) {
-  if (item.read) return
-
-  const updated = { ...item, read: true }
-  try {
-    await updateDoc(doc(db, "users", myUid), { inbox: arrayRemove(item) })
-    await updateDoc(doc(db, "users", myUid), { inbox: arrayUnion(updated) })
-
-    const inbox = myData?.inbox ?? []
-    const idx = inbox.findIndex(x => x.at === item.at && x.type === item.type)
-    if (idx >= 0 && myData.inbox) {
-      myData.inbox[idx] = updated
-    }
-
-    item.read = true
-
-  } catch(e) {
-    console.warn("읽음 처리 실패", e)
-  }
-}
-
-// ══════════════════════════════════════════════════════
-//  선물 수락
-// ══════════════════════════════════════════════════════
 window.acceptGift = async function() {
   if (!currentGiftMailItem) return
   const mailItem = currentGiftMailItem
-  const gItem    = mailItem.item
-
   try {
-    await updateDoc(doc(db, "users", myUid), { inventory: arrayUnion(gItem) })
+    await updateDoc(doc(db, "users", myUid), { inventory: arrayUnion(mailItem.item) })
     await updateDoc(doc(db, "users", myUid), { inbox: arrayRemove(mailItem) })
-    showToast("🎁 선물을 가방에 넣었어!")
+    showToast("🎁 선물을 가방에 넣었어요!")
     closeGiftModal()
     await renderMail()
   } catch(e) {
     console.error(e)
-    showToast("수락 실패... 다시 해봐")
+    showToast("수락 실패... 다시 시도해 주세요")
   }
 }
 
-// ══════════════════════════════════════════════════════
-//  선물 거절
-// ══════════════════════════════════════════════════════
 window.rejectGift = async function() {
   if (!currentGiftMailItem) return
   const mailItem = currentGiftMailItem
-
   try {
     await updateDoc(doc(db, "users", myUid), { inbox: arrayRemove(mailItem) })
-    showToast("선물을 거절했어.")
+    showToast("선물을 거절했어요.")
     closeGiftModal()
     await renderMail()
   } catch(e) {

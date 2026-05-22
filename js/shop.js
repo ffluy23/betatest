@@ -10,28 +10,20 @@ import {
 // ══════════════════════════════════════════════════════
 //  칭호 풀 & 확률
 // ══════════════════════════════════════════════════════
-
-// S급 (합계 2%)
 const TITLES_S = [
   { name: "제니스 아카데미 1짱", rate: 0.01 },
   { name: "정복자",              rate: 0.01 },
 ]
-
-// A급 (합계 8%)
 const TITLES_A = [
   { name: "마스터 트레이너", rate: 0.02 },
   { name: "심판자",          rate: 0.02 },
   { name: "영웅",            rate: 0.02 },
   { name: "엘리트 트레이너", rate: 0.02 },
 ]
-
-// B급 (합계 5%)
 const TITLES_B = [
   { name: "달인",   rate: 0.025 },
   { name: "마스터", rate: 0.025 },
 ]
-
-// 일반 (나머지 85% 균등 분배)
 const TITLES_NORMAL = [
   "반바지 꼬마", "곤충채집 소년", "강태공", "연구원", "새 조련사",
   "신사", "포켓몬 매니아", "태권왕", "초능력자", "갬블러",
@@ -52,23 +44,20 @@ const TITLES_NORMAL = [
 ]
 
 const GRADE_LABEL = { S: "✨ S급", A: "🌟 A급", B: "⭐ B급", N: "일반" }
-const GRADE_COLOR = { S: "#FFD700", A: "#FF8C00", B: "#88AAFF", N: "#555" }
+const GRADE_COLOR = { S: "#FFD700", A: "#FF8C00", B: "#88AAFF", N: "var(--text-main)" }
 
-/** 가중 랜덤 뽑기 → { name, grade } */
 function drawTitle() {
   const rarePool = [
     ...TITLES_S.map(t => ({ ...t, grade: "S" })),
     ...TITLES_A.map(t => ({ ...t, grade: "A" })),
     ...TITLES_B.map(t => ({ ...t, grade: "B" })),
   ]
-  const rareTotal   = rarePool.reduce((acc, t) => acc + t.rate, 0) // 0.15
-  const normalRate  = (1 - rareTotal) / TITLES_NORMAL.length
-
+  const rareTotal  = rarePool.reduce((acc, t) => acc + t.rate, 0)
+  const normalRate = (1 - rareTotal) / TITLES_NORMAL.length
   const pool = [
     ...rarePool,
     ...TITLES_NORMAL.map(name => ({ name, rate: normalRate, grade: "N" })),
   ]
-
   const rand = Math.random()
   let cum = 0
   for (const entry of pool) {
@@ -78,7 +67,6 @@ function drawTitle() {
   return { name: TITLES_NORMAL[0], grade: "N" }
 }
 
-/** 칭호 이름으로 등급 조회 */
 function getTitleGrade(name) {
   if (!name) return null
   if (TITLES_S.some(t => t.name === name)) return "S"
@@ -151,12 +139,12 @@ function showToast(msg, duration = 2500) {
 
 function updateCoinDisplay() {
   document.getElementById("user-coins").innerText =
-    `💰 ZP: ${(myData?.coins ?? 0).toLocaleString()}`
+    `${(myData?.coins ?? 0).toLocaleString()} ZP`
 }
 
 async function spendCoins(amount) {
   const current = myData?.coins ?? 0
-  if (current < amount) { showToast("ZP가 부족해!"); return false }
+  if (current < amount) { showToast("ZP가 부족해요!"); return false }
   await updateDoc(doc(db, "users", myUid), { coins: increment(-amount) })
   myData.coins = current - amount
   updateCoinDisplay()
@@ -164,7 +152,7 @@ async function spendCoins(amount) {
 }
 
 // ══════════════════════════════════════════════════════
-//  일반 모달 열기/닫기
+//  모달 열기/닫기
 // ══════════════════════════════════════════════════════
 window.openModal = function(type) {
   if (type === "title") {
@@ -193,35 +181,33 @@ window.closeModal = function(type) {
 }
 
 // ══════════════════════════════════════════════════════
-//  유저 검색 (우정반지 / 쪽지 공용)
+//  유저 검색
 // ══════════════════════════════════════════════════════
 window.searchUser = async function(type) {
   const inputId      = type === "ring" ? "ring-search"      : "note-search"
   const resultId     = type === "ring" ? "ring-result"      : "note-result"
   const confirmBtnId = type === "ring" ? "ring-confirm-btn" : "note-confirm-btn"
   const nickname = document.getElementById(inputId).value.trim()
-  if (!nickname) { showToast("이름을 입력해줘!"); return }
+  if (!nickname) { showToast("이름을 입력해주세요!"); return }
 
   const q    = query(collection(db, "users"), where("nickname", "==", nickname))
   const snap = await getDocs(q)
   const resultEl = document.getElementById(resultId)
 
   if (snap.empty) {
-    resultEl.innerText = "그런 사람은 아카데미에 없어..."
+    resultEl.innerText = "그런 사람은 아카데미에 없어요..."
     document.getElementById(confirmBtnId).disabled = true
-    foundUserUid = null; foundUserNickname = null
-    return
+    foundUserUid = null; foundUserNickname = null; return
   }
   const found = snap.docs[0]
   if (found.id === myUid) {
-    resultEl.innerText = "자기 자신에게는 보낼 수 없어!"
+    resultEl.innerText = "자기 자신에게는 보낼 수 없어요!"
     document.getElementById(confirmBtnId).disabled = true
-    foundUserUid = null; foundUserNickname = null
-    return
+    foundUserUid = null; foundUserNickname = null; return
   }
   foundUserUid      = found.id
   foundUserNickname = found.data().nickname
-  resultEl.innerText = `✅ ${foundUserNickname} 찾았어!`
+  resultEl.innerText = `✅ ${foundUserNickname} 찾았어요!`
   document.getElementById(confirmBtnId).disabled = false
 }
 
@@ -234,35 +220,21 @@ window.buyRing = async function() {
   if (!ok) return
 
   const now = Date.now()
-  const myRingItem = {
-    type: "friendship_ring",
-    withUid: foundUserUid,
-    withNickname: foundUserNickname,
-    status: "pending",
-    at: now
-  }
-  const request = { fromUid: myUid, fromNickname: myData.nickname, at: now }
-
-  const inboxRingItem = {
-    type: "ring_request",
-    fromUid: myUid,
-    fromNickname: myData.nickname,
-    at: now,
-    read: false,
-  }
+  const myRingItem = { type: "friendship_ring", withUid: foundUserUid, withNickname: foundUserNickname, status: "pending", at: now }
+  const inboxRingItem = { type: "ring_request", fromUid: myUid, fromNickname: myData.nickname, at: now, read: false }
 
   await updateDoc(doc(db, "users", myUid), { inventory: arrayUnion(myRingItem) })
   await setDoc(doc(db, "users", foundUserUid), {
-    ringRequests: arrayUnion(request),
+    ringRequests: arrayUnion({ fromUid: myUid, fromNickname: myData.nickname, at: now }),
     inbox: arrayUnion(inboxRingItem),
   }, { merge: true })
 
-  showToast(`💍 ${foundUserNickname}에게 우정반지를 보냈어! 상대방의 수락을 기다려봐.`)
+  showToast(`💍 ${foundUserNickname}에게 우정반지를 보냈어요! 수락을 기다려봐요.`)
   closeModal("ring")
 }
 
 // ══════════════════════════════════════════════════════
-//  구매: 랜덤 칭호 (등급제 + 누적 + 중복 시 50ZP 반환)
+//  구매: 랜덤 칭호
 // ══════════════════════════════════════════════════════
 window.buyTitle = async function() {
   const ok = await spendCoins(500)
@@ -271,55 +243,42 @@ window.buyTitle = async function() {
   document.getElementById("gacha-btn").disabled = true
 
   const { name: picked, grade } = drawTitle()
-
-  // 현재 보유 칭호 목록 확인
   const snap        = await getDoc(doc(db, "users", myUid))
   const ownedTitles = snap.data()?.titles ?? []
   const isDuplicate = ownedTitles.includes(picked)
 
-  const updates = {}
-
   if (isDuplicate) {
-    // 중복 → 50ZP 반환, 칭호 목록 변경 없음
     await updateDoc(doc(db, "users", myUid), { coins: increment(50) })
     myData.coins = (myData.coins ?? 0) + 50
     updateCoinDisplay()
   } else {
-    // 신규 → titles 배열에 추가, activeTitle이 없으면 자동 장착
-    updates.titles = arrayUnion(picked)
+    const updates = { titles: arrayUnion(picked) }
     if (!snap.data()?.activeTitle) updates.activeTitle = picked
     await updateDoc(doc(db, "users", myUid), updates)
-    myData.titles     = [...ownedTitles, picked]
+    myData.titles = [...ownedTitles, picked]
     myData.activeTitle = snap.data()?.activeTitle || picked
   }
 
-  // 결과 표시
-  const resultEl   = document.getElementById("gacha-result")
   const gradeColor = GRADE_COLOR[grade]
   const gradeLabel = GRADE_LABEL[grade]
   const isRare     = grade !== "N"
-
+  const resultEl   = document.getElementById("gacha-result")
   resultEl.className = "show"
 
   if (isDuplicate) {
     resultEl.innerHTML = `
-      ${isRare
-        ? `<div style="font-size:11px;font-weight:bold;color:${gradeColor};letter-spacing:1px;margin-bottom:4px;">${gradeLabel}</div>`
-        : ""}
-      <div style="font-size:17px;font-weight:bold;color:${gradeColor};">[${picked}]</div>
-      <div style="font-size:13px;color:#e07b00;margin-top:8px;font-weight:bold;">이미 보유 중! 💰 50ZP 반환</div>
+      ${isRare ? `<div style="font-size:11px;font-weight:700;color:${gradeColor};letter-spacing:1px;margin-bottom:4px;">${gradeLabel}</div>` : ""}
+      <div style="font-size:18px;font-weight:800;color:${gradeColor};">[${picked}]</div>
+      <div style="font-size:13px;color:#e07b00;margin-top:8px;font-weight:600;">이미 보유 중! 🪙 50ZP 반환</div>
     `
   } else {
     resultEl.innerHTML = `
-      ${isRare
-        ? `<div style="font-size:11px;font-weight:bold;color:${gradeColor};letter-spacing:1px;margin-bottom:4px;">${gradeLabel}</div>`
-        : ""}
-      <div style="font-size:17px;font-weight:bold;color:${gradeColor};">[${picked}]</div>
-      <div style="font-size:13px;color:#555;margin-top:6px;">새 칭호 획득!</div>
-      ${grade === "S" ? `<div style="font-size:22px;margin-top:4px;">🎊</div>`
-      : grade === "A" ? `<div style="font-size:22px;margin-top:4px;">🎉</div>`
-      : grade === "B" ? `<div style="font-size:22px;margin-top:4px;">✨</div>`
-      : ""}
+      ${isRare ? `<div style="font-size:11px;font-weight:700;color:${gradeColor};letter-spacing:1px;margin-bottom:4px;">${gradeLabel}</div>` : ""}
+      <div style="font-size:18px;font-weight:800;color:${gradeColor};">[${picked}]</div>
+      <div style="font-size:13px;color:var(--text-sub);margin-top:6px;">새 칭호 획득!</div>
+      ${grade === "S" ? `<div style="font-size:24px;margin-top:4px;">🎊</div>`
+      : grade === "A" ? `<div style="font-size:24px;margin-top:4px;">🎉</div>`
+      : grade === "B" ? `<div style="font-size:24px;margin-top:4px;">✨</div>` : ""}
     `
   }
 }
@@ -330,22 +289,18 @@ window.buyTitle = async function() {
 window.buyNote = async function() {
   if (!foundUserUid) return
   const text = document.getElementById("note-text").value.trim()
-  if (!text) { showToast("쪽지 내용을 입력해줘!"); return }
+  if (!text) { showToast("쪽지 내용을 입력해주세요!"); return }
 
   const ok = await spendCoins(300)
   if (!ok) return
 
   const noteItem = {
-    type: "note",
-    text,
-    at: Date.now(),
-    read: false,
-    senderUid: myUid,
-    senderNickname: myData.nickname ?? "익명",
+    type: "note", text, at: Date.now(), read: false,
+    senderUid: myUid, senderNickname: myData.nickname ?? "익명",
   }
   await setDoc(doc(db, "users", foundUserUid), { inbox: arrayUnion(noteItem) }, { merge: true })
 
-  showToast(`📨 ${foundUserNickname}에게 쪽지${josa("쪽지", "을를")} 보냈어!`)
+  showToast(`📨 ${foundUserNickname}에게 쪽지를 보냈어요!`)
   closeModal("note")
 }
 
@@ -362,7 +317,7 @@ window.buyIngredient = async function() {
   await updateDoc(doc(db, "users", myUid), { inventory: arrayUnion(item) })
 
   closeModal("ingredient")
-  showToast(isGood ? `🧂 ${name}${josa(name, "을를")} 획득!` : `🫙 ${name}${josa(name, "을를")} 획득... (어째서)`)
+  showToast(isGood ? `🧂 ${name}을 획득했어요!` : `🫙 ${name}을 획득했어요... (어째서)`)
 }
 
 // ══════════════════════════════════════════════════════
@@ -373,7 +328,10 @@ async function renderInventory() {
   const items = snap.data()?.inventory ?? []
   const el    = document.getElementById("inventory-list")
 
-  if (items.length === 0) { el.innerHTML = "<p>가방이 비어있어.</p>"; return }
+  if (items.length === 0) {
+    el.innerHTML = '<div class="inv-empty">가방이 비어있어요.</div>'
+    return
+  }
 
   el.innerHTML = ""
   const sorted = items
@@ -383,56 +341,61 @@ async function renderInventory() {
   sorted.forEach(({ item, originalIndex }) => {
     const div  = document.createElement("div")
     const date = item.at
-      ? new Date(item.at).toLocaleString("ko-KR", {
-          month:"numeric", day:"numeric", hour:"2-digit", minute:"2-digit"
-        })
+      ? new Date(item.at).toLocaleString("ko-KR", { month:"numeric", day:"numeric", hour:"2-digit", minute:"2-digit" })
       : ""
 
     if (item.type === "friendship_ring") {
       const statusText = item.status === "pending"
-        ? ` <span style="color:#aaa;font-size:12px;">(수락 대기 중)</span>`
-        : ""
-      div.innerHTML = `💍 우정반지 — <strong>${item.withNickname}</strong>${josa(item.withNickname, "과와")}${statusText} · ${date}`
+        ? `<span style="color:var(--gray-400);"> · 수락 대기 중</span>` : ""
+      div.className = "inv-item"
+      div.innerHTML = `
+        <div class="inv-item-icon ring">💍</div>
+        <div class="inv-item-body">
+          <div class="inv-item-name">우정반지 — ${item.withNickname}${josa(item.withNickname, "과와")}</div>
+          <div class="inv-item-meta">${date}${statusText}</div>
+        </div>`
 
     } else if (item.type === "title_ticket") {
-      // ── 칭호 선택권[진짜 자유] ── 선물 불가, 클릭 시 안내만
-      div.className = "inv-item-special"
+      div.className = "inv-item"
       div.innerHTML = `
-        <div style="display:flex;align-items:flex-start;gap:8px;">
-          <span style="font-size:20px;line-height:1.3;">📃</span>
-          <div>
-            <div style="font-weight:bold;color:#7c5cfc;">${item.name ?? "칭호 선택권[진짜 자유]"}</div>
-            <div style="font-size:12px;color:#999;margin-top:2px;">원하는 칭호를 하나 선택할 수 있다. 커스텀 칭호도 가능하다. 소넷 선생님께 들고가보자.</div>
-            <div style="font-size:11px;color:#bbb;margin-top:4px;">· ${date} &nbsp;|&nbsp; <span style="color:#e07b00;">선물 불가</span></div>
-          </div>
-        </div>
-      `
+        <div class="inv-item-icon ticket">📃</div>
+        <div class="inv-item-body">
+          <div class="inv-item-name" style="color:#7c5cfc;">${item.name ?? "칭호 선택권[진짜 자유]"}</div>
+          <div class="inv-item-meta">${date} · 선물 불가 · 소넷 선생님께 가져가세요</div>
+        </div>`
 
     } else if (item.type === "ingredient") {
-      div.className = "inv-item-giftable"
+      div.className = "inv-item inv-item-giftable"
       div.innerHTML = `
-        🧂 ${item.name} · ${date}
-        <span style="font-size:11px;color:#bbb;margin-left:6px;">탭해서 선물</span>
-      `
+        <div class="inv-item-icon">🧂</div>
+        <div class="inv-item-body">
+          <div class="inv-item-name">${item.name}</div>
+          <div class="inv-item-meta">${date}</div>
+        </div>`
       div.addEventListener("click", () => openGiftModal(item, originalIndex))
 
     } else if (item.type === "poppin") {
       const color   = POPPIN_COLOR[item.pType] ?? "#aaa"
       const imgHtml = item.img
-        ? `<img src="${item.img}" alt="${item.name}"
-             style="width:28px;height:28px;object-fit:contain;vertical-align:middle;image-rendering:pixelated;">`
-        : `<span style="font-size:15px;">🧁</span>`
-      div.className = "inv-item-giftable"
+        ? `<img src="${item.img}" alt="${item.name}" style="width:100%;height:100%;object-fit:contain;image-rendering:pixelated;">`
+        : "🧁"
+      div.className = "inv-item inv-item-giftable"
       div.innerHTML = `
-        ${imgHtml}
-        <strong style="color:${color};">${item.name}</strong>
-        <span style="color:#999;font-size:12px;"> · ${date}</span>
-        <span style="font-size:11px;color:#bbb;margin-left:6px;">탭해서 선물</span>
-      `
+        <div class="inv-item-icon" style="overflow:hidden;">${imgHtml}</div>
+        <div class="inv-item-body">
+          <div class="inv-item-name" style="color:${color};">${item.name}</div>
+          <div class="inv-item-meta">${date}</div>
+        </div>`
       div.addEventListener("click", () => openGiftModal(item, originalIndex))
 
     } else {
-      div.innerHTML = `📦 ${item.type} · ${date}`
+      div.className = "inv-item"
+      div.innerHTML = `
+        <div class="inv-item-icon">📦</div>
+        <div class="inv-item-body">
+          <div class="inv-item-name">${item.type}</div>
+          <div class="inv-item-meta">${date}</div>
+        </div>`
     }
 
     el.appendChild(div)
@@ -440,7 +403,7 @@ async function renderInventory() {
 }
 
 // ══════════════════════════════════════════════════════
-//  칭호 탭 렌더 (누적 목록 + 장착 전환)
+//  칭호 탭 렌더
 // ══════════════════════════════════════════════════════
 async function renderTitle() {
   const snap        = await getDoc(doc(db, "users", myUid))
@@ -449,50 +412,48 @@ async function renderTitle() {
   const el          = document.getElementById("title-display")
 
   if (ownedTitles.length === 0) {
-    el.innerHTML = "<p>아직 칭호가 없어. 매점에서 뽑아봐!</p>"
+    el.innerHTML = '<p style="color:var(--text-sub);font-size:14px;">아직 칭호가 없어요. 매점에서 뽑아봐요!</p>'
     return
   }
 
-  // 현재 장착 중 칭호 표시
-  let headerHtml = ""
+  let html = ""
+
   if (active) {
     const grade      = getTitleGrade(active)
     const gradeColor = GRADE_COLOR[grade]
     const gradeLabel = GRADE_LABEL[grade]
     const isRare     = grade !== "N"
-    headerHtml = `
-      <div style="margin-bottom:16px;padding:10px 12px;background:#f9f9f9;border-radius:8px;">
-        <span style="font-size:12px;color:#999;">장착 중</span><br>
-        ${isRare ? `<span style="font-size:11px;font-weight:bold;color:${gradeColor};">${gradeLabel} </span>` : ""}
-        <strong style="color:${gradeColor};">[${active}]</strong>
-      </div>
-    `
+    html += `
+      <div class="title-active-box">
+        <div class="title-active-label">장착 중</div>
+        <div>
+          ${isRare ? `<span style="font-size:11px;font-weight:700;color:${gradeColor};margin-right:4px;">${gradeLabel}</span>` : ""}
+          <strong style="color:${gradeColor};">[${active}]</strong>
+        </div>
+      </div>`
   }
 
-  // 보유 칭호 목록
-  const listHtml = ownedTitles.map(title => {
+  html += `<div class="title-list">`
+  ownedTitles.forEach(title => {
     const grade      = getTitleGrade(title)
     const gradeColor = GRADE_COLOR[grade]
     const gradeLabel = GRADE_LABEL[grade]
     const isRare     = grade !== "N"
     const isActive   = title === active
-
-    return `
+    html += `
       <div class="title-item ${isActive ? "title-active" : ""}"
            onclick="equipTitle('${title.replace(/'/g, "\\'")}')">
         <span>
-          ${isRare ? `<span style="font-size:11px;font-weight:bold;color:${gradeColor};margin-right:3px;">${gradeLabel}</span>` : ""}
-          <span style="color:${gradeColor};font-weight:${isRare ? "bold" : "normal"};">[${title}]</span>
+          ${isRare ? `<span style="font-size:11px;font-weight:700;color:${gradeColor};margin-right:4px;">${gradeLabel}</span>` : ""}
+          <span style="color:${gradeColor};font-weight:${isRare ? "700" : "500"};">[${title}]</span>
         </span>
         ${isActive
           ? `<span class="title-equipped-badge">장착 중</span>`
-          : `<span class="title-equip-btn">장착</span>`
-        }
-      </div>
-    `
-  }).join("")
-
-  el.innerHTML = headerHtml + `<div class="title-list">${listHtml}</div>`
+          : `<span class="title-equip-btn">장착</span>`}
+      </div>`
+  })
+  html += `</div>`
+  el.innerHTML = html
 }
 
 // ══════════════════════════════════════════════════════
@@ -502,11 +463,11 @@ window.equipTitle = async function(title) {
   try {
     await updateDoc(doc(db, "users", myUid), { activeTitle: title })
     myData.activeTitle = title
-    showToast(`[${title}] 칭호를 장착했어!`)
+    showToast(`[${title}] 칭호를 장착했어요!`)
     renderTitle()
   } catch(e) {
     console.error(e)
-    showToast("칭호 장착 실패... 다시 해봐")
+    showToast("칭호 장착 실패... 다시 시도해주세요")
   }
 }
 
@@ -514,15 +475,9 @@ window.equipTitle = async function(title) {
 //  선물 모달
 // ══════════════════════════════════════════════════════
 window.openGiftModal = function(item, originalIndex) {
-  // 칭호 선택권은 선물 불가
-  if (item.type === "title_ticket") {
-    showToast("📃 너 이거 남한테 주려는 거냐?!")
-    return
-  }
+  if (item.type === "title_ticket") { showToast("📃 이건 선물할 수 없어요!"); return }
 
-  giftTargetObj     = item
-  giftFoundUid      = null
-  giftFoundNickname = null
+  giftTargetObj = item; giftFoundUid = null; giftFoundNickname = null
 
   let itemHtml = ""
   if (item.type === "ingredient") {
@@ -530,8 +485,7 @@ window.openGiftModal = function(item, originalIndex) {
   } else if (item.type === "poppin") {
     const color   = POPPIN_COLOR[item.pType] ?? "#aaa"
     const imgHtml = item.img
-      ? `<img src="${item.img}" alt="${item.name}"
-           style="width:40px;height:40px;object-fit:contain;vertical-align:middle;image-rendering:pixelated;">`
+      ? `<img src="${item.img}" alt="${item.name}" style="width:36px;height:36px;object-fit:contain;vertical-align:middle;image-rendering:pixelated;">`
       : "🧁"
     itemHtml = `<p>${imgHtml} <strong style="color:${color};">${item.name}</strong></p>`
   }
@@ -549,28 +503,26 @@ window.closeGiftModal = function() {
 
 window.searchGiftUser = async function() {
   const nickname = document.getElementById("gift-search").value.trim()
-  if (!nickname) { showToast("이름을 입력해줘!"); return }
+  if (!nickname) { showToast("이름을 입력해주세요!"); return }
 
   const q    = query(collection(db, "users"), where("nickname", "==", nickname))
   const snap = await getDocs(q)
   const resultEl = document.getElementById("gift-result")
 
   if (snap.empty) {
-    resultEl.innerText = "그런 사람은 아카데미에 없어..."
+    resultEl.innerText = "그런 사람은 아카데미에 없어요..."
     document.getElementById("gift-confirm-btn").disabled = true
-    giftFoundUid = null; giftFoundNickname = null
-    return
+    giftFoundUid = null; giftFoundNickname = null; return
   }
   const found = snap.docs[0]
   if (found.id === myUid) {
-    resultEl.innerText = "자기 자신에게는 보낼 수 없어!"
+    resultEl.innerText = "자기 자신에게는 보낼 수 없어요!"
     document.getElementById("gift-confirm-btn").disabled = true
-    giftFoundUid = null; giftFoundNickname = null
-    return
+    giftFoundUid = null; giftFoundNickname = null; return
   }
   giftFoundUid      = found.id
   giftFoundNickname = found.data().nickname
-  resultEl.innerText = `✅ ${giftFoundNickname} 찾았어!`
+  resultEl.innerText = `✅ ${giftFoundNickname} 찾았어요!`
   document.getElementById("gift-confirm-btn").disabled = false
 }
 
@@ -578,27 +530,20 @@ window.sendGift = async function() {
   if (!giftFoundUid || !giftTargetObj) return
 
   const giftPayload = {
-    type:         "gift",
-    item:         giftTargetObj,
+    type: "gift", item: giftTargetObj,
     fromNickname: myData.nickname ?? "익명",
-    at:           Date.now(),
-    read:         false,
+    at: Date.now(), read: false,
   }
 
   try {
-    await setDoc(
-      doc(db, "users", giftFoundUid),
-      { inbox: arrayUnion(giftPayload) },
-      { merge: true }
-    )
+    await setDoc(doc(db, "users", giftFoundUid), { inbox: arrayUnion(giftPayload) }, { merge: true })
     await updateDoc(doc(db, "users", myUid), { inventory: arrayRemove(giftTargetObj) })
-
-    showToast(`🎁 ${giftFoundNickname}에게 선물${josa("선물", "을를")} 보냈어!`)
+    showToast(`🎁 ${giftFoundNickname}에게 선물을 보냈어요!`)
     closeGiftModal()
     renderInventory()
   } catch(e) {
     console.error(e)
-    showToast("선물 전송 실패... 다시 해봐")
+    showToast("선물 전송 실패... 다시 시도해주세요")
   }
 }
 
