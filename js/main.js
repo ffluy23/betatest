@@ -44,7 +44,7 @@ onAuthStateChanged(auth, async (user) => {
             <div class="profile-title">${activeTitle}</div>
             <div class="profile-coins">
               <span class="coin-icon">🪙</span>
-              <span>${coins.toLocaleString()} 코인</span>
+              <span>${coins.toLocaleString()} ZP</span>
             </div>
           </div>
           <button class="logout-btn" id="logout-btn">로그아웃</button>
@@ -243,13 +243,14 @@ function renderMeal() {
   if (!container) return;
 
   const MEAL_MENU = [
-    '흑미밥',
-    '콩나물국(5)',
-    '돈육삼겹보쌈(5.6.10.13)',
-    '상추+쌈장(5.6)',
-    '매실양념무말랭이',
-    '보쌈김치(9)',
-    '친환경과일(13)',
+    '귀리밥(무정)',
+    '콩나물쫄면(5.6.13)',
+    '쇠고기고추장감자국(5.6.16)',
+    '구운버섯샐러드(2.12.13)',
+    '참나물배추겉절이(5.6.13)',
+    '별이 내리는 5겹돈까스(1.2.4.5.10.12.13.16.18)',
+    '바나나돈까스소스(공통19-저당)(1.2.5.6.12.13.16.18)',
+    '두바이쫀득쿠키(2.5)',
   ];
 
   container.innerHTML = `
