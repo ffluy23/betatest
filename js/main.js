@@ -44,7 +44,7 @@ onAuthStateChanged(auth, async (user) => {
             <div class="profile-title">${activeTitle}</div>
             <div class="profile-coins">
               <span class="coin-icon">🪙</span>
-              <span>${coins.toLocaleString()} ZP</span>
+              <span>${coins.toLocaleString()} 코인</span>
             </div>
           </div>
           <button class="logout-btn" id="logout-btn">로그아웃</button>
@@ -238,53 +238,26 @@ function renderCalendar() {
 /* ══════════════════════════════════════
    급식 렌더링
 ══════════════════════════════════════ */
-async function renderMeal() {
+function renderMeal() {
   const container = document.getElementById('meal-container');
   if (!container) return;
 
-  const now     = new Date();
-  const yyyy    = now.getFullYear();
-  const mm      = String(now.getMonth() + 1).padStart(2, '0');
-  const dd      = String(now.getDate()).padStart(2, '0');
-  const dateStr = `${yyyy}${mm}${dd}`;
+  const MEAL_MENU = [
+    '흑미밥',
+    '콩나물국(5)',
+    '돈육삼겹보쌈(5.6.10.13)',
+    '상추+쌈장(5.6)',
+    '매실양념무말랭이',
+    '보쌈김치(9)',
+    '친환경과일(13)',
+  ];
 
-  const OFFICE_CODE = 'J10';
-  const SCHOOL_CODE = '7531575'; // 실제 학교 코드로 교체
-  const API_KEY     = 'DEMO';   // 실제 API 키로 교체
-
-  container.innerHTML = `<div class="meal-loading">급식 정보를 불러오는 중...</div>`;
-
-  try {
-    const url  = `https://open.neis.go.kr/hub/mealServiceDietInfo?Type=json&ATPT_OFCDC_SC_CODE=${OFFICE_CODE}&SD_SCHUL_CODE=${SCHOOL_CODE}&MLSV_YMD=${dateStr}&KEY=${API_KEY}`;
-    const res  = await fetch(url);
-    const data = await res.json();
-
-    if (data.mealServiceDietInfo) {
-      const rows = data.mealServiceDietInfo[1].row;
-      let mealHtml = '';
-      rows.forEach(row => {
-        const dishes = row.DDISH_NM.replace(/<br\/>/g, '\n').split('\n');
-        mealHtml += `
-          <div class="meal-type">${row.MMEAL_SC_NM}</div>
-          <ul class="meal-list">
-            ${dishes.map(d => `<li>${d.replace(/\([^)]*\)/g, '').trim()}</li>`).join('')}
-          </ul>
-        `;
-      });
-      container.innerHTML = mealHtml || `<div class="meal-none">오늘 급식 정보가 없습니다.</div>`;
-    } else {
-      container.innerHTML = `<div class="meal-none">오늘 급식 정보가 없습니다.</div>`;
-    }
-  } catch {
-    container.innerHTML = `
-      <div class="meal-type">중식 (예시)</div>
-      <ul class="meal-list">
-        <li>잡곡밥</li><li>미역국</li><li>닭갈비</li>
-        <li>깍두기</li><li>배추김치</li><li>요구르트</li>
-      </ul>
-      <div class="meal-note">* 실제 데이터는 NEIS API 키 설정 후 표시됩니다</div>
-    `;
-  }
+  container.innerHTML = `
+    <div class="meal-type">중식</div>
+    <ul class="meal-list">
+      ${MEAL_MENU.map(d => `<li>${d}</li>`).join('')}
+    </ul>
+  `;
 }
 
 /* ══════════════════════════════════════
