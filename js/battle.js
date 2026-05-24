@@ -722,7 +722,7 @@ async function leaveGame() {
     weather: null, weatherTurns: 0,                     // ← 추가
     game_started_at: 0,
 })
-  location.href = "../main.html"
+  location.href = "../index.html"
 }
 
 function updateMoveButtons(data) {

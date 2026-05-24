@@ -139,6 +139,7 @@ export const moves = {
   "잠재댄스":     { power: 50, type: "전기", accuracy: 100, alwaysHit: false, effect: null },
   "일렉트릭네트": { power: 40, type: "전기", accuracy: 95,  alwaysHit: false, targetSelf: false, effect: null,
                     rank: { targetSpd: -1, turns: 3 }, aoeEnemy: true },
+  "볼트체인지":   { power: 40, type: "전기", accuracy: 100, alwaysHit: false, effect: null, uTurn: true },
 
   // ───── 풀 ─────
   "에너지볼":       { power: 40, type: "풀", accuracy: 100, alwaysHit: false, effect: null,
@@ -173,7 +174,7 @@ export const moves = {
   "냉동펀치":       { power: 45, type: "얼음", accuracy: 100, alwaysHit: false, effect: { chance: 0.1, status: "얼음" } },
   "얼어붙은바람":   { power: 40, type: "얼음", accuracy: 95,  alwaysHit: false, targetSelf: false, effect: null,
                       rank: { targetSpd: -1, turns: 3 }, aoeEnemy: true },
-  "아이스펀치":     { power: 40, type: "얼음", accuracy: 100, alwaysHit: false, effect: { chance: 0.1, status: "얼음" } },
+  "아이스스피너":     { power: 50, type: "얼음", accuracy: 100, alwaysHit: false, effect: null },
   "얼음엄니":       { power: 40, type: "얼음", accuracy: 100, alwaysHit: false, effect: { chance: 0.1, status: "얼음" } },
   "눈싸라기":       { power: 30, type: "얼음", accuracy: 100, alwaysHit: false, effect: { chance: 0.1, status: "얼음" }, aoeEnemy: true },
   "흑안개":         { power: 0,  type: "얼음", accuracy: 100, alwaysHit: true,  effect: null, haze: true, targetSelf: true },
@@ -184,7 +185,7 @@ export const moves = {
   "파동탄":             { power: 40, type: "격투", accuracy: 100, alwaysHit: true,  effect: null },
   "기합구슬":             { power: 60, type: "격투", accuracy: 70, alwaysHit: false,  effect: null, rank: { chance: 0.1, targetDef: -1, turns: 2 }   },
   "깨트리기":           { power: 45, type: "격투", accuracy: 100, alwaysHit: false, effect: null, breakBarrier: true },
-  "발뒤꿈치떨어뜨리기": { power: 40, type: "격투", accuracy: 100, alwaysHit: false, effect: null },
+  "그로우펀치": { power: 30, type: "격투", accuracy: 100, alwaysHit: false, effect: null, rank: { atk: 1, turns: 2} },
   "드레인펀치":         { power: 45, type: "격투", accuracy: 100, alwaysHit: false, effect: { drain: 0.15 } },
   "바디프레스":         { power: 50, type: "격투", accuracy: 100, alwaysHit: false, effect: null, bodyPress: true },
   "무릎차기":           { power: 70, type: "격투", accuracy: 90,  alwaysHit: false, effect: null, jumpKick: true },
@@ -203,6 +204,7 @@ export const moves = {
   "오물폭탄": { power: 50, type: "독", accuracy: 100, alwaysHit: false, effect: { chance: 0.3, status: "독" } },
   "오물웨이브":{ power: 50, type: "독", accuracy: 100, alwaysHit: false, effect: { chance: 0.1, status: "독" }, aoe: true },
   "맹독":     { power: 0,  type: "독", accuracy: 90,  alwaysHit: false, targetSelf:false, effect: { chance: 1, status: "독" } },
+  "독가스":     { power: 0,  type: "독", accuracy: 90,  alwaysHit: false, targetSelf:false, effect: { chance: 1, status: "독" } },
   "똬리틀기": { power: 0,  type: "독", accuracy: 100, alwaysHit: true,  targetSelf: true, effect: null,
                 rank: { atk: 1, def: 1, spd: 1, turns: 3 } },
   "베놈쇼크": { power: 40, type: "독", accuracy: 100, alwaysHit: false, effect: null, venomShock: true },
@@ -290,7 +292,8 @@ export const moves = {
   "벌레의야단법석":{ power: 50, type: "벌레", accuracy: 100, alwaysHit: false, effect: null,
                     targetSelf: false, rank: { chance: 0.1, targetDef: 1, turns: 2 } },
   "시저크로스": { power: 50, type: "벌레", accuracy: 100, alwaysHit: false,  effect: null },
-
+  "엄습하는일격":   { power: 40,  type: "벌레", accuracy: 90, alwaysHit: false,  effect: null,
+                  rank: { targetAtk: -1, turns: 2 } },
   // ───── 고스트 ─────
   "섀도볼":     { power: 50, type: "고스트", accuracy: 100, alwaysHit: false, effect: null,
                   rank: { chance: 0.2, targetDef: -1, turns: 3 } },
@@ -452,6 +455,9 @@ export const moves = {
 "사이코노이즈": { power: 45, type: "에스퍼", accuracy: 100,
                   effect: { healBlock: true },
                   targetSelf: false, aoeEnemy: true },
+"메테오빔":     { power: 70, type: "바위", accuracy: 90, alwaysHit: false, effect: null, meteorBeam: true },
+"마지막일침":   { power: 40, type: "벌레", accuracy: 100, alwaysHit: false, effect: null, lastSting: true },
+"거대해머":     { power: 70, type: "강철", accuracy: 100, alwaysHit: false, effect: null, heavyHammer: true },
 "블러드문":     { power: 120, type: "심안", accuracy: 100, alwaysHit: true, effect: null},
 "너죽이는생각":     { power: 120, type: "심안", accuracy: 100, alwaysHit: true, effect: null},
 "배북":     { power: 120, type: "심안", accuracy: 100, alwaysHit: true, effect: null},

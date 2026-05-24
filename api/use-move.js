@@ -1159,6 +1159,18 @@ const anyFaintedTotal = anyFainted || myPokemon.hp <= 0 || enePokemon.hp <= 0
       return res.status(200).json({ ok: true })
     }
 
+    if (moveInfo?.meteorBeam && !myPokemon.meteorBeamState?.charging) {
+  myPokemon.meteorBeamState = { charging: true }
+  const rankMsgs = applyRankChanges({ atk: 1, turns: 3 }, myPokemon, enePokemon, moveData.name)
+  for (const msg of rankMsgs) await log(logsRef, msg)
+  await log(logsRef, `${myPokemon.name}${josa(myPokemon.name, "은는")} 우주의 힘을 모으고 있다!`)
+  await finishTurn({})
+  return res.status(200).json({ ok: true })
+}
+if (myPokemon.meteorBeamState?.charging) {
+  myPokemon.meteorBeamState = null
+}
+
     if (moveInfo?.solarBlade && !myPokemon.solarBladeState?.charging) {
   if (currentWeather === "쾌청") {
     // 쾌청이면 바로 공격 (아래 일반 공격 흐름으로 넘어감)
@@ -1607,6 +1619,13 @@ if (myPokemon.solarBladeState?.charging) {
 
     // 일반 공격 처리
     {
+// 거대해머 쿨다운 체크
+      if (moveInfo?.heavyHammer && myPokemon.heavyHammerCooldown) {
+        myPokemon.heavyHammerCooldown = false
+        await log(logsRef, `${myPokemon.name}${josa(myPokemon.name, "은는")} 거대해머를 아직 휘두를 수 없다!`)
+        await finishTurn({})
+        return res.status(200).json({ ok: true })
+      }
       const patchedMoveInfo = patchMoveForWeather(currentWeather, moveData.name, moveInfo)
       const { hit, hitType } = calcHit(myPokemon, patchedMoveInfo, enePokemon)
       if (!hit) {
@@ -1804,6 +1823,7 @@ if (myPokemon.solarBladeState?.charging) {
             for (const msg of rankMsgs) await log(logsRef, msg)
           }
           if (moveInfo?.hyperBeam) { myPokemon.hyperBeamState = true }
+          if (moveInfo?.heavyHammer) { myPokemon.heavyHammerCooldown = true }
           if (moveInfo?.effect?.recoil && damage > 0) {
             const recoilDmg = Math.max(1, Math.floor(damage * moveInfo.effect.recoil))
             myPokemon.hp = Math.max(0, myPokemon.hp - recoilDmg)
@@ -1827,6 +1847,12 @@ if (moveInfo?.tickDmg && enePokemon.hp > 0 && !enePokemon.tickDmgState) {
 }
 
           if (enePokemon.hp <= 0) await log(logsRef, `${enePokemon.name}${josa(enePokemon.name, "은는")} 쓰러졌다!`, "faint")
+
+            // 마지막일침: 상대 기절 시 공격 3랭크 상승
+          if (moveInfo?.lastSting && enePokemon.hp <= 0) {
+            const rankMsgs = applyRankChanges({ atk: 3, turns: 2 }, myPokemon, enePokemon, null)
+            for (const msg of rankMsgs) await log(logsRef, msg)
+          }
         }
       }
     }
