@@ -227,7 +227,57 @@ function processLogQueue() {
     isProcessing = false
     if (logQueue.length === 0) {
       if (pendingGameOver) { const data = pendingGameOver; pendingGameOver = null; showGameOver(data); return }
-      if (pendingTurnUpdate) { const data = pendingTurnUpdate; pendingTurnUpdate = null; actionDone = false; myTurn = data.current_turn === mySlot; updateTurnUI(data); updateMoveButtons(data); updateBenchButtons(data); return }
+      if (pendingTurnUpdate) {
+  const data = pendingTurnUpdate
+  pendingTurnUpdate = null
+  actionDone = false
+  myTurn = data.current_turn === mySlot
+  updateTurnUI(data)
+  updateMoveButtons(data)
+  updateBenchButtons(data)
+  if (myTurn) {
+    const myActiveIdx = data[`${mySlot}_active_idx`]
+    const myPokemon = data[`${mySlot}_entry`]?.[myActiveIdx]
+    if (myPokemon && myPokemon.hp > 0) {
+      if (myPokemon?.flyState?.flying) {
+        const flyMoveIdx = (myPokemon.moves ?? []).findIndex(m => moves[m.name]?.fly)
+        actionDone = true
+        fetch(`${API}/api/use-move`, { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ roomId: ROOM_ID, mySlot, moveIdx: flyMoveIdx !== -1 ? flyMoveIdx : 0 }) })
+        return
+      }
+      if (myPokemon?.digState?.digging) {
+        const digMoveIdx = (myPokemon.moves ?? []).findIndex(m => moves[m.name]?.dig)
+        actionDone = true
+        fetch(`${API}/api/use-move`, { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ roomId: ROOM_ID, mySlot, moveIdx: digMoveIdx !== -1 ? digMoveIdx : 0 }) })
+        return
+      }
+      if (myPokemon?.ghostDiveState?.diving) {
+        const gdMoveIdx = (myPokemon.moves ?? []).findIndex(m => moves[m.name]?.ghostDive)
+        actionDone = true
+        fetch(`${API}/api/use-move`, { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ roomId: ROOM_ID, mySlot, moveIdx: gdMoveIdx !== -1 ? gdMoveIdx : 0 }) })
+        return
+      }
+      if (myPokemon?.solarBladeState?.charging) {
+        const solarIdx = (myPokemon.moves ?? []).findIndex(m => m.name === "솔라블레이드")
+        if (solarIdx !== -1) { actionDone = true; fetch(`${API}/api/use-move`, { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ roomId: ROOM_ID, mySlot, moveIdx: solarIdx }) }); return }
+      }
+      if (myPokemon?.outrageState?.active) {
+        const outrageMoveIdx = (myPokemon.moves ?? []).findIndex(m => m.name === myPokemon.outrageState.moveName)
+        if (outrageMoveIdx !== -1) { actionDone = true; fetch(`${API}/api/use-move`, { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ roomId: ROOM_ID, mySlot, moveIdx: outrageMoveIdx }) }); return }
+      }
+      if (myPokemon?.rollState?.active) {
+        const rollMoveIdx = (myPokemon.moves ?? []).findIndex(m => m.name === "구르기")
+        if (rollMoveIdx !== -1) { actionDone = true; fetch(`${API}/api/use-move`, { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ roomId: ROOM_ID, mySlot, moveIdx: rollMoveIdx }) }); return }
+      }
+      if (myPokemon?.bideState) {
+        actionDone = true
+        fetch(`${API}/api/use-move`, { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ roomId: ROOM_ID, mySlot, moveIdx: -1 }) })
+        return
+      }
+    }
+  }
+  return
+}
       if (lastRoomData) { updateMoveButtons(lastRoomData); updateBenchButtons(lastRoomData) }
     }
     setTimeout(processLogQueue, 50)
