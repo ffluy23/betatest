@@ -1261,7 +1261,7 @@ if (myPokemon.solarBladeState?.charging) {
     if (moveInfo?.burnOff) {
   const myTypes = Array.isArray(myPokemon.type) ? myPokemon.type : [myPokemon.type]
   if (!myTypes.includes("불")) {
-    await log(logsRef, `${myPokemon.name}${josa(myPokemon.name, "은는")} 불 타입이 아니라 실패했다!`)
+    await log(logsRef, `${myPokemon.name}${josa(myPokemon.name, "은는")} 불타입이 아니라 실패했다!`)
     await finishTurn({})
     return res.status(200).json({ ok: true })
   }
@@ -1278,6 +1278,10 @@ if (myPokemon.solarBladeState?.charging) {
   const atkRankBO = getActiveRank(myPokemon, "atk")
   const defRankEneBO = getActiveRank(enePokemon, "def")
   const { damage, multiplier, critical, minRoll, minDice } = calcDamage(myPokemon, moveData.name, enePokemon, atkRankBO, defRankEneBO, null, null, currentWeather)
+  
+  // 독립적인 burnOffUpdate 객체 사용
+  const burnOffUpdate = {}
+  
   if (multiplier === 0) {
     await log(logsRef, `${enePokemon.name}에게는 효과가 없다…`)
   } else {
@@ -1289,16 +1293,17 @@ if (myPokemon.solarBladeState?.charging) {
     if (minRoll) await log(logsRef, `${minDice}! (최소 피해 보장)`)
     else if (critical) await log(logsRef, "급소에 맞았다!", "critical")
     if (enePokemon.hp <= 0) await log(logsRef, `${enePokemon.name}${josa(enePokemon.name, "은는")} 쓰러졌다!`, "faint")
-    recordDmg(revengeUpdate ?? {}, enemySlot, damage)
+    recordDmg(burnOffUpdate, enemySlot, damage)  // burnOffUpdate에 기록
   }
-  // 불 타입 제거 (날개쉬기 방식)
+  
+  // 불 타입 제거
   const types = Array.isArray(myPokemon.type) ? [...myPokemon.type] : [myPokemon.type]
   myPokemon._origType = myPokemon.type
   myPokemon.type = types.filter(t => t !== "불")
   if (myPokemon.type.length === 0) myPokemon.type = ["노말"]
   myPokemon.roostTurns = 3
-  await log(logsRef, `${myPokemon.name}${josa(myPokemon.name, "은는")} 불꽃을 다 태워버려 불 타입이 사라졌다!`)
-  await finishTurn(revengeUpdate ?? {})
+  await log(logsRef, `${myPokemon.name}${josa(myPokemon.name, "은는")} 불꽃을 다 태워버려 불타입이 사라졌다!`)
+  await finishTurn(burnOffUpdate)  // ★ burnOffUpdate 전달
   return res.status(200).json({ ok: true })
 }
 
