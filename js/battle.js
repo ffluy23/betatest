@@ -471,6 +471,7 @@ function listenRoom() {
     if (!data.current_turn) return
     if (!isSpectator) {
       const wasMine = myTurn
+      if (data.current_turn === mySlot) actionDone = false
       myTurn = data.current_turn === mySlot
       const myPokemon = data[`${mySlot}_entry`]?.[data[`${mySlot}_active_idx`]]
 
@@ -697,7 +698,7 @@ async function leaveAsSpectator() {
     spectators: (data.spectators ?? []).filter(u => u !== myUid),
     spectator_names: (data.spectator_names ?? []).filter((_, i) => (data.spectators ?? [])[i] !== myUid)
   })
-  location.href = "../main.html"
+  location.href = "../index.html"
 }
 
 async function leaveGame() {
