@@ -567,6 +567,16 @@ if (myTurn && !actionDone && myPokemon?.digState?.digging) {
   return
 }
 
+if (myTurn && !actionDone && myPokemon?.ghostDiveState?.diving) {
+  const gdMoveIdx = (myPokemon.moves ?? []).findIndex(m => moves[m.name]?.ghostDive)
+  actionDone = true
+  fetch(`${API}/api/use-move`, {
+    method: "POST", headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ roomId: ROOM_ID, mySlot, moveIdx: gdMoveIdx !== -1 ? gdMoveIdx : 0 })
+  })
+  return
+}
+
       if (!wasMine && myTurn) {
   if (logQueue.length > 0 || isProcessing) {
     pendingTurnUpdate = data
