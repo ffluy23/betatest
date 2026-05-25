@@ -1298,7 +1298,7 @@ if (myPokemon.solarBladeState?.charging) {
   
   // 불 타입 제거
   const types = Array.isArray(myPokemon.type) ? [...myPokemon.type] : [myPokemon.type]
-  myPokemon._origType = myPokemon.type
+  myPokemon._origType = [...types]
   myPokemon.type = types.filter(t => t !== "불")
   if (myPokemon.type.length === 0) myPokemon.type = ["노말"]
   myPokemon.roostTurns = 3
