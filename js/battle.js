@@ -517,7 +517,7 @@ if (myTurn && !actionDone && myPokemon?.digState?.digging) {
   return
 }
 
-if (myTurn && !actionDone && myPokemon?.ghostDiveState?.diving) {
+if (data.current_turn === mySlot && !actionDone && myPokemon?.ghostDiveState?.diving) {
   const gdMoveIdx = (myPokemon.moves ?? []).findIndex(m => moves[m.name]?.ghostDive)
   actionDone = true
   fetch(`${API}/api/use-move`, {
