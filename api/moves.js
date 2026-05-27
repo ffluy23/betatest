@@ -166,7 +166,8 @@ export const moves = {
   "사과산":         { power: 50, type: "풀", accuracy: 100, alwaysHit: false, effect: null,
                       rank: { targetDef: -1, turns: 2 } },
   "트릭플라워": { power: 40, type: "풀", accuracy: 100, alwaysHit: true, effect: null, alwaysCrit: true },
-
+  "광합성":           { power: 0,  type: "풀", accuracy: 100, alwaysHit: true,
+                      effect: { moonlight: true }, targetSelf: true },
   // ───── 얼음 ─────
   "눈보라":         { power: 40, type: "얼음", accuracy: 70,  alwaysHit: false, effect: { chance: 0.1, status: "얼음" }, aoeEnemy: true },
   "얼음뭉치":       { power: 35, type: "얼음", accuracy: 100, alwaysHit: true,  effect: null },
