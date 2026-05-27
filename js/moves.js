@@ -276,8 +276,8 @@ export const moves = {
   "사이코팽":       { power: 50, type: "에스퍼", accuracy: 100, alwaysHit: false, effect: null, breakBarrier: true },
 
   // ───── 벌레 ─────
-  "달려들기":   { power: 40, type: "벌레", accuracy: 100, alwaysHit: false,
-                  rank: { targetSpd: -1, turns: 3 } },
+  "덤벼들기":   { power: 50, type: "벌레", accuracy: 100, alwaysHit: false,
+                  rank: { targetAtk: -1, turns: 3 } },
   "실뿜기":     { power: 0,  type: "벌레", accuracy: 95,  alwaysHit: false,
                   rank: { targetSpd: -2, turns: 3 }, aoeEnemy: true },
   "벌레먹음":   { power: 40, type: "벌레", accuracy: 100, alwaysHit: false, effect: null },
@@ -463,4 +463,6 @@ export const moves = {
 "너죽이는생각":     { power: 120, type: "심안", accuracy: 100, alwaysHit: true, effect: null},
 "배북":     { power: 120, type: "심안", accuracy: 100, alwaysHit: true, effect: null},
 "파괴충동":     { power: 120, type: "심안", accuracy: 100, alwaysHit: true, effect: null},
+"다이빙": { power: 50, type: "물", accuracy: 100, alwaysHit: false, effect: null, dive: true },
+"예민해지기": { power: 0, type: "노말", accuracy: 100, alwaysHit: true, effect: null, focusEnergy: true, targetSelf: true },
 }

@@ -134,6 +134,8 @@ function calcHit(attacker, moveInfo, defender) {
     return { hit: false, hitType: "evaded" }
   if (defender.ghostDiveState?.diving)
     return { hit: false, hitType: "evaded" }
+  if (defender.diveState?.diving && moveName !== "파도타기")
+  return { hit: false, hitType: "evaded" }
   const as = Math.max(1, (attacker.speed ?? 3) - getStatusSpdPenalty(attacker))
   const ds = Math.max(1, (defender.speed ?? 3) - getStatusSpdPenalty(defender))
   const defSpdRank = (defender.ranks ?? {})
@@ -186,7 +188,8 @@ function calcDamage(attacker, moveName, defender, atkRankBonus = 0, defRankBonus
   const weatherMult = getWeatherDamageMult(weather, move.type)
   const critRate = Math.min(100, atkStat * 2 + (move.highCrit ? 3 : 0))
   const critical = Math.random() * 100 < critRate
-  const finalDmg = Math.floor(baseDmg * screenMult * flyLightningMult * twisterFlyMult * digEarthquakeMult * weatherMult)
+  const diveDmgMult = (defender.diveState?.diving && moveName === "파도타기") ? 2.0 : 1.0
+const finalDmg = Math.floor(baseDmg * screenMult * flyLightningMult * twisterFlyMult * digEarthquakeMult * weatherMult * diveDmgMult)
   return { damage: critical ? Math.floor(finalDmg * 1.5) : finalDmg, multiplier, stab, dice, critical, minRoll: false }
 }
 
@@ -488,6 +491,45 @@ export default async function handler(req, res) {
       }
       return res.status(200).json({ ok: true })
     }
+
+    // ── 다이빙 2턴째
+if (myPokemon.diveState?.diving) {
+  myPokemon.diveState = null
+  await log(logsRef, `${myPokemon.name}${josa(myPokemon.name, "은는")} 물속에서 떠올랐다!`)
+  await log(logsRef, "", "attack", { attacker: mySlot })
+  const atkRankDive = getActiveRank(myPokemon, "atk")
+  const defRankEneDive = getActiveRank(enePokemon, "def")
+  enePokemon.defending = false; enePokemon.defendTurns = 0
+  const { hit, hitType } = calcHit(myPokemon, { accuracy: 100, type: "물", alwaysHit: false }, enePokemon)
+  if (!hit) {
+    await log(logsRef, hitType === "evaded" ? `${enePokemon.name}에게는 맞지 않았다!` : `그러나 ${myPokemon.name}의 공격은 빗나갔다!`, hitType === "evaded" ? "evade" : "normal")
+  } else {
+    const diveMoveName = myPokemon.diveMoveName ?? "다이빙"
+    const { damage, multiplier, critical, minRoll, minDice } = calcDamage(myPokemon, diveMoveName, enePokemon, atkRankDive, defRankEneDive, null, null, currentWeather)
+    if (multiplier === 0) {
+      await log(logsRef, `${enePokemon.name}에게는 효과가 없다…`)
+    } else {
+      enePokemon.hp = Math.max(0, enePokemon.hp - damage)
+      if (enePokemon.hp <= 0 && enePokemon.enduring) { enePokemon.hp = 1; enePokemon.enduring = false }
+      await log(logsRef, "", "hit", { defender: enemySlot, hp: enePokemon.hp, maxHp: enePokemon.maxHp ?? enePokemon.hp })
+      if (multiplier > 1) await log(logsRef, "효과가 굉장했다!")
+      if (multiplier < 1) await log(logsRef, "효과가 별로인 듯하다…")
+      if (minRoll) await log(logsRef, `${minDice}! (최소 피해 보장)`)
+      else if (critical) await log(logsRef, "급소에 맞았다!", "critical")
+      if (enePokemon.hp <= 0) await log(logsRef, `${enePokemon.name}${josa(enePokemon.name, "은는")} 쓰러졌다!`, "faint")
+    }
+  }
+  myPokemon.diveMoveName = null
+  const expMsgsDive = tickMyRanks(myPokemon); clearRankStack(myPokemon)
+  for (const msg of expMsgsDive) await log(logsRef, msg)
+  if (isAllFainted(enemyEntry)) {
+    await safeUpdate(roomRef, { [`${mySlot}_entry`]: myEntry, [`${enemySlot}_entry`]: enemyEntry, turn_count: nextTurnCount, game_over: true, winner: myName, current_turn: null })
+    await log(logsRef, `${myName}의 승리!`, "win")
+  } else {
+    await safeUpdate(roomRef, { [`${mySlot}_entry`]: myEntry, [`${enemySlot}_entry`]: enemyEntry, current_turn: enemySlot, turn_count: nextTurnCount })
+  }
+  return res.status(200).json({ ok: true })
+}
 
     // ── 참기 중이면 자동으로 턴 스킵
     if (myPokemon.bideState && (!moveInfo || !moveInfo?.bide)) {
@@ -1195,6 +1237,14 @@ if (myPokemon.solarBladeState?.charging) {
       return res.status(200).json({ ok: true })
     }
 
+    if (moveInfo?.dive && !myPokemon.diveState?.diving) {
+  myPokemon.diveState = { diving: true }
+  myPokemon.diveMoveName = moveData.name
+  await log(logsRef, `${myPokemon.name}${josa(myPokemon.name, "은는")} 물속으로 잠수했다!`)
+  await finishTurn({})
+  return res.status(200).json({ ok: true })
+}
+
     if (moveInfo?.futureSight) {
       if (myPokemon.futureSight) {
         await log(logsRef, `이미 미래예지가 걸려있다!`)
@@ -1205,6 +1255,13 @@ if (myPokemon.solarBladeState?.charging) {
       await finishTurn({})
       return res.status(200).json({ ok: true })
     }
+
+    if (moveInfo?.focusEnergy) {
+  myPokemon.focusEnergy = true
+  await log(logsRef, `${myPokemon.name}${josa(myPokemon.name, "은는")} 예민해졌다!`)
+  await finishTurn({})
+  return res.status(200).json({ ok: true })
+}
 
     if (moveInfo?.fakeOut) {
       const { hit, hitType } = calcHit(myPokemon, moveInfo, enePokemon)
@@ -1455,26 +1512,26 @@ if (myPokemon.solarBladeState?.charging) {
         await log(logsRef, `${enePokemon.name}${josa(enePokemon.name, "의")} 능력 변화가 원래대로 돌아왔다!`)
       }
 
-     if (moveInfo?.effect?.removeFlying) {
-  if ((myPokemon.healBlocked ?? 0) > 0) {
-    await log(logsRef, `${myPokemon.name}${josa(myPokemon.name, "은는")} 회복봉인 상태라 날개쉬기에 실패했다!`)
-    await finishTurn({})
-    return res.status(200).json({ ok: true })
-  }
-  const healRate = moveInfo.effect.heal ?? 0.5
-  const heal = Math.max(1, Math.floor((myPokemon.maxHp ?? myPokemon.hp) * healRate))
-  myPokemon.hp = Math.min(myPokemon.maxHp ?? myPokemon.hp, myPokemon.hp + heal)
-  await log(logsRef, "", "heal_self", { slot: mySlot, hp: myPokemon.hp, maxHp: myPokemon.maxHp ?? myPokemon.hp })
-  await log(logsRef, `${myPokemon.name}${josa(myPokemon.name, "은는")} HP를 회복했다! (+${heal})`)
-  const types = Array.isArray(myPokemon.type) ? [...myPokemon.type] : [myPokemon.type]
-  myPokemon._origType = myPokemon.type
-  if (types.length === 1) { myPokemon.type = ["노말"] }
-  else { myPokemon.type = types.filter(t => t !== "비행"); if (myPokemon.type.length === 0) myPokemon.type = ["노말"] }
-  myPokemon.roostTurns = 3
-  await log(logsRef, `${myPokemon.name}${josa(myPokemon.name, "은는")} 땅에 내려앉아 비행 타입이 사라졌다!`)
-  await finishTurn({})
-  return res.status(200).json({ ok: true })
-}
+      if (moveInfo?.effect?.removeFlying) {
+        if ((myPokemon.healBlocked ?? 0) > 0) {
+          await log(logsRef, `${myPokemon.name}${josa(myPokemon.name, "은는")} 회복봉인 상태라 날개쉬기에 실패했다!`)
+          await finishTurn({})
+          return res.status(200).json({ ok: true })
+        }
+        const healRate = moveInfo.effect.heal ?? 0.5
+        const heal = Math.max(1, Math.floor((myPokemon.maxHp ?? myPokemon.hp) * healRate))
+        myPokemon.hp = Math.min(myPokemon.maxHp ?? myPokemon.hp, myPokemon.hp + heal)
+        await log(logsRef, "", "heal_self", { slot: mySlot, hp: myPokemon.hp, maxHp: myPokemon.maxHp ?? myPokemon.hp })
+        await log(logsRef, `${myPokemon.name}${josa(myPokemon.name, "은는")} HP를 회복했다! (+${heal})`)
+        const types = Array.isArray(myPokemon.type) ? [...myPokemon.type] : [myPokemon.type]
+        myPokemon._origType = myPokemon.type
+        if (types.length === 1) { myPokemon.type = ["노말"] }
+        else { myPokemon.type = types.filter(t => t !== "비행"); if (myPokemon.type.length === 0) myPokemon.type = ["노말"] }
+        myPokemon.roostTurns = 1
+        await log(logsRef, `${myPokemon.name}${josa(myPokemon.name, "은는")} 땅에 내려앉아 비행 타입이 사라졌다!`)
+        await finishTurn({})
+        return res.status(200).json({ ok: true })
+      }
       let rankToApply = r
       if (moveData.name === "성장" && r) {
         rankToApply = { ...r, atk: getSunnyGrowthBonus(currentWeather) }
@@ -1740,7 +1797,8 @@ if (myPokemon.solarBladeState?.charging) {
         }
 
         const { damage: rawDmg, multiplier, critical: calcCritical, minRoll, minDice } = calcDamage(myPokemon, moveData.name, enePokemon, atkRank, defRankEne, powerOverride, atkStatOverride, currentWeather)
-        const critical = moveInfo?.alwaysCrit ? true : calcCritical
+        const critical = (moveInfo?.alwaysCrit || myPokemon.focusEnergy) ? true : calcCritical
+if (critical && myPokemon.focusEnergy) myPokemon.focusEnergy = false
         const alwaysCritMult = (moveInfo?.alwaysCrit && !calcCritical) ? 1.5 : 1.0
         const tricksterMult = moveInfo?.trickster ? 0.7 : 1.0
         const damage = counterDamage ?? Math.floor(rawDmg * comebackMult * sickMult * gutsMult * revivedMult * tricksterMult * finisherMult * venomShockMult * chargedMult * alwaysCritMult)
