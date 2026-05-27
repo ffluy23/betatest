@@ -134,7 +134,7 @@ function calcHit(attacker, moveInfo, defender) {
     return { hit: false, hitType: "evaded" }
   if (defender.ghostDiveState?.diving)
     return { hit: false, hitType: "evaded" }
-  if (defender.diveState?.diving && moveName !== "파도타기")
+  if (defender.diveState?.diving && moveInfo._name !== "파도타기")
   return { hit: false, hitType: "evaded" }
   const as = Math.max(1, (attacker.speed ?? 3) - getStatusSpdPenalty(attacker))
   const ds = Math.max(1, (defender.speed ?? 3) - getStatusSpdPenalty(defender))
@@ -1693,7 +1693,7 @@ if (myPokemon.solarBladeState?.charging) {
         await finishTurn({})
         return res.status(200).json({ ok: true })
       }
-      const patchedMoveInfo = patchMoveForWeather(currentWeather, moveData.name, moveInfo)
+      const patchedMoveInfo = { ...patchMoveForWeather(currentWeather, moveData.name, moveInfo), _name: moveData.name }
       const { hit, hitType } = calcHit(myPokemon, patchedMoveInfo, enePokemon)
       if (!hit) {
         // ★ 빗나감 추적
