@@ -257,6 +257,15 @@ function processLogQueue() {
         fetch(`${API}/api/use-move`, { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ roomId: ROOM_ID, mySlot, moveIdx: gdMoveIdx !== -1 ? gdMoveIdx : 0 }) })
         return
       }
+      if (myPokemon?.diveState?.diving) {
+  const diveMoveIdx = (myPokemon.moves ?? []).findIndex(m => moves[m.name]?.dive)
+  actionDone = true
+  fetch(`${API}/api/use-move`, {
+    method: "POST", headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ roomId: ROOM_ID, mySlot, moveIdx: diveMoveIdx !== -1 ? diveMoveIdx : 0 })
+  })
+  return
+}
       if (myPokemon?.solarBladeState?.charging) {
         const solarIdx = (myPokemon.moves ?? []).findIndex(m => m.name === "솔라블레이드")
         if (solarIdx !== -1) { actionDone = true; fetch(`${API}/api/use-move`, { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ roomId: ROOM_ID, mySlot, moveIdx: solarIdx }) }); return }
@@ -577,6 +586,16 @@ if (myTurn && !actionDone && myPokemon?.ghostDiveState?.diving) {
   return
 }
 
+if (myTurn && !actionDone && myPokemon?.diveState?.diving) {
+  const diveMoveIdx = (myPokemon.moves ?? []).findIndex(m => moves[m.name]?.dive)
+  actionDone = true
+  fetch(`${API}/api/use-move`, {
+    method: "POST", headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ roomId: ROOM_ID, mySlot, moveIdx: diveMoveIdx !== -1 ? diveMoveIdx : 0 })
+  })
+  return
+}
+
       if (!wasMine && myTurn) {
   if (logQueue.length > 0 || isProcessing) {
     pendingTurnUpdate = data
@@ -622,6 +641,16 @@ if (myPokemon?.ghostDiveState?.diving) {
   fetch(`${API}/api/use-move`, {
     method: "POST", headers: { "Content-Type": "application/json" },
     body: JSON.stringify({ roomId: ROOM_ID, mySlot, moveIdx: gdMoveIdx !== -1 ? gdMoveIdx : 0 })
+  })
+  return
+}
+
+if (myPokemon?.diveState?.diving) {
+  const diveMoveIdx = (myPokemon.moves ?? []).findIndex(m => moves[m.name]?.dive)
+  actionDone = true
+  fetch(`${API}/api/use-move`, {
+    method: "POST", headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ roomId: ROOM_ID, mySlot, moveIdx: diveMoveIdx !== -1 ? diveMoveIdx : 0 })
   })
   return
 }
