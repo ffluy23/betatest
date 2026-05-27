@@ -878,6 +878,7 @@ function updateBenchButtons(data) {
       const queueBusy = logQueue.length > 0 || isProcessing
       const activeFainted = (myEntry[activeIdx]?.hp ?? 0) <= 0
       const isFlying = myEntry[activeIdx]?.flyState?.flying ?? false
+      const isDigging = myEntry[activeIdx]?.digState?.digging ?? false
 const isDiving = myEntry[activeIdx]?.diveState?.diving ?? false
 const enemySlotForWrap = mySlot === "p1" ? "p2" : "p1"
 const isWrapped = !activeFainted && !!(myEntry[activeIdx]?.wrapState)
