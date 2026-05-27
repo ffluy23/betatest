@@ -1166,7 +1166,7 @@ const anyFaintedTotal = anyFainted || myPokemon.hp <= 0 || enePokemon.hp <= 0
 
     if (moveInfo?.healPulse) {
       if ((enePokemon.healBlocked ?? 0) > 0) {
-        await log(logsRef, `${enePokemon.name}${josa(enePokemon.name, "은는")} 회복봉인 상태라 회복할 수 없다!`)
+        await log(logsRef, `${enePokemon.name}${josa(enePokemon.name, "은는")} 회복봉인 상태라 ${moveData.name}을(를) 사용할 수 없다!`)
         await finishTurn({})
         return res.status(200).json({ ok: true })
       }
@@ -1482,7 +1482,7 @@ if (myPokemon.solarBladeState?.charging) {
 
       if (moveInfo?.effect?.moonlight) {
         if ((myPokemon.healBlocked ?? 0) > 0) {
-          await log(logsRef, `${myPokemon.name}${josa(myPokemon.name, "은는")} 회복봉인 상태라 회복할 수 없다!`)
+          await log(logsRef, `${myPokemon.name}${josa(myPokemon.name, "은는")} 회복봉인 상태라 ${moveData.name}을(를) 사용할 수 없다!`)
           await finishTurn({})
           return res.status(200).json({ ok: true })
         }
@@ -1514,7 +1514,7 @@ if (myPokemon.solarBladeState?.charging) {
 
       if (moveInfo?.effect?.removeFlying) {
         if ((myPokemon.healBlocked ?? 0) > 0) {
-          await log(logsRef, `${myPokemon.name}${josa(myPokemon.name, "은는")} 회복봉인 상태라 날개쉬기에 실패했다!`)
+          await log(logsRef, `${myPokemon.name}${josa(myPokemon.name, "은는")} 회복봉인 상태라 ${moveData.name}을(를) 사용할 수 없다!`)
           await finishTurn({})
           return res.status(200).json({ ok: true })
         }
@@ -1532,6 +1532,11 @@ if (myPokemon.solarBladeState?.charging) {
         await finishTurn({})
         return res.status(200).json({ ok: true })
       }
+      if (moveInfo?.effect?.heal && (myPokemon.healBlocked ?? 0) > 0) {
+        await log(logsRef, `${myPokemon.name}${josa(myPokemon.name, "은는")} 회복봉인 상태라 ${moveData.name}을(를) 사용할 수 없다!`)
+        await finishTurn({})
+        return res.status(200).json({ ok: true })
+      }
       let rankToApply = r
       if (moveData.name === "성장" && r) {
         rankToApply = { ...r, atk: getSunnyGrowthBonus(currentWeather) }
@@ -1539,11 +1544,6 @@ if (myPokemon.solarBladeState?.charging) {
       const rankMsgs = applyRankChanges(rankToApply, myPokemon, enePokemon, moveData.name)
       for (const msg of rankMsgs) await log(logsRef, msg)
       if (moveInfo?.effect?.heal) {
-        if ((myPokemon.healBlocked ?? 0) > 0) {
-          await log(logsRef, `${myPokemon.name}${josa(myPokemon.name, "은는")} 회복봉인 상태라 회복할 수 없다!`)
-          await finishTurn({})
-          return res.status(200).json({ ok: true })
-        }
         const healRate = moveInfo.effect.heal
         const heal = Math.max(1, Math.floor((myPokemon.maxHp ?? myPokemon.hp) * healRate))
         myPokemon.hp = Math.min(myPokemon.maxHp ?? myPokemon.hp, myPokemon.hp + heal)
@@ -1681,6 +1681,11 @@ if (myPokemon.solarBladeState?.charging) {
 
     // 일반 공격 처리
     {
+      if (moveInfo?.effect?.drain && (myPokemon.healBlocked ?? 0) > 0) {
+        await log(logsRef, `${myPokemon.name}${josa(myPokemon.name, "은는")} 회복봉인 상태라 ${moveData.name}을(를) 사용할 수 없다!`)
+        await finishTurn({})
+        return res.status(200).json({ ok: true })
+      }
 // 거대해머 쿨다운 체크
       if (moveInfo?.heavyHammer && myPokemon.heavyHammerCooldown) {
         myPokemon.heavyHammerCooldown = false

@@ -62,7 +62,6 @@ export function applyMoveEffect(moveEffect, attacker, defender, damage = 0, weat
 
   // 흡수
   if (moveEffect.drain) {
-    if ((attacker.healBlocked ?? 0) > 0) return []
     const heal = Math.floor(damage * moveEffect.drain)
     if (heal > 0) {
       attacker.hp = Math.min(attacker.maxHp ?? attacker.hp, attacker.hp + heal)
