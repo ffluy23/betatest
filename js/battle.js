@@ -845,7 +845,7 @@ const lockedByTaunt = !!((myPokemon?.taunted ?? 0) > 0 && !(moveInfo?.power > 0)
     const queueBusy = logQueue.length > 0 || isProcessing
     const disabled = isSpectator || fainted || move.pp <= 0 || !myTurn || actionDone
   || !lrUnlocked || lockedByRoll || lockedByChain || lockedByBide || lockedByOutrage || queueBusy
-  || isFlying || isDigging || forceSwitch|| lockedByThroatChop|| myPokemon?.ghostDiveState?.diving || lockedByTorment || lockedByTaunt
+  || isFlying || isDigging || forceSwitch || lockedByThroatChop || myPokemon?.ghostDiveState?.diving || myPokemon?.diveState?.diving || lockedByTorment || lockedByTaunt
     if (disabled) { btn.disabled = true; btn.onclick = null }
     else { btn.disabled = false; btn.onclick = () => { playSound(SFX_BTN); useMove(i, data) } }
   }
@@ -878,13 +878,13 @@ function updateBenchButtons(data) {
       const queueBusy = logQueue.length > 0 || isProcessing
       const activeFainted = (myEntry[activeIdx]?.hp ?? 0) <= 0
       const isFlying = myEntry[activeIdx]?.flyState?.flying ?? false
-const isDigging = myEntry[activeIdx]?.digState?.digging ?? false
+const isDiving = myEntry[activeIdx]?.diveState?.diving ?? false
 const enemySlotForWrap = mySlot === "p1" ? "p2" : "p1"
 const isWrapped = !activeFainted && !!(myEntry[activeIdx]?.wrapState)
 const isForceUTurn = !!(data[`force_switch_${mySlot}`] && data.current_turn === mySlot)
 btn.disabled = isSpectator || !myTurn || (actionDone && !forceSwitch) || queueBusy
   || (!activeFainted && !forceSwitch && !!(myEntry[activeIdx]?.bideState?.turnsLeft > 0))
-  || isFlying || isDigging || (isWrapped && !isForceUTurn)
+  || isFlying || isDigging || isDiving || (isWrapped && !isForceUTurn)
       if (!isSpectator) btn.onclick = () => { playSound(SFX_BTN); switchPokemon(idx) }
     }
     bench.appendChild(btn)
